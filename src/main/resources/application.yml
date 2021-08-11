@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: 'jdbc:postgresql://localhost:5432/czar_bank'
+    username: 'username'
+    password: 'password'
+  jpa:
+    hibernate:
+      ddl-auto: update

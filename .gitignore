@@ -1,3 +1,6 @@
+### Czar Bank ###
+**/src/main/recources/application-dev.yml
+
 HELP.md
 target/
 !.mvn/wrapper/maven-wrapper.jar
