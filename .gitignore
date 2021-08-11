@@ -1,5 +1,5 @@
 ### Czar Bank ###
-**/src/main/recources/application-dev.yml
+*-dev.yml
 
 HELP.md
 target/

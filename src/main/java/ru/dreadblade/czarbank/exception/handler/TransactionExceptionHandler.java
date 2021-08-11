@@ -4,15 +4,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import ru.dreadblade.czarbank.exception.BankAccountNotFoundException;
+import ru.dreadblade.czarbank.exception.NotEnoughBalanceException;
 import ru.dreadblade.czarbank.exception.model.ErrorResponse;
 
 import javax.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
-public class BankAccountControllerExceptionHandler {
-    @ExceptionHandler(BankAccountNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleBankAccountNotFoundException(BankAccountNotFoundException exception, HttpServletRequest request) {
+public class TransactionExceptionHandler {
+    @ExceptionHandler(NotEnoughBalanceException.class)
+    public ResponseEntity<ErrorResponse> handleNotEnoughBalanceException(NotEnoughBalanceException exception, HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND.value())
                 .body(ErrorResponse.builder()
                         .status(HttpStatus.NOT_FOUND.value())

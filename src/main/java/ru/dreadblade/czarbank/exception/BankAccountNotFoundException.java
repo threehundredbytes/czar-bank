@@ -1,8 +1,6 @@
 package ru.dreadblade.czarbank.exception;
 
-import javax.persistence.EntityNotFoundException;
-
-public class BankAccountNotFoundException extends EntityNotFoundException {
+public class BankAccountNotFoundException extends RuntimeException {
     public BankAccountNotFoundException(String message) {
         super(message);
     }
