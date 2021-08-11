@@ -1,17 +1,22 @@
-package ru.dreadblade.czarbank.controller;
+package ru.dreadblade.czarbank.api.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+import ru.dreadblade.czarbank.api.mapper.BankAccountMapper;
 import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.exception.BankAccountNotFoundException;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
@@ -25,9 +30,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(BankAccountController.class)
+@SpringBootTest
 public class BankAccountControllerIntegrationTests {
     @Autowired
+    WebApplicationContext webApplicationContext;
+
     MockMvc mockMvc;
 
     @MockBean
@@ -59,6 +66,12 @@ public class BankAccountControllerIntegrationTests {
 
     List<BankAccount> records = List.of(MOCK_RECORD_1, MOCK_RECORD_2, MOCK_RECORD_3);
 
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders
+                .webAppContextSetup(webApplicationContext)
+                .build();
+    }
 
     @Nested
     @DisplayName("getAll() Tests")

@@ -29,6 +29,4 @@ public class BankAccount {
 
     @OneToMany(mappedBy = "sourceBankAccount")
     private Set<Transaction> transactions;
-
-
 }

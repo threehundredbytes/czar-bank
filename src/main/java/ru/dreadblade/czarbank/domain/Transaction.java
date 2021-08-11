@@ -26,8 +26,8 @@ public class Transaction {
     private BigDecimal amount;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    private BankAccount destinationBankAccount;
+    private BankAccount sourceBankAccount;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    private BankAccount sourceBankAccount;
+    private BankAccount destinationBankAccount;
 }
