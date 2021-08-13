@@ -1,20 +1,18 @@
 package ru.dreadblade.czarbank.api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.model.request.BankAccountRequestDTO;
-import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 import static org.hamcrest.Matchers.hasLength;
 import static org.hamcrest.Matchers.hasSize;
@@ -24,20 +22,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @DisplayName("BankAccount Integration Tests")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@Sql(value = "/bank-account/bank-accounts-insertion.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(value = "/bank-account/bank-accounts-deletion.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class BankAccountIntegrationTest extends BaseIntegrationTest {
     @Autowired
     ObjectMapper objectMapper;
 
     @Autowired
     BankAccountRepository bankAccountRepository;
-
-    @BeforeEach
-    @Override
-    void setUp() {
-        super.setUp();
-        insertBankAccounts();
-    }
 
     @Nested
     @DisplayName("getAll() Tests")
@@ -64,6 +56,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
+        @Transactional
         void getAll_isEmpty() throws Exception {
             bankAccountRepository.deleteAll();
 
@@ -80,7 +73,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @Test
         void findById_isSuccess() throws Exception {
             long expectedBankAccountId = 4L;
-            BigDecimal expectedBalance = BigDecimal.valueOf(500.0);
+            BigDecimal expectedBalance = new BigDecimal("500.0");
             String expectedNumber = "36264421013439107929";
             String expectedOwner = "Owner #4";
 
@@ -118,6 +111,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @Transactional
     void deleteAccount_isSuccess() throws Exception {
         long bankAccountDeletionId = 1L;
 
@@ -127,45 +121,5 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/bank-accounts/" + bankAccountDeletionId)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
-    }
-
-    private void insertBankAccounts() {
-        BankAccount bankAccount1 = BankAccount.builder()
-                .balance(BigDecimal.valueOf(15000L))
-                .number("39903336089073190794")
-                .owner("Owner #1")
-                .build();
-
-        BankAccount bankAccount2 = BankAccount.builder()
-                .balance(BigDecimal.valueOf(5000L))
-                .number("33390474811219980161")
-                .owner("Owner #2")
-                .build();
-
-        BankAccount bankAccount3 = BankAccount.builder()
-                .balance(BigDecimal.valueOf(2000L))
-                .number("38040432731497506063")
-                .owner("Owner #3")
-                .build();
-
-        BankAccount bankAccount4 = BankAccount.builder()
-                .balance(BigDecimal.valueOf(500L))
-                .number("36264421013439107929")
-                .owner("Owner #4")
-                .build();
-
-        BankAccount bankAccount5 = BankAccount.builder()
-                .balance(BigDecimal.valueOf(1500L))
-                .number("32541935657215432384")
-                .owner("Owner #5")
-                .build();
-
-        bankAccountRepository.saveAll(List.of(
-                bankAccount1,
-                bankAccount2,
-                bankAccount3,
-                bankAccount4,
-                bankAccount5
-        ));
     }
 }

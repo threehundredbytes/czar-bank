@@ -13,10 +13,10 @@ import javax.servlet.http.HttpServletRequest;
 public class TransactionExceptionHandler {
     @ExceptionHandler(NotEnoughBalanceException.class)
     public ResponseEntity<ErrorResponse> handleNotEnoughBalanceException(NotEnoughBalanceException exception, HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND.value())
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST.value())
                 .body(ErrorResponse.builder()
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .error(HttpStatus.NOT_FOUND.getReasonPhrase())
+                        .status(HttpStatus.BAD_REQUEST.value())
+                        .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
                         .message(exception.getMessage())
                         .path(request.getRequestURI())
                         .build());

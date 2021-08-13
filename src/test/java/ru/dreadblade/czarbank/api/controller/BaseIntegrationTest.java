@@ -3,6 +3,7 @@ package ru.dreadblade.czarbank.api.controller;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
@@ -16,6 +17,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(initializers = BaseIntegrationTest.DockerPostgreDataSourceInitializer.class)
 @Testcontainers
+@SpringBootTest
 public abstract class BaseIntegrationTest {
     @Autowired
     WebApplicationContext webApplicationContext;
@@ -43,7 +45,7 @@ public abstract class BaseIntegrationTest {
     }
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         mockMvc = MockMvcBuilders
                 .webAppContextSetup(webApplicationContext)
                 .build();
