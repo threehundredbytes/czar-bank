@@ -1,7 +1,9 @@
 package ru.dreadblade.czarbank.exception;
 
-public class BankAccountTypeNameAlreadyExistsException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class BankAccountTypeNameAlreadyExistsException extends BaseException {
     public BankAccountTypeNameAlreadyExistsException(String message) {
-        super(message);
+        super(message, HttpStatus.BAD_REQUEST);
     }
 }

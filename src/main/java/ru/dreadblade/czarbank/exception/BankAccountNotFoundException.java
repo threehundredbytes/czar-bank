@@ -1,7 +1,9 @@
 package ru.dreadblade.czarbank.exception;
 
-public class BankAccountNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class BankAccountNotFoundException extends BaseException {
     public BankAccountNotFoundException(String message) {
-        super(message);
+        super(message, HttpStatus.NOT_FOUND);
     }
 }

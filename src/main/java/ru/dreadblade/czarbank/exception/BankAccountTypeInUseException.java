@@ -1,7 +1,9 @@
 package ru.dreadblade.czarbank.exception;
 
-public class BankAccountTypeInUseException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class BankAccountTypeInUseException extends BaseException {
     public BankAccountTypeInUseException(String message) {
-        super(message);
+        super(message, HttpStatus.BAD_REQUEST);
     }
 }
