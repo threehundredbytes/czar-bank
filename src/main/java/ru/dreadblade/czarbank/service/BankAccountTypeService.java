@@ -35,7 +35,7 @@ public class BankAccountTypeService {
 
         return bankAccountTypeRepository.save(BankAccountType.builder()
                 .name(requestDTO.getName())
-                .transactionsCommission(requestDTO.getTransactionsCommission())
+                .transactionCommission(requestDTO.getTransactionCommission())
                 .build());
     }
 
@@ -54,10 +54,10 @@ public class BankAccountTypeService {
             bankAccountTypeToUpdate.setName(name);
         }
 
-        BigDecimal transactionCommission = requestDTO.getTransactionsCommission();
+        BigDecimal transactionCommission = requestDTO.getTransactionCommission();
 
         if (transactionCommission != null) {
-            bankAccountTypeToUpdate.setTransactionsCommission(transactionCommission);
+            bankAccountTypeToUpdate.setTransactionCommission(transactionCommission);
         }
 
         return bankAccountTypeRepository.save(bankAccountTypeToUpdate);

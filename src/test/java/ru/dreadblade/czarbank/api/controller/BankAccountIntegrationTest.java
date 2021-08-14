@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.model.request.BankAccountRequestDTO;
 import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
-import ru.dreadblade.czarbank.utils.MatchersUtils;
+import ru.dreadblade.czarbank.util.MatchersUtils;
 
 import java.math.BigDecimal;
 
@@ -27,8 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(value = "/bank-account/bank-accounts-insertion.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(value = "/bank-account/bank-accounts-deletion.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class BankAccountIntegrationTest extends BaseIntegrationTest {
-    @Autowired
-    ObjectMapper objectMapper;
 
     @Autowired
     BankAccountRepository bankAccountRepository;

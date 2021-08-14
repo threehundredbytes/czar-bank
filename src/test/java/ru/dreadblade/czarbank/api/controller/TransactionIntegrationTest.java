@@ -16,7 +16,7 @@ import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.domain.Transaction;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 import ru.dreadblade.czarbank.repository.TransactionRepository;
-import ru.dreadblade.czarbank.utils.MatchersUtils;
+import ru.dreadblade.czarbank.util.MatchersUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -32,8 +32,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(value = { "/bank-account/bank-accounts-insertion.sql", "/transaction/transactions-insertion.sql" }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(value = { "/transaction/transactions-deletion.sql", "/bank-account/bank-accounts-deletion.sql" }, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class TransactionIntegrationTest extends BaseIntegrationTest {
-    @Autowired
-    ObjectMapper objectMapper;
 
     @Autowired
     BankAccountRepository bankAccountRepository;

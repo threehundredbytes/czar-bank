@@ -1,6 +1,5 @@
 package ru.dreadblade.czarbank.exception.util;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import ru.dreadblade.czarbank.exception.BaseException;
 import ru.dreadblade.czarbank.exception.model.ErrorResponse;

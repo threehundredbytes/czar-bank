@@ -11,5 +11,5 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class BankAccountTypeRequestDTO {
     private String name;
-    private BigDecimal transactionsCommission;
+    private BigDecimal transactionCommission;
 }

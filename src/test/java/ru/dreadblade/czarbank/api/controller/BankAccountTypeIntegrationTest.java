@@ -1,8 +1,6 @@
 package ru.dreadblade.czarbank.api.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,7 +13,7 @@ import ru.dreadblade.czarbank.api.model.request.BankAccountTypeRequestDTO;
 import ru.dreadblade.czarbank.domain.BankAccountType;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 import ru.dreadblade.czarbank.repository.BankAccountTypeRepository;
-import ru.dreadblade.czarbank.utils.MatchersUtils;
+import ru.dreadblade.czarbank.util.MatchersUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -30,8 +28,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(value = "/bank-account/bank-accounts-insertion.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(value = "/bank-account/bank-accounts-deletion.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
-    @Autowired
-    ObjectMapper objectMapper;
 
     @Autowired
     BankAccountTypeRepository bankAccountTypeRepository;
@@ -56,14 +52,14 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(Math.toIntExact(expectedSize))))
                     .andExpect(jsonPath("$[0].name").value(expectedType1.getName()))
-                    .andExpect(jsonPath("$[0].transactionsCommission")
-                            .value(MatchersUtils.closeTo(expectedType1.getTransactionsCommission()), BigDecimal.class))
+                    .andExpect(jsonPath("$[0].transactionCommission")
+                            .value(MatchersUtils.closeTo(expectedType1.getTransactionCommission()), BigDecimal.class))
                     .andExpect(jsonPath("$[2].name").value(expectedType3.getName()))
-                    .andExpect(jsonPath("$[2].transactionsCommission")
-                            .value(MatchersUtils.closeTo(expectedType3.getTransactionsCommission()), BigDecimal.class))
+                    .andExpect(jsonPath("$[2].transactionCommission")
+                            .value(MatchersUtils.closeTo(expectedType3.getTransactionCommission()), BigDecimal.class))
                     .andExpect(jsonPath("$[4].name").value(expectedType5.getName()))
-                    .andExpect(jsonPath("$[4].transactionsCommission")
-                            .value(MatchersUtils.closeTo(expectedType5.getTransactionsCommission()), BigDecimal.class));
+                    .andExpect(jsonPath("$[4].transactionCommission")
+                            .value(MatchersUtils.closeTo(expectedType5.getTransactionCommission()), BigDecimal.class));
         }
 
         @Test
@@ -88,7 +84,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         void createBankAccountType_isSuccess() throws Exception {
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name("New BankAccountType")
-                    .transactionsCommission(new BigDecimal("0.07"))
+                    .transactionCommission(new BigDecimal("0.07"))
                     .build();
 
             mockMvc.perform(post("/api/bank-account-types")
@@ -97,16 +93,16 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").isNumber())
                     .andExpect(jsonPath("$.name").value(bankAccountTypeRequest.getName()))
-                    .andExpect(jsonPath("$.transactionsCommission")
-                            .value(MatchersUtils.closeTo(bankAccountTypeRequest.getTransactionsCommission()), BigDecimal.class));
+                    .andExpect(jsonPath("$.transactionCommission")
+                            .value(MatchersUtils.closeTo(bankAccountTypeRequest.getTransactionCommission()), BigDecimal.class));
 
             BankAccountType createdType = bankAccountTypeRepository.findByName(bankAccountTypeRequest.getName())
                     .orElseThrow();
 
             Assertions.assertThat(createdType.getName()).isEqualTo(bankAccountTypeRequest.getName());
 
-            Assertions.assertThat(createdType.getTransactionsCommission())
-                    .isEqualTo(bankAccountTypeRequest.getTransactionsCommission());
+            Assertions.assertThat(createdType.getTransactionCommission())
+                    .isEqualTo(bankAccountTypeRequest.getTransactionCommission());
         }
 
         @Test
@@ -116,7 +112,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name(typeFromDb.getName())
-                    .transactionsCommission(new BigDecimal("0.07"))
+                    .transactionCommission(new BigDecimal("0.07"))
                     .build();
 
             mockMvc.perform(post("/api/bank-account-types")
@@ -139,7 +135,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name("New BankAccountType (old name is \"" + unusedBankAccountType.getName() + "\")")
-                    .transactionsCommission(new BigDecimal("0.07"))
+                    .transactionCommission(new BigDecimal("0.07"))
                     .build();
 
             mockMvc.perform(put("/api/bank-account-types/" + unusedBankAccountType.getId())
@@ -148,8 +144,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(unusedBankAccountType.getId()))
                     .andExpect(jsonPath("$.name").value(bankAccountTypeRequest.getName()))
-                    .andExpect(jsonPath("$.transactionsCommission")
-                            .value(MatchersUtils.closeTo(bankAccountTypeRequest.getTransactionsCommission()), BigDecimal.class));
+                    .andExpect(jsonPath("$.transactionCommission")
+                            .value(MatchersUtils.closeTo(bankAccountTypeRequest.getTransactionCommission()), BigDecimal.class));
 
             BankAccountType createdType = bankAccountTypeRepository.findByName(bankAccountTypeRequest.getName())
                     .orElseThrow();
@@ -158,8 +154,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
             Assertions.assertThat(createdType.getName()).isEqualTo(bankAccountTypeRequest.getName());
 
-            Assertions.assertThat(createdType.getTransactionsCommission())
-                    .isEqualTo(bankAccountTypeRequest.getTransactionsCommission());
+            Assertions.assertThat(createdType.getTransactionCommission())
+                    .isEqualTo(bankAccountTypeRequest.getTransactionCommission());
         }
 
         @Test
@@ -172,7 +168,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name(junkerBankAccountType.getName())
-                    .transactionsCommission(new BigDecimal("0.07"))
+                    .transactionCommission(new BigDecimal("0.07"))
                     .build();
 
             mockMvc.perform(put("/api/bank-account-types/" + unusedBankAccountType.getId())
@@ -187,7 +183,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         void updateBankAccountType_isNotFound() throws Exception {
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name("Updating type that doesn't exist")
-                    .transactionsCommission(new BigDecimal("0.07"))
+                    .transactionCommission(new BigDecimal("0.07"))
                     .build();
 
             mockMvc.perform(put("/api/bank-account-types/" + BASE_BANK_ACCOUNT_TYPE_ID + 123L)

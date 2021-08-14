@@ -21,5 +21,5 @@ public class BankAccountType {
 
     private String name;
 
-    private BigDecimal transactionsCommission;
+    private BigDecimal transactionCommission;
 }

@@ -12,5 +12,5 @@ import java.math.BigDecimal;
 public class BankAccountTypeResponseDTO {
     private Long id;
     private String name;
-    private BigDecimal transactionsCommission;
+    private BigDecimal transactionCommission;
 }

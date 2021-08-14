@@ -1,4 +1,4 @@
-package ru.dreadblade.czarbank.utils;
+package ru.dreadblade.czarbank.util;
 
 import org.hamcrest.Matcher;
 import org.hamcrest.number.BigDecimalCloseTo;
