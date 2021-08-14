@@ -128,11 +128,17 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void createTransaction_isSuccess() throws Exception {
+            BankAccount sourceBankAccount = bankAccountRepository.findById(1L).orElseThrow();
+            BankAccount destinationBankAccount = bankAccountRepository.findById(2L).orElseThrow();
+
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(10000L))
-                    .sourceBankAccountNumber(bankAccountRepository.findById(1L).orElseThrow().getNumber())
-                    .destinationBankAccountNumber(bankAccountRepository.findById(2L).orElseThrow().getNumber())
+                    .sourceBankAccountNumber(sourceBankAccount.getNumber())
+                    .destinationBankAccountNumber(destinationBankAccount.getNumber())
                     .build();
+
+            BigDecimal sourceBankAccountBalanceBeforeTransaction = sourceBankAccount.getBalance();
+            BigDecimal destinationBankAccountBalanceBeforeTransaction = destinationBankAccount.getBalance();
 
             long expectedId = bankAccountRepository.count() + transactionRepository.count() + 1;
 
@@ -147,6 +153,23 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.destinationBankAccount.number")
                             .value(transactionRequest.getDestinationBankAccountNumber()));
 
+            BigDecimal sourceBankAccountBalanceAfterTransaction = sourceBankAccount.getBalance();
+            BigDecimal destinationBankAccountBalanceAfterTransaction = destinationBankAccount.getBalance();
+
+            Assertions.assertThat(sourceBankAccountBalanceBeforeTransaction)
+                    .isGreaterThan(sourceBankAccountBalanceAfterTransaction);
+
+            Assertions.assertThat(destinationBankAccountBalanceBeforeTransaction)
+                    .isLessThan(destinationBankAccountBalanceAfterTransaction);
+
+            Assertions.assertThat(sourceBankAccountBalanceAfterTransaction)
+                    .isLessThan(destinationBankAccountBalanceAfterTransaction);
+
+            Assertions.assertThat(sourceBankAccountBalanceAfterTransaction)
+                    .isEqualTo(sourceBankAccountBalanceBeforeTransaction.subtract(transactionRequest.getAmount()));
+
+            Assertions.assertThat(destinationBankAccountBalanceAfterTransaction)
+                    .isEqualTo(destinationBankAccountBalanceBeforeTransaction.add(transactionRequest.getAmount()));
         }
 
         @Test

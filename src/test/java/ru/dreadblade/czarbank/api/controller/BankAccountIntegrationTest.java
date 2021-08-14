@@ -10,7 +10,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.model.request.BankAccountRequestDTO;
+import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
+import ru.dreadblade.czarbank.utils.MatchersUtils;
 
 import java.math.BigDecimal;
 
@@ -36,23 +38,20 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
     class getAllTests {
         @Test
         void getAll_isSuccess() throws Exception {
-            String expectedOwner1 = "Owner #1";
-            String expectedNumber1 = "39903336089073190794";
-            String expectedOwner3 = "Owner #3";
-            String expectedNumber3 = "38040432731497506063";
-            String expectedOwner5 = "Owner #5";
-            String expectedNumber5 = "32541935657215432384";
+            BankAccount expectedBankAccount1 = bankAccountRepository.findById(1L).orElseThrow();
+            BankAccount expectedBankAccount3 = bankAccountRepository.findById(3L).orElseThrow();
+            BankAccount expectedBankAccount5 = bankAccountRepository.findById(5L).orElseThrow();
 
             mockMvc.perform(get("/api/bank-accounts")
                     .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(5)))
-                    .andExpect(jsonPath("$[0].owner").value(expectedOwner1))
-                    .andExpect(jsonPath("$[0].number").value(expectedNumber1))
-                    .andExpect(jsonPath("$[2].owner").value(expectedOwner3))
-                    .andExpect(jsonPath("$[2].number").value(expectedNumber3))
-                    .andExpect(jsonPath("$[4].owner").value(expectedOwner5))
-                    .andExpect(jsonPath("$[4].number").value(expectedNumber5));
+                    .andExpect(jsonPath("$[0].owner").value(expectedBankAccount1.getOwner()))
+                    .andExpect(jsonPath("$[0].number").value(expectedBankAccount1.getNumber()))
+                    .andExpect(jsonPath("$[2].owner").value(expectedBankAccount3.getOwner()))
+                    .andExpect(jsonPath("$[2].number").value(expectedBankAccount3.getNumber()))
+                    .andExpect(jsonPath("$[4].owner").value(expectedBankAccount5.getOwner()))
+                    .andExpect(jsonPath("$[4].number").value(expectedBankAccount5.getNumber()));
         }
 
         @Test
@@ -72,19 +71,19 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
     class findById {
         @Test
         void findById_isSuccess() throws Exception {
-            long expectedBankAccountId = 4L;
-            BigDecimal expectedBalance = new BigDecimal("500.0");
-            String expectedNumber = "36264421013439107929";
-            String expectedOwner = "Owner #4";
+            BankAccount expectedBankAccount = bankAccountRepository.findById(4L).orElseThrow();
 
-
-            mockMvc.perform(get("/api/bank-accounts/" + expectedBankAccountId)
+            mockMvc.perform(get("/api/bank-accounts/" + expectedBankAccount.getId())
                     .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(expectedBankAccountId))
-                    .andExpect(jsonPath("$.balance").value(expectedBalance))
-                    .andExpect(jsonPath("$.number").value(expectedNumber))
-                    .andExpect(jsonPath("$.owner").value(expectedOwner));
+                    .andExpect(jsonPath("$.id")
+                            .value(expectedBankAccount.getId()))
+                    .andExpect(jsonPath("$.balance")
+                            .value(MatchersUtils.closeTo(expectedBankAccount.getBalance()), BigDecimal.class))
+                    .andExpect(jsonPath("$.number")
+                            .value(expectedBankAccount.getNumber()))
+                    .andExpect(jsonPath("$.owner")
+                            .value(expectedBankAccount.getOwner()));
         }
 
         @Test
