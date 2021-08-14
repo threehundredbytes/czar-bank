@@ -24,11 +24,29 @@ public abstract class BaseIntegrationTest {
 
     MockMvc mockMvc;
 
+    /**
+     * Base entity ID values according by .SQL scripts (from test resource package)
+     * Usage:
+     * To get N entity from the repository: <code>repository.findById(BASE_<ENTITY_NAME>_ID + N)</code>
+     * Example:
+     * To get 2-nd transaction from repository: <code>transactionRepository(BASE_TRANSACTION_ID + 2L)</code>
+     */
+    protected final long BASE_BANK_ACCOUNT_TYPE_ID = 0L;
+    protected final long BASE_BANK_ACCOUNT_ID = 5L;
+    protected final long BASE_TRANSACTION_ID = 10L;
+
     public static PostgreSQLContainer<?> postgresqlContainer = new PostgreSQLContainer<>("postgres:13")
             .withDatabaseName("czar_bank_test");
 
     static {
         postgresqlContainer.start();
+    }
+
+    @BeforeEach
+    public void setUp() {
+        mockMvc = MockMvcBuilders
+                .webAppContextSetup(webApplicationContext)
+                .build();
     }
 
     public static class DockerPostgreDataSourceInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
@@ -42,12 +60,5 @@ public abstract class BaseIntegrationTest {
                     "spring.datasource.password=" + postgresqlContainer.getPassword()
             );
         }
-    }
-
-    @BeforeEach
-    public void setUp() {
-        mockMvc = MockMvcBuilders
-                .webAppContextSetup(webApplicationContext)
-                .build();
     }
 }

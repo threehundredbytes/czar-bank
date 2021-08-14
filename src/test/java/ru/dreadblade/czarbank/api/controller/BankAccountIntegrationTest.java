@@ -38,9 +38,9 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
     class getAllTests {
         @Test
         void getAll_isSuccess() throws Exception {
-            BankAccount expectedBankAccount1 = bankAccountRepository.findById(1L).orElseThrow();
-            BankAccount expectedBankAccount3 = bankAccountRepository.findById(3L).orElseThrow();
-            BankAccount expectedBankAccount5 = bankAccountRepository.findById(5L).orElseThrow();
+            BankAccount expectedBankAccount1 = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
+            BankAccount expectedBankAccount3 = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow();
+            BankAccount expectedBankAccount5 = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 5L).orElseThrow();
 
             mockMvc.perform(get("/api/bank-accounts")
                     .contentType(MediaType.APPLICATION_JSON))
@@ -71,7 +71,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
     class findById {
         @Test
         void findById_isSuccess() throws Exception {
-            BankAccount expectedBankAccount = bankAccountRepository.findById(4L).orElseThrow();
+            BankAccount expectedBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 4L).orElseThrow();
 
             mockMvc.perform(get("/api/bank-accounts/" + expectedBankAccount.getId())
                     .contentType(MediaType.APPLICATION_JSON))
@@ -109,16 +109,28 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.number", hasLength(20)));
     }
 
-    @Test
-    @Transactional
-    void deleteAccount_isSuccess() throws Exception {
-        long bankAccountDeletionId = 1L;
+    @Nested
+    @DisplayName("deleteAccount() Tests")
+    class deleteAccount {
+        @Test
+        @Transactional
+        void deleteAccount_isSuccess() throws Exception {
+            long bankAccountDeletionId = BASE_BANK_ACCOUNT_ID + 1L;
 
-        mockMvc.perform(delete("/api/bank-accounts/" + bankAccountDeletionId))
-                .andExpect(status().isNoContent());
+            mockMvc.perform(delete("/api/bank-accounts/" + bankAccountDeletionId))
+                    .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/bank-accounts/" + bankAccountDeletionId)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
+            mockMvc.perform(get("/api/bank-accounts/" + bankAccountDeletionId)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void deleteAccount_isNotFound() throws Exception {
+            long bankAccountDeletionId = BASE_BANK_ACCOUNT_ID - 1L;
+
+            mockMvc.perform(delete("/api/bank-accounts/" + bankAccountDeletionId))
+                    .andExpect(status().isNotFound());
+        }
     }
 }

@@ -27,6 +27,9 @@ public class BankAccount {
     @Builder.Default
     private Boolean isClosed = false;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    private BankAccountType bankAccountType;
+
     @OneToMany(mappedBy = "sourceBankAccount")
     private Set<Transaction> transactions;
 }

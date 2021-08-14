@@ -54,8 +54,8 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         void findAll_isSuccess() throws Exception {
             long expectedSize = transactionRepository.count();
 
-            Transaction expectedTransaction1 = transactionRepository.findById(6L).orElseThrow();
-            Transaction expectedTransaction4 = transactionRepository.findById(9L).orElseThrow();
+            Transaction expectedTransaction1 = transactionRepository.findById(BASE_TRANSACTION_ID + 1L).orElseThrow();
+            Transaction expectedTransaction4 = transactionRepository.findById(BASE_TRANSACTION_ID + 4L).orElseThrow();
 
             mockMvc.perform(get("/api/transactions")
                     .contentType(MediaType.APPLICATION_JSON))
@@ -63,7 +63,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$", hasSize(Math.toIntExact(expectedSize))))
                     .andExpect(jsonPath("$[0].amount").value(MatchersUtils.closeTo(expectedTransaction1.getAmount()), BigDecimal.class))
                     .andExpect(jsonPath("$[0].sourceBankAccount.number").value(expectedTransaction1.getSourceBankAccount().getNumber()))
-                    .andExpect(jsonPath("$[3].amount").value(MatchersUtils.closeTo(BigDecimal.valueOf(250.000001)), BigDecimal.class))
+                    .andExpect(jsonPath("$[3].amount").value(MatchersUtils.closeTo(expectedTransaction4.getAmount()), BigDecimal.class))
                     .andExpect(jsonPath("$[3].destinationBankAccount.number").value(expectedTransaction4.getDestinationBankAccount().getNumber()));
         }
 
@@ -86,7 +86,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
     class findAllByBankAccountIdTests {
         @Test
         void findAllByBankAccountId_isSuccess() throws Exception {
-            BankAccount bankAccountForTest = bankAccountRepository.findById(3L).orElseThrow();
+            BankAccount bankAccountForTest = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow();
 
             List<Transaction> expectedTransactions = transactionRepository.findAllByBankAccountId(bankAccountForTest.getId());
 
@@ -113,7 +113,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void findAllByBankAccountId_isNotFound() throws Exception {
-            long expectedId = 123L;
+            long expectedId = BASE_TRANSACTION_ID - 1L;
 
             mockMvc.perform(get("/api/transactions/" + expectedId)
                     .contentType(MediaType.APPLICATION_JSON))
@@ -128,8 +128,8 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void createTransaction_isSuccess() throws Exception {
-            BankAccount sourceBankAccount = bankAccountRepository.findById(1L).orElseThrow();
-            BankAccount destinationBankAccount = bankAccountRepository.findById(2L).orElseThrow();
+            BankAccount sourceBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
+            BankAccount destinationBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 2L).orElseThrow();
 
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(10000L))
@@ -140,7 +140,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             BigDecimal sourceBankAccountBalanceBeforeTransaction = sourceBankAccount.getBalance();
             BigDecimal destinationBankAccountBalanceBeforeTransaction = destinationBankAccount.getBalance();
 
-            long expectedId = bankAccountRepository.count() + transactionRepository.count() + 1;
+            long expectedId = BASE_TRANSACTION_ID + transactionRepository.count() + 1;
 
             mockMvc.perform(post("/api/transactions")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -177,7 +177,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(10000L))
                     .sourceBankAccountNumber("11111111111111111111")
-                    .destinationBankAccountNumber(bankAccountRepository.findById(2L).orElseThrow().getNumber())
+                    .destinationBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 2L).orElseThrow().getNumber())
                     .build();
 
             mockMvc.perform(post("/api/transactions")
@@ -192,7 +192,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         void createTransaction_destinationBankAccountIsNotFound() throws Exception {
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(1L))
-                    .sourceBankAccountNumber(bankAccountRepository.findById(1L).orElseThrow().getNumber())
+                    .sourceBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow().getNumber())
                     .destinationBankAccountNumber("123")
                     .build();
 
@@ -207,8 +207,8 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         void createTransaction_sourceBankAccountDoesntHaveEnoughBalanceToCompleteTransaction() throws Exception {
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(10000L))
-                    .sourceBankAccountNumber(bankAccountRepository.findById(3L).orElseThrow().getNumber())
-                    .destinationBankAccountNumber(bankAccountRepository.findById(4L).orElseThrow().getNumber())
+                    .sourceBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow().getNumber())
+                    .destinationBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 4L).orElseThrow().getNumber())
                     .build();
 
             mockMvc.perform(post("/api/transactions")
