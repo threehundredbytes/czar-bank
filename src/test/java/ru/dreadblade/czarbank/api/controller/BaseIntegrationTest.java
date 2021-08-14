@@ -2,6 +2,7 @@ package ru.dreadblade.czarbank.api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,19 +16,13 @@ import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(initializers = BaseIntegrationTest.DockerPostgreDataSourceInitializer.class)
 @Testcontainers
 @SpringBootTest
 public abstract class BaseIntegrationTest {
-    @Autowired
-    WebApplicationContext webApplicationContext;
-
-    @Autowired
-    ObjectMapper objectMapper;
-
-    MockMvc mockMvc;
-
     /**
      * Base entity ID values according by .SQL scripts (from test resource package)
      * Usage:
@@ -39,18 +34,33 @@ public abstract class BaseIntegrationTest {
     protected final long BASE_BANK_ACCOUNT_ID = 5L;
     protected final long BASE_TRANSACTION_ID = 10L;
 
-    public static PostgreSQLContainer<?> postgresqlContainer = new PostgreSQLContainer<>("postgres:13")
-            .withDatabaseName("czar_bank_test");
+    @Autowired
+    WebApplicationContext webApplicationContext;
 
-    static {
-        postgresqlContainer.start();
-    }
+    @Autowired
+    ObjectMapper objectMapper;
+
+    MockMvc mockMvc;
 
     @BeforeEach
     public void setUp() {
         mockMvc = MockMvcBuilders
                 .webAppContextSetup(webApplicationContext)
                 .build();
+    }
+
+    @Test
+    void contextLoads() {
+        assertThat(webApplicationContext).isNotNull();
+        assertThat(mockMvc).isNotNull();
+        assertThat(objectMapper).isNotNull();
+    }
+
+    public static PostgreSQLContainer<?> postgresqlContainer = new PostgreSQLContainer<>("postgres:13")
+            .withDatabaseName("czar_bank_test");
+
+    static {
+        postgresqlContainer.start();
     }
 
     public static class DockerPostgreDataSourceInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
