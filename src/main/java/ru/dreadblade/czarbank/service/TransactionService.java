@@ -54,12 +54,17 @@ public class TransactionService {
                 .orElseThrow(() -> new BankAccountNotFoundException("Destination bank account doesn't exist"));
 
         Transaction transaction = Transaction.builder()
-                .amount(transactionRequest.getAmount())
+                .amount(transactionAmount)
                 .sourceBankAccount(source)
                 .destinationBankAccount(destination)
                 .build();
 
-        source.setBalance(source.getBalance().subtract(transactionAmount));
+        BigDecimal transactionCommissionAmount = transactionAmount.multiply(source.getBankAccountType()
+                .getTransactionCommission());
+
+        BigDecimal transactionAmountWithCommission = transactionAmount.add(transactionCommissionAmount);
+
+        source.setBalance(source.getBalance().subtract(transactionAmountWithCommission));
 
         destination.setBalance(destination.getBalance().add(transactionAmount));
 

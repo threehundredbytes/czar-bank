@@ -204,6 +204,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
             mockMvc.perform(delete("/api/bank-account-types/" + bankAccountTypeDeletionId))
                     .andExpect(status().isNoContent());
+
+            Assertions.assertThat(bankAccountTypeRepository.existsById(bankAccountTypeDeletionId)).isFalse();
         }
 
         @Test
@@ -217,6 +219,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value("Bank account type \"" +
                             bankAccountTypeToDelete.getName() + "\" in use"));
+
+            Assertions.assertThat(bankAccountTypeRepository.existsById(bankAccountTypeDeletionId)).isTrue();
         }
 
         @Test

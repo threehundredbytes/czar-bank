@@ -163,8 +163,13 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(sourceBankAccountBalanceAfterTransaction)
                     .isLessThan(destinationBankAccountBalanceAfterTransaction);
 
+            BigDecimal transactionAmount = transactionRequest.getAmount();
+
+            BigDecimal transactionAmountWithCommission = transactionAmount.add(transactionAmount
+                    .multiply(sourceBankAccount.getBankAccountType().getTransactionCommission()));
+
             Assertions.assertThat(sourceBankAccountBalanceAfterTransaction)
-                    .isEqualTo(sourceBankAccountBalanceBeforeTransaction.subtract(transactionRequest.getAmount()));
+                    .isEqualTo(sourceBankAccountBalanceBeforeTransaction.subtract(transactionAmountWithCommission));
 
             Assertions.assertThat(destinationBankAccountBalanceAfterTransaction)
                     .isEqualTo(destinationBankAccountBalanceBeforeTransaction.add(transactionRequest.getAmount()));
