@@ -3,6 +3,7 @@ package ru.dreadblade.czarbank.domain.security;
 import lombok.*;
 
 import javax.persistence.*;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -24,6 +25,10 @@ public class User {
 
     private String email;
 
-
-
+    @Singular
+    @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.MERGE })
+    @JoinTable(name = "user_role",
+            joinColumns = { @JoinColumn(name = "USER_ID", referencedColumnName = "ID") },
+            inverseJoinColumns = { @JoinColumn(name = "ROLE_ID", referencedColumnName = "ID" ) })
+    private Set<Role> roles;
 }

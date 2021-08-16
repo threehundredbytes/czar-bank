@@ -30,10 +30,11 @@ public abstract class BaseIntegrationTest {
      * Example:
      * To get 2-nd transaction from repository: <code>transactionRepository(BASE_TRANSACTION_ID + 2L)</code>
      */
-    protected final long BASE_USER_ID = 0L;
-    protected final long BASE_BANK_ACCOUNT_TYPE_ID = 4L;
-    protected final long BASE_BANK_ACCOUNT_ID = 9L;
-    protected final long BASE_TRANSACTION_ID = 14L;
+    protected final long BASE_ROLE_ID = 0L;
+    protected final long BASE_USER_ID = 3L;
+    protected final long BASE_BANK_ACCOUNT_TYPE_ID = 7L;
+    protected final long BASE_BANK_ACCOUNT_ID = 12L;
+    protected final long BASE_TRANSACTION_ID = 17L;
 
     @Autowired
     WebApplicationContext webApplicationContext;
