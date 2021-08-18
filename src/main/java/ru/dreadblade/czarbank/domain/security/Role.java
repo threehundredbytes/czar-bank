@@ -2,10 +2,8 @@ package ru.dreadblade.czarbank.domain.security;
 
 import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -19,4 +17,10 @@ public class Role {
     private Long id;
 
     private String name;
+
+    @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.MERGE })
+    @JoinTable(name = "role_permission",
+            joinColumns = { @JoinColumn(name = "ROLE_ID", referencedColumnName = "ID") },
+            inverseJoinColumns = { @JoinColumn(name = "PERMISSION_ID", referencedColumnName = "ID") })
+    Set<Permission> permissions;
 }
