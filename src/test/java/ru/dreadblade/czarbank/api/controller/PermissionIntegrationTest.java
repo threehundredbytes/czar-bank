@@ -1,6 +1,5 @@
 package ru.dreadblade.czarbank.api.controller;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,7 +9,9 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.domain.security.Permission;
 import ru.dreadblade.czarbank.repository.security.PermissionRepository;
+import ru.dreadblade.czarbank.repository.security.RoleRepository;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -18,7 +19,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@Disabled
 @SpringBootTest
 @DisplayName("Permission Integration Tests")
 @Sql(value = "/user/users-insertion.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
@@ -26,6 +26,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class PermissionIntegrationTest extends BaseIntegrationTest  {
     @Autowired
     PermissionRepository permissionRepository;
+
+    @Autowired
+    RoleRepository roleRepository;
 
     private final static String PERMISSIONS_API_URL = "/api/permissions";
 
@@ -53,6 +56,8 @@ public class PermissionIntegrationTest extends BaseIntegrationTest  {
         @Test
         @Transactional
         void findAll_isEmpty() throws Exception {
+            roleRepository.findAll().forEach(role -> role.setPermissions(Collections.emptySet()));
+
             permissionRepository.deleteAll();
 
             long expectedSize = 0;

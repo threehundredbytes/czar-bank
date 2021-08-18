@@ -1,7 +1,6 @@
 package ru.dreadblade.czarbank.api.controller;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,12 +9,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.jdbc.Sql;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.model.request.security.RoleRequestDTO;
 import ru.dreadblade.czarbank.domain.security.Role;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
+import ru.dreadblade.czarbank.repository.security.UserRepository;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
@@ -30,6 +30,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class RoleIntegrationTest extends BaseIntegrationTest {
     @Autowired
     RoleRepository roleRepository;
+
+    @Autowired
+    UserRepository userRepository;
 
     private static final String ROLES_API_URL = "/api/roles";
     private static final String ROLE_WITH_SAME_NAME_ALREADY_EXISTS_MESSAGE = "Role with name \"%s\" already exists";
@@ -59,6 +62,9 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void findAll_isEmpty() throws Exception {
+            roleRepository.findAll().forEach(role -> role.setPermissions(Collections.emptySet()));
+            userRepository.findAll().forEach(user -> user.setRoles(Collections.emptySet()));
+
             roleRepository.deleteAll();
 
             long expectedSize = 0L;
