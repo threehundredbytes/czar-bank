@@ -5,7 +5,7 @@ import ru.dreadblade.czarbank.api.model.request.security.RoleRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.security.RoleResponseDTO;
 import ru.dreadblade.czarbank.domain.security.Role;
 
-@Mapper
+@Mapper(uses = { PermissionMapper.class })
 public interface RoleMapper {
     Role roleRequestToRole(RoleRequestDTO roleRequestDTO);
     RoleResponseDTO roleTeRoleResponse(Role role);

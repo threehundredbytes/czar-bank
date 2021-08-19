@@ -2,6 +2,8 @@ package ru.dreadblade.czarbank.api.model.response.security;
 
 import lombok.*;
 
+import java.util.Set;
+
 @Getter
 @Setter
 @Builder
@@ -12,4 +14,5 @@ public class UserResponseDTO {
     private String userId;
     private String username;
     private String email;
+    private Set<RoleResponseDTO> roles;
 }

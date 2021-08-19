@@ -10,13 +10,19 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
+import ru.dreadblade.czarbank.api.model.request.security.PermissionRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.RoleRequestDTO;
+import ru.dreadblade.czarbank.domain.security.Permission;
 import ru.dreadblade.czarbank.domain.security.Role;
+import ru.dreadblade.czarbank.repository.security.PermissionRepository;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
@@ -34,6 +40,9 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
     @Autowired
     UserRepository userRepository;
 
+    @Autowired
+    PermissionRepository permissionRepository;
+
     private static final String ROLES_API_URL = "/api/roles";
     private static final String ROLE_WITH_SAME_NAME_ALREADY_EXISTS_MESSAGE = "Role with name \"%s\" already exists";
     private static final String ROLE_DOESNT_EXIST_MESSAGE = "Role doesn't exist";
@@ -47,16 +56,12 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
 
             long expectedSize = roleRepository.count();
 
-            Role expectedRole1 = roles.get(0);
-            Role expectedRole3 = roles.get(2);
+            String expectedResponse = objectMapper.writeValueAsString(roles);
 
             mockMvc.perform(get(ROLES_API_URL))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(Math.toIntExact(expectedSize))))
-                    .andExpect(jsonPath("$[0].id").value(expectedRole1.getId()))
-                    .andExpect(jsonPath("$[0].name").value(expectedRole1.getName()))
-                    .andExpect(jsonPath("$[2].id").value(expectedRole3.getId()))
-                    .andExpect(jsonPath("$[2].name").value(expectedRole3.getName()));
+                    .andExpect(content().json(expectedResponse));
         }
 
         @Test
@@ -82,10 +87,11 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         void findRoleById_isSuccessful() throws Exception {
             Role expectedRole = roleRepository.findById(BASE_ROLE_ID + 1L).orElseThrow();
 
+            String expectedResponse = objectMapper.writeValueAsString(expectedRole);
+
             mockMvc.perform(get(ROLES_API_URL + "/" + expectedRole.getId()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(expectedRole.getId()))
-                    .andExpect(jsonPath("$.name").value(expectedRole.getName()));
+                    .andExpect(content().json(expectedResponse));
         }
 
         @Test
@@ -106,9 +112,21 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void createRole_isSuccessful() throws Exception {
+            Set<PermissionRequestDTO> permissions = new HashSet<>();
+            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 2L).build());
+            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 6L).build());
+            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 7L).build());
+            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 10L).build());
+
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name("MANAGER")
+                    .permissions(permissions)
                     .build();
+
+            Set<Permission> expectedPermissions = permissions.stream()
+                    .filter(dto -> permissionRepository.existsById(dto.getId()))
+                    .map(dto -> permissionRepository.findById(dto.getId()).orElseThrow())
+                    .collect(Collectors.toSet());
 
             mockMvc.perform(post(ROLES_API_URL)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -117,11 +135,14 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .andExpect(header().exists(HttpHeaders.LOCATION))
                     .andExpect(header().string(HttpHeaders.LOCATION, containsString(ROLES_API_URL)))
                     .andExpect(jsonPath("$.id").isNumber())
-                    .andExpect(jsonPath("$.name").value(requestDTO.getName()));
+                    .andExpect(jsonPath("$.name").value(requestDTO.getName()))
+                    .andExpect(jsonPath("$.permissions", hasSize(permissions.size())));
 
             Role createdRole = roleRepository.findByName(requestDTO.getName()).orElseThrow();
 
             Assertions.assertThat(createdRole.getName()).isEqualTo(requestDTO.getName());
+            Assertions.assertThat(createdRole.getPermissions()).hasSize(permissions.size());
+            Assertions.assertThat(createdRole.getPermissions()).containsExactlyInAnyOrderElementsOf(expectedPermissions);
         }
 
         @Test
@@ -151,12 +172,35 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void updateRoleById_isSuccessful() throws Exception {
+            Set<Permission> permissions = new HashSet<>();
+            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
+            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 6L).orElseThrow());
+            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 7L).orElseThrow());
+            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 10L).orElseThrow());
+
             Role roleToUpdate = roleRepository.save(Role.builder()
                     .name("MANAGER")
+                    .permissions(permissions)
                     .build());
+
+            Set<PermissionRequestDTO> updatedPermissions = new HashSet<>();
+            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 4L).build());
+            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 5L).build());
+            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 6L).build());
+            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 7L).build());
+            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 8L).build());
+            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 10L).build());
+
+            Set<Permission> expectedPermissions = updatedPermissions.stream()
+                    .filter(dto -> permissionRepository.existsById(dto.getId()))
+                    .map(dto -> permissionRepository.findById(dto.getId()).orElseThrow())
+                    .collect(Collectors.toSet());
+
+            int expectedSize = updatedPermissions.size();
 
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name("upd" + roleToUpdate.getName())
+                    .permissions(updatedPermissions)
                     .build();
 
             mockMvc.perform(put(ROLES_API_URL + "/" + roleToUpdate.getId())
@@ -164,9 +208,11 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").isNumber())
-                    .andExpect(jsonPath("$.name").value(requestDTO.getName()));
+                    .andExpect(jsonPath("$.name").value(requestDTO.getName()))
+                    .andExpect(jsonPath("$.permissions", hasSize(expectedSize)));
 
             Assertions.assertThat(roleToUpdate.getName()).isEqualTo(requestDTO.getName());
+            Assertions.assertThat(roleToUpdate.getPermissions()).containsExactlyInAnyOrderElementsOf(expectedPermissions);
         }
 
         @Test
@@ -211,9 +257,18 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void deleteRoleById_isSuccessful() throws Exception {
+            Set<Permission> permissions = new HashSet<>();
+            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
+            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 6L).orElseThrow());
+            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 7L).orElseThrow());
+            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 10L).orElseThrow());
+
             Role roleToDelete = roleRepository.save(Role.builder()
                     .name("MANAGER")
+                    .permissions(permissions)
                     .build());
+
+            int permissionsCountBeforeDelete = permissions.size();
 
             Assertions.assertThat(roleRepository.existsById(roleToDelete.getId())).isTrue();
 
@@ -221,6 +276,13 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isNoContent());
 
             Assertions.assertThat(roleRepository.existsById(roleToDelete.getId())).isFalse();
+
+            Set<Permission> existingPermissions = permissions.stream()
+                    .filter(permission -> permissionRepository.existsById(permission.getId()))
+                    .collect(Collectors.toSet());
+
+            Assertions.assertThat(permissionsCountBeforeDelete).isEqualTo(existingPermissions.size());
+            Assertions.assertThat(existingPermissions).containsExactlyInAnyOrderElementsOf(permissions);
         }
 
         @Test
