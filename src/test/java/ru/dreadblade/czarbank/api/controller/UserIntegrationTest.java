@@ -9,16 +9,25 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
+import ru.dreadblade.czarbank.api.mapper.security.RoleMapper;
+import ru.dreadblade.czarbank.api.mapper.security.UserMapper;
+import ru.dreadblade.czarbank.api.model.request.security.PermissionRequestDTO;
+import ru.dreadblade.czarbank.api.model.request.security.RoleRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.UserRequestDTO;
+import ru.dreadblade.czarbank.api.model.response.security.UserResponseDTO;
+import ru.dreadblade.czarbank.domain.security.Role;
 import ru.dreadblade.czarbank.domain.security.User;
+import ru.dreadblade.czarbank.repository.security.RoleRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @DisplayName("User Integration Tests")
@@ -27,6 +36,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class UserIntegrationTest extends BaseIntegrationTest {
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    UserMapper userMapper;
+
+    @Autowired
+    RoleRepository roleRepository;
+
+    @Autowired
+    RoleMapper roleMapper;
 
     private static final String USERS_API_URL = "/api/users";
     private static final String USER_WITH_SAME_USERNAME_ALREADY_EXISTS_MESSAGE = "User with username \"%s\" already exists";
@@ -37,26 +55,15 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     class findAllTests {
         @Test
         void findAll_isSuccessful() throws Exception {
-            List<User> usersFromDb = userRepository.findAll();
+            List<UserResponseDTO> expectedResponseDTOs = userRepository.findAll().stream()
+                    .map(userMapper::userToUserResponseDTO)
+                    .collect(Collectors.toList());
 
-            long expectedSize = userRepository.count();
-
-            User expectedUser1 = usersFromDb.get(0);
-            User expectedUser2 = usersFromDb.get(1);
-            User expectedUser3 = usersFromDb.get(2);
+            String expectedResponse = objectMapper.writeValueAsString(expectedResponseDTOs);
 
             mockMvc.perform(get(USERS_API_URL))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(Math.toIntExact(expectedSize))))
-                    .andExpect(jsonPath("$[0].userId").value(expectedUser1.getUserId()))
-                    .andExpect(jsonPath("$[0].username").value(expectedUser1.getUsername()))
-                    .andExpect(jsonPath("$[0].email").value(expectedUser1.getEmail()))
-                    .andExpect(jsonPath("$[1].userId").value(expectedUser2.getUserId()))
-                    .andExpect(jsonPath("$[1].username").value(expectedUser2.getUsername()))
-                    .andExpect(jsonPath("$[1].email").value(expectedUser2.getEmail()))
-                    .andExpect(jsonPath("$[2].userId").value(expectedUser3.getUserId()))
-                    .andExpect(jsonPath("$[2].username").value(expectedUser3.getUsername()))
-                    .andExpect(jsonPath("$[2].email").value(expectedUser3.getEmail()));
+                    .andExpect(content().json(expectedResponse));
         }
 
         @Test
@@ -79,11 +86,11 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         void findUserById_isSuccessful() throws Exception {
             User expectedUser = userRepository.findById(BASE_USER_ID + 1L).orElseThrow();
 
+            String expectedResponse = objectMapper.writeValueAsString(userMapper.userToUserResponseDTO(expectedUser));
+
             mockMvc.perform(get(USERS_API_URL + "/" + expectedUser.getId()))
-                    .andExpect(jsonPath("$.id").value(expectedUser.getId()))
-                    .andExpect(jsonPath("$.userId").value(expectedUser.getUserId()))
-                    .andExpect(jsonPath("$.username").value(expectedUser.getUsername()))
-                    .andExpect(jsonPath("$.email").value(expectedUser.getEmail()));
+                    .andExpect(status().isOk())
+                    .andExpect(content().json(expectedResponse));
         }
 
         @Test
@@ -163,18 +170,34 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         void updateUserById_isSuccessful() throws Exception {
             User userToBeUpdated = userRepository.findById(BASE_USER_ID + 4L).orElseThrow();
 
+            Role role = roleRepository.findByName("EMPLOYEE").orElseThrow();
+
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username("upd" + userToBeUpdated.getUsername())
                     .email("upd" + userToBeUpdated.getEmail())
+                    .roles(Collections.singleton(RoleRequestDTO.builder()
+                            .name(role.getName())
+                            .permissions(role.getPermissions().stream()
+                                    .map(p -> new PermissionRequestDTO(p.getId()))
+                                    .collect(Collectors.toSet()))
+                            .build()))
                     .build();
+
+            UserResponseDTO responseAfterUpdate = userMapper.userToUserResponseDTO(userToBeUpdated);
+            responseAfterUpdate.setUsername(requestDTO.getUsername());
+            responseAfterUpdate.setEmail(requestDTO.getEmail());
+            responseAfterUpdate.setRoles(requestDTO.getRoles().stream()
+                    .map(r -> roleRepository.findByName(r.getName()).orElseThrow())
+                    .map(roleMapper::roleTeRoleResponse)
+                    .collect(Collectors.toSet()));
+
+            String expectedResponse = objectMapper.writeValueAsString(responseAfterUpdate);
 
             mockMvc.perform(put(USERS_API_URL + "/" + userToBeUpdated.getId())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(userToBeUpdated.getId()))
-                    .andExpect(jsonPath("$.username").value(requestDTO.getUsername()))
-                    .andExpect(jsonPath("$.email").value(requestDTO.getEmail()));
+                    .andExpect(content().json(expectedResponse));
 
             Assertions.assertThat(userToBeUpdated.getUsername()).isEqualTo(requestDTO.getUsername());
             Assertions.assertThat(userToBeUpdated.getEmail()).isEqualTo(requestDTO.getEmail());
@@ -240,10 +263,13 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
             Assertions.assertThat(userRepository.existsById(userDeletionId)).isTrue();
 
+            Set<Role> roles = userRepository.findById(userDeletionId).orElseThrow().getRoles();
+
             mockMvc.perform(delete(USERS_API_URL + "/" + userDeletionId))
                     .andExpect(status().isNoContent());
 
             Assertions.assertThat(userRepository.existsById(userDeletionId)).isFalse();
+            Assertions.assertThat(roleRepository.findAll()).containsAll(roles);
         }
 
         @Test

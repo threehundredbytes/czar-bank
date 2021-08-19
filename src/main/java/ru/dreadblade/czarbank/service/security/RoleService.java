@@ -34,6 +34,11 @@ public class RoleService {
                 .orElseThrow(() -> new RoleNotFoundException("Role doesn't exist"));
     }
 
+    public Role findRoleByName(String name) {
+        return roleRepository.findByName(name)
+                .orElseThrow(() -> new RoleNotFoundException("Role doesn't exist"));
+    }
+
     public Role createRole(Role role) {
         if (roleRepository.existsByName(role.getName())) {
             throw new RoleNameAlreadyExistsException("Role with name \"" + role.getName() + "\" already exists");

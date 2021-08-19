@@ -19,9 +19,9 @@ insert into permission (id, name) values (10, 'TRANSACTION_READ');
 insert into permission (id, name) values (11, 'TRANSACTION_UPDATE');
 insert into permission (id, name) values (12, 'TRANSACTION_DELETE');
 
-insert into role (id, name) values (13, 'ROLE_ADMIN');
-insert into role (id, name) values (14, 'ROLE_EMPLOYEE');
-insert into role (id, name) values (15, 'ROLE_CLIENT');
+insert into role (id, name) values (13, 'ADMIN');
+insert into role (id, name) values (14, 'EMPLOYEE');
+insert into role (id, name) values (15, 'CLIENT');
 
 insert into role_permission (role_id, permission_id)
 values (13, 1), (13, 2), (13, 3), (13, 4), (13, 5), (13, 6), (13, 7), (13, 8), (13, 9), (13, 10), (13, 11), (13, 12);
