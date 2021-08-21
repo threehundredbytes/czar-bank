@@ -1,0 +1,22 @@
+version: 2.1
+
+executorType: machine
+
+jobs:
+  build-and-test:
+    machine:
+      image: ubuntu-2004:202107-02
+    steps:
+      - run: sudo apt-get install openjdk-11-jdk
+      - checkout
+      - run:
+          name: Build
+          command: mvn -B -DskipTests clean package
+      - run:
+          name: Test
+          command: mvn test
+
+workflows:
+  run-tests:
+    jobs:
+      - build-and-test
