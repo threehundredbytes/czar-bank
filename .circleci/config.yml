@@ -2,6 +2,9 @@ version: 2.1
 
 executorType: machine
 
+orbs:
+  codecov: codecov/codecov@3.0.0
+
 jobs:
   build-and-test:
     machine:
@@ -15,6 +18,8 @@ jobs:
       - run:
           name: Test
           command: mvn test
+      - codecov/upload
+
 
 workflows:
   run-tests:
