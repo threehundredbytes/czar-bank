@@ -9,20 +9,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
+import ru.dreadblade.czarbank.api.mapper.BankAccountTypeMapper;
 import ru.dreadblade.czarbank.api.model.request.BankAccountTypeRequestDTO;
+import ru.dreadblade.czarbank.api.model.response.BankAccountTypeResponseDTO;
 import ru.dreadblade.czarbank.domain.BankAccountType;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 import ru.dreadblade.czarbank.repository.BankAccountTypeRepository;
-import ru.dreadblade.czarbank.util.MatchersUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @DisplayName("BankAccountType Integration Tests")
@@ -36,31 +37,28 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
     @Autowired
     BankAccountRepository bankAccountRepository;
 
+    @Autowired
+    BankAccountTypeMapper bankAccountTypeMapper;
+
+    private static final String BANK_ACCOUNT_TYPES_API_URL = "/api/bank-account-types";
+
     @Nested
     @DisplayName("findAll() Tests")
     class findAllTests {
         @Test
-        void findAll_isSuccess() throws Exception {
-            List<BankAccountType> expectedTypes = bankAccountTypeRepository.findAll();
+        void findAll_isSuccessful() throws Exception {
+            List<BankAccountTypeResponseDTO> expectedTypes = bankAccountTypeRepository.findAll().stream()
+                    .map(bankAccountTypeMapper::bankAccountTypeToBankAccountTypeResponse)
+                    .collect(Collectors.toList());
 
             long expectedSize = bankAccountTypeRepository.count();
 
-            BankAccountType expectedType1 = expectedTypes.get(0);
-            BankAccountType expectedType3 = expectedTypes.get(2);
-            BankAccountType expectedType5 = expectedTypes.get(4);
+            String expectedResponse = objectMapper.writeValueAsString(expectedTypes);
 
-            mockMvc.perform(get("/api/bank-account-types"))
+            mockMvc.perform(get(BANK_ACCOUNT_TYPES_API_URL))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(Math.toIntExact(expectedSize))))
-                    .andExpect(jsonPath("$[0].name").value(expectedType1.getName()))
-                    .andExpect(jsonPath("$[0].transactionCommission")
-                            .value(MatchersUtils.closeTo(expectedType1.getTransactionCommission()), BigDecimal.class))
-                    .andExpect(jsonPath("$[2].name").value(expectedType3.getName()))
-                    .andExpect(jsonPath("$[2].transactionCommission")
-                            .value(MatchersUtils.closeTo(expectedType3.getTransactionCommission()), BigDecimal.class))
-                    .andExpect(jsonPath("$[4].name").value(expectedType5.getName()))
-                    .andExpect(jsonPath("$[4].transactionCommission")
-                            .value(MatchersUtils.closeTo(expectedType5.getTransactionCommission()), BigDecimal.class));
+                    .andExpect(content().json(expectedResponse));
         }
 
         @Test
@@ -71,7 +69,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
             int expectedSize = 0;
 
-            mockMvc.perform(get("/api/bank-account-types"))
+            mockMvc.perform(get(BANK_ACCOUNT_TYPES_API_URL))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(expectedSize)));
         }
@@ -82,20 +80,19 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
     class createBankAccountTypeTests {
         @Test
         @Transactional
-        void createBankAccountType_isSuccess() throws Exception {
+        void createBankAccountType_isSuccessful() throws Exception {
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name("New BankAccountType")
                     .transactionCommission(new BigDecimal("0.07"))
                     .build();
 
-            mockMvc.perform(post("/api/bank-account-types")
+            String expectedResponse = objectMapper.writeValueAsString(bankAccountTypeRequest);
+
+            mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
                     .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.id").isNumber())
-                    .andExpect(jsonPath("$.name").value(bankAccountTypeRequest.getName()))
-                    .andExpect(jsonPath("$.transactionCommission")
-                            .value(MatchersUtils.closeTo(bankAccountTypeRequest.getTransactionCommission()), BigDecimal.class));
+                    .andExpect(content().json(expectedResponse));
 
             BankAccountType createdType = bankAccountTypeRepository.findByName(bankAccountTypeRequest.getName())
                     .orElseThrow();
@@ -116,7 +113,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .transactionCommission(new BigDecimal("0.07"))
                     .build();
 
-            mockMvc.perform(post("/api/bank-account-types")
+            mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
                     .andExpect(status().isBadRequest())
@@ -130,7 +127,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
     class updateBankAccountTypeTests {
         @Test
         @Transactional
-        void updateBankAccountType_isSuccess() throws Exception {
+        void updateBankAccountType_isSuccessful() throws Exception {
             BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
                     .orElseThrow();
 
@@ -139,14 +136,13 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .transactionCommission(new BigDecimal("0.07"))
                     .build();
 
-            mockMvc.perform(put("/api/bank-account-types/" + unusedBankAccountType.getId())
+            String expectedResponse = objectMapper.writeValueAsString(bankAccountTypeRequest);
+
+            mockMvc.perform(put(BANK_ACCOUNT_TYPES_API_URL + "/" + unusedBankAccountType.getId())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(unusedBankAccountType.getId()))
-                    .andExpect(jsonPath("$.name").value(bankAccountTypeRequest.getName()))
-                    .andExpect(jsonPath("$.transactionCommission")
-                            .value(MatchersUtils.closeTo(bankAccountTypeRequest.getTransactionCommission()), BigDecimal.class));
+                    .andExpect(content().json(expectedResponse));
 
             BankAccountType createdType = bankAccountTypeRepository.findByName(bankAccountTypeRequest.getName())
                     .orElseThrow();
@@ -172,11 +168,12 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .transactionCommission(new BigDecimal("0.07"))
                     .build();
 
-            mockMvc.perform(put("/api/bank-account-types/" + unusedBankAccountType.getId())
+            mockMvc.perform(put(BANK_ACCOUNT_TYPES_API_URL + "/" + unusedBankAccountType.getId())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value(ExceptionMessage.BANK_ACCOUNT_TYPE_NAME_ALREADY_EXISTS.getMessage()));
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.BANK_ACCOUNT_TYPE_NAME_ALREADY_EXISTS.getMessage()));
         }
 
         @Test
@@ -186,7 +183,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .transactionCommission(new BigDecimal("0.07"))
                     .build();
 
-            mockMvc.perform(put("/api/bank-account-types/" + BASE_BANK_ACCOUNT_TYPE_ID + 123L)
+            mockMvc.perform(put(BANK_ACCOUNT_TYPES_API_URL + "/" + BASE_BANK_ACCOUNT_TYPE_ID + 123L)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
                     .andExpect(status().isNotFound())
@@ -202,7 +199,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         void deleteBankAccountType_isSuccessful() throws Exception {
             long bankAccountTypeDeletionId = BASE_BANK_ACCOUNT_TYPE_ID + 5L;
 
-            mockMvc.perform(delete("/api/bank-account-types/" + bankAccountTypeDeletionId))
+            mockMvc.perform(delete(BANK_ACCOUNT_TYPES_API_URL + "/" + bankAccountTypeDeletionId))
                     .andExpect(status().isNoContent());
 
             Assertions.assertThat(bankAccountTypeRepository.existsById(bankAccountTypeDeletionId)).isFalse();
@@ -212,10 +209,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         void deleteBankAccountType_isFailed_bankAccountTypeIsUsed() throws Exception {
             long bankAccountTypeDeletionId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
 
-            BankAccountType bankAccountTypeToDelete = bankAccountTypeRepository.findById(bankAccountTypeDeletionId)
-                    .orElseThrow();
-
-            mockMvc.perform(delete("/api/bank-account-types/" + bankAccountTypeDeletionId))
+            mockMvc.perform(delete(BANK_ACCOUNT_TYPES_API_URL + "/" + bankAccountTypeDeletionId))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.BANK_ACCOUNT_TYPE_IN_USE.getMessage()));
@@ -227,7 +221,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         void deleteBankAccountType_isNotFound() throws Exception {
             long bankAccountTypeDeletionId = BASE_BANK_ACCOUNT_TYPE_ID + 123L;
 
-            mockMvc.perform(delete("/api/bank-account-types/" + bankAccountTypeDeletionId))
+            mockMvc.perform(delete(BANK_ACCOUNT_TYPES_API_URL + "/" + bankAccountTypeDeletionId))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.BANK_ACCOUNT_TYPE_NOT_FOUND.getMessage()));

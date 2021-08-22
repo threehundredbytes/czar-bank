@@ -20,7 +20,7 @@ public class BankAccountService {
         this.bankAccountRepository = bankAccountRepository;
     }
 
-    public List<BankAccount> getAll() {
+    public List<BankAccount> findAll() {
         return bankAccountRepository.findAll();
     }
 

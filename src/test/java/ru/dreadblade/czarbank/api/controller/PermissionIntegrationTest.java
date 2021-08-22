@@ -7,17 +7,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
-import ru.dreadblade.czarbank.domain.security.Permission;
+import ru.dreadblade.czarbank.api.mapper.security.PermissionMapper;
+import ru.dreadblade.czarbank.api.model.response.security.PermissionResponseDTO;
 import ru.dreadblade.czarbank.repository.security.PermissionRepository;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @DisplayName("Permission Integration Tests")
@@ -30,6 +31,9 @@ public class PermissionIntegrationTest extends BaseIntegrationTest  {
     @Autowired
     RoleRepository roleRepository;
 
+    @Autowired
+    PermissionMapper permissionMapper;
+
     private final static String PERMISSIONS_API_URL = "/api/permissions";
 
     @Nested
@@ -37,20 +41,18 @@ public class PermissionIntegrationTest extends BaseIntegrationTest  {
     class findAllTests {
         @Test
         void findAll_isSuccessful() throws Exception {
-            List<Permission> expectedPermissions = permissionRepository.findAll();
+            List<PermissionResponseDTO> expectedPermissions = permissionRepository.findAll().stream()
+                    .map(permissionMapper::permissionToPermissionResponse)
+                    .collect(Collectors.toList());
 
             long expectedSize = permissionRepository.count();
 
-            Permission expectedPermission1 = expectedPermissions.get(0);
-            Permission expectedPermission6 = expectedPermissions.get(5);
-            Permission expectedPermission12 = expectedPermissions.get(11);
+            String expectedResponse = objectMapper.writeValueAsString(expectedPermissions);
 
             mockMvc.perform(get(PERMISSIONS_API_URL))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(Math.toIntExact(expectedSize))))
-                    .andExpect(jsonPath("$[0].name").value(expectedPermission1.getName()))
-                    .andExpect(jsonPath("$[5].name").value(expectedPermission6.getName()))
-                    .andExpect(jsonPath("$[11].name").value(expectedPermission12.getName()));
+                    .andExpect(content().json(expectedResponse));
         }
 
         @Test

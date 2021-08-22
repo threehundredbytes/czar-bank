@@ -28,8 +28,8 @@ public class BankAccountController {
     }
 
     @GetMapping
-    public ResponseEntity<List<BankAccountResponseDTO>> getAll() {
-        return ResponseEntity.ok(bankAccountService.getAll().stream()
+    public ResponseEntity<List<BankAccountResponseDTO>> findAllAll() {
+        return ResponseEntity.ok(bankAccountService.findAll().stream()
                 .map(bankAccountMapper::bankAccountToBankAccountResponse)
                 .collect(Collectors.toList()));
     }

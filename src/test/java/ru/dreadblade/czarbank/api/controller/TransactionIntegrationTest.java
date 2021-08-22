@@ -1,8 +1,6 @@
 package ru.dreadblade.czarbank.api.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -11,22 +9,22 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
+import ru.dreadblade.czarbank.api.mapper.TransactionMapper;
 import ru.dreadblade.czarbank.api.model.request.TransactionRequestDTO;
+import ru.dreadblade.czarbank.api.model.response.TransactionResponseDTO;
 import ru.dreadblade.czarbank.domain.BankAccount;
-import ru.dreadblade.czarbank.domain.Transaction;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 import ru.dreadblade.czarbank.repository.TransactionRepository;
-import ru.dreadblade.czarbank.util.MatchersUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @DisplayName("Transaction Integration Tests")
@@ -40,30 +38,32 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
     @Autowired
     TransactionRepository transactionRepository;
 
-    @BeforeEach
-    @Override
-    public void setUp() {
-        super.setUp();
-    }
+    @Autowired
+    TransactionMapper transactionMapper;
+
+    private static final String TRANSACTIONS_API_URL = "/api/transactions";
+    private static final String BANK_ACCOUNTS_API_URL = "/api/bank-accounts";
+    private static final String TRANSACTIONS = "transactions";
 
     @Nested
     @DisplayName("findAll() Tests")
     class findAllTests {
+
         @Test
-        void findAll_isSuccess() throws Exception {
+        void findAll_isSuccessful() throws Exception {
+            List<TransactionResponseDTO> expectedTransactions = transactionRepository.findAll().stream()
+                    .map(transactionMapper::transactionToTransactionResponse)
+                    .collect(Collectors.toList());
+
             long expectedSize = transactionRepository.count();
 
-            Transaction expectedTransaction1 = transactionRepository.findById(BASE_TRANSACTION_ID + 1L).orElseThrow();
-            Transaction expectedTransaction4 = transactionRepository.findById(BASE_TRANSACTION_ID + 4L).orElseThrow();
+            String expectedResponse = objectMapper.writeValueAsString(expectedTransactions);
 
-            mockMvc.perform(get("/api/transactions")
+            mockMvc.perform(get(TRANSACTIONS_API_URL)
                     .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(Math.toIntExact(expectedSize))))
-                    .andExpect(jsonPath("$[0].amount").value(MatchersUtils.closeTo(expectedTransaction1.getAmount()), BigDecimal.class))
-                    .andExpect(jsonPath("$[0].sourceBankAccount.number").value(expectedTransaction1.getSourceBankAccount().getNumber()))
-                    .andExpect(jsonPath("$[3].amount").value(MatchersUtils.closeTo(expectedTransaction4.getAmount()), BigDecimal.class))
-                    .andExpect(jsonPath("$[3].destinationBankAccount.number").value(expectedTransaction4.getDestinationBankAccount().getNumber()));
+                    .andExpect(content().json(expectedResponse));
         }
 
         @Test
@@ -71,50 +71,50 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         void findAll_isEmpty() throws Exception {
             transactionRepository.deleteAll();
 
-            mockMvc.perform(get("/api/transactions")
+            int expectedSize = 0;
+
+            Assertions.assertThat(transactionRepository.count()).isEqualTo(expectedSize);
+
+            mockMvc.perform(get(TRANSACTIONS_API_URL)
                     .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(0)))
-                    .andExpect(jsonPath("$[0].amount").doesNotExist())
-                    .andExpect(jsonPath("$[0].sourceBankAccount.number").doesNotExist());
+                    .andExpect(jsonPath("$", hasSize(expectedSize)))
+                    .andExpect(jsonPath("$[0]").doesNotExist());
         }
     }
 
     @Nested
     @DisplayName("findAllByBankAccountId() Tests")
     class findAllByBankAccountIdTests {
+
         @Test
-        void findAllByBankAccountId_isSuccess() throws Exception {
+        void findAllByBankAccountId_isSuccessful() throws Exception {
             BankAccount bankAccountForTest = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow();
 
-            List<Transaction> expectedTransactions = transactionRepository.findAllByBankAccountId(bankAccountForTest.getId());
+            List<TransactionResponseDTO> expectedTransactions = transactionRepository
+                    .findAllByBankAccountId(bankAccountForTest.getId())
+                    .stream()
+                    .map(transactionMapper::transactionToTransactionResponse)
+                    .collect(Collectors.toList());
 
             int expectedSize = expectedTransactions.size();
 
-            Assertions.assertThat(expectedSize).isEqualTo(2);
+            String expectedResponse = objectMapper.writeValueAsString(expectedTransactions);
 
-            Transaction expectedTransaction1 = expectedTransactions.get(0);
-            Transaction expectedTransaction2 = expectedTransactions.get(1);
-
-            mockMvc.perform(get("/api/bank-accounts/" + bankAccountForTest.getId() + "/transactions")
+            mockMvc.perform(get(BANK_ACCOUNTS_API_URL + "/" + bankAccountForTest.getId() + "/" + TRANSACTIONS)
                     .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(expectedSize)))
-                    .andExpect(jsonPath("$[0].id").value(expectedTransaction1.getId()))
-                    .andExpect(jsonPath("$[0].amount").value(MatchersUtils.closeTo(expectedTransaction1.getAmount()), BigDecimal.class))
-                    .andExpect(jsonPath("$[0].sourceBankAccount.number").value(expectedTransaction1.getSourceBankAccount().getNumber()))
-                    .andExpect(jsonPath("$[0].destinationBankAccount.number").value(expectedTransaction1.getDestinationBankAccount().getNumber()))
-                    .andExpect(jsonPath("$[1].id").value(expectedTransaction2.getId()))
-                    .andExpect(jsonPath("$[1].amount").value(MatchersUtils.closeTo(expectedTransaction2.getAmount()), BigDecimal.class))
-                    .andExpect(jsonPath("$[1].sourceBankAccount.number").value(expectedTransaction2.getSourceBankAccount().getNumber()))
-                    .andExpect(jsonPath("$[1].destinationBankAccount.number").value(expectedTransaction2.getDestinationBankAccount().getNumber()));
+                    .andExpect(content().json(expectedResponse));
         }
 
         @Test
         void findAllByBankAccountId_isNotFound() throws Exception {
-            long expectedId = BASE_TRANSACTION_ID - 1L;
+            long expectedId = BASE_BANK_ACCOUNT_ID - 1L;
 
-            mockMvc.perform(get("/api/transactions/" + expectedId)
+            Assertions.assertThat(bankAccountRepository.existsById(expectedId)).isFalse();
+
+            mockMvc.perform(get(BANK_ACCOUNTS_API_URL + "/" + expectedId + "/" + TRANSACTIONS)
                     .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isNotFound());
         }
@@ -126,7 +126,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @Transactional
-        void createTransaction_isSuccess() throws Exception {
+        void createTransaction_isSuccessful() throws Exception {
             BankAccount sourceBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
             BankAccount destinationBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 2L).orElseThrow();
 
@@ -139,9 +139,17 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             BigDecimal sourceBankAccountBalanceBeforeTransaction = sourceBankAccount.getBalance();
             BigDecimal destinationBankAccountBalanceBeforeTransaction = destinationBankAccount.getBalance();
 
+            BigDecimal transactionAmount = transactionRequest.getAmount();
+
+            BigDecimal transactionAmountWithCommission = transactionAmount.add(transactionAmount
+                    .multiply(sourceBankAccount.getBankAccountType().getTransactionCommission()));
+
+            Assertions.assertThat(sourceBankAccountBalanceBeforeTransaction)
+                    .isGreaterThanOrEqualTo(transactionAmountWithCommission);
+
             long expectedId = BASE_TRANSACTION_ID + transactionRepository.count() + 1;
 
-            mockMvc.perform(post("/api/transactions")
+            mockMvc.perform(post(TRANSACTIONS_API_URL)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(transactionRequest)))
                     .andExpect(status().isCreated())
@@ -164,11 +172,6 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(sourceBankAccountBalanceAfterTransaction)
                     .isLessThan(destinationBankAccountBalanceAfterTransaction);
 
-            BigDecimal transactionAmount = transactionRequest.getAmount();
-
-            BigDecimal transactionAmountWithCommission = transactionAmount.add(transactionAmount
-                    .multiply(sourceBankAccount.getBankAccountType().getTransactionCommission()));
-
             Assertions.assertThat(sourceBankAccountBalanceAfterTransaction)
                     .isEqualTo(sourceBankAccountBalanceBeforeTransaction.subtract(transactionAmountWithCommission));
 
@@ -184,7 +187,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .destinationBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 2L).orElseThrow().getNumber())
                     .build();
 
-            mockMvc.perform(post("/api/transactions")
+            mockMvc.perform(post(TRANSACTIONS_API_URL)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(transactionRequest)))
                     .andExpect(status().isNotFound())
@@ -201,7 +204,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .destinationBankAccountNumber("123")
                     .build();
 
-            mockMvc.perform(post("/api/transactions")
+            mockMvc.perform(post(TRANSACTIONS_API_URL)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(transactionRequest)))
                     .andExpect(status().isNotFound())
@@ -217,10 +220,11 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .destinationBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 4L).orElseThrow().getNumber())
                     .build();
 
-            mockMvc.perform(post("/api/transactions")
+            mockMvc.perform(post(TRANSACTIONS_API_URL)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(transactionRequest)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value(ExceptionMessage.NOT_ENOUGH_BALANCE.getMessage()));
         }
     }
 }
