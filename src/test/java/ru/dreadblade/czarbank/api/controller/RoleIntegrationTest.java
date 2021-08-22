@@ -14,6 +14,7 @@ import ru.dreadblade.czarbank.api.model.request.security.PermissionRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.RoleRequestDTO;
 import ru.dreadblade.czarbank.domain.security.Permission;
 import ru.dreadblade.czarbank.domain.security.Role;
+import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.PermissionRepository;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
@@ -44,8 +45,6 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
     PermissionRepository permissionRepository;
 
     private static final String ROLES_API_URL = "/api/roles";
-    private static final String ROLE_WITH_SAME_NAME_ALREADY_EXISTS_MESSAGE = "Role with name \"%s\" already exists";
-    private static final String ROLE_DOESNT_EXIST_MESSAGE = "Role doesn't exist";
 
     @Nested
     @DisplayName("findAll() Tests")
@@ -102,7 +101,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
 
             mockMvc.perform(get(ROLES_API_URL + "/" + expectedRoleId))
                     .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.message").value(ROLE_DOESNT_EXIST_MESSAGE));
+                    .andExpect(jsonPath("$.message").value(ExceptionMessage.ROLE_NOT_FOUND.getMessage()));
         }
     }
 
@@ -160,7 +159,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message")
-                            .value(String.format(ROLE_WITH_SAME_NAME_ALREADY_EXISTS_MESSAGE, requestDTO.getName())));
+                            .value(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS.getMessage()));
 
             Assertions.assertThat(rolesCountBeforeCreating).isEqualTo(roleRepository.count());
         }
@@ -229,7 +228,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.message").value(ROLE_DOESNT_EXIST_MESSAGE));
+                    .andExpect(jsonPath("$.message").value(ExceptionMessage.ROLE_NOT_FOUND.getMessage()));
 
         }
 
@@ -247,7 +246,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message")
-                            .value(String.format(ROLE_WITH_SAME_NAME_ALREADY_EXISTS_MESSAGE, requestDTO.getName())));
+                            .value(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS.getMessage()));
         }
     }
 
@@ -293,7 +292,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
 
             mockMvc.perform(delete(ROLES_API_URL + "/" + userToDeleteId))
                     .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.message").value(ROLE_DOESNT_EXIST_MESSAGE));
+                    .andExpect(jsonPath("$.message").value(ExceptionMessage.ROLE_NOT_FOUND.getMessage()));
         }
     }
 }

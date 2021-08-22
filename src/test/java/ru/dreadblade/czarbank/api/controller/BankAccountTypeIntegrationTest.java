@@ -11,6 +11,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.model.request.BankAccountTypeRequestDTO;
 import ru.dreadblade.czarbank.domain.BankAccountType;
+import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 import ru.dreadblade.czarbank.repository.BankAccountTypeRepository;
 import ru.dreadblade.czarbank.util.MatchersUtils;
@@ -119,8 +120,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value("Bank account type with name \"" +
-                            bankAccountTypeRequest.getName() + "\" already exists"));
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.BANK_ACCOUNT_TYPE_NAME_ALREADY_EXISTS.getMessage()));
         }
     }
 
@@ -175,8 +176,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value("Bank account type with name \"" +
-                            bankAccountTypeRequest.getName() + "\" already exists"));
+                    .andExpect(jsonPath("$.message").value(ExceptionMessage.BANK_ACCOUNT_TYPE_NAME_ALREADY_EXISTS.getMessage()));
         }
 
         @Test
@@ -217,8 +217,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
             mockMvc.perform(delete("/api/bank-account-types/" + bankAccountTypeDeletionId))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value("Bank account type \"" +
-                            bankAccountTypeToDelete.getName() + "\" in use"));
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.BANK_ACCOUNT_TYPE_IN_USE.getMessage()));
 
             Assertions.assertThat(bankAccountTypeRepository.existsById(bankAccountTypeDeletionId)).isTrue();
         }
@@ -229,7 +229,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
             mockMvc.perform(delete("/api/bank-account-types/" + bankAccountTypeDeletionId))
                     .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.message").value("Bank account type doesn't exist"));
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.BANK_ACCOUNT_TYPE_NOT_FOUND.getMessage()));
         }
     }
 }

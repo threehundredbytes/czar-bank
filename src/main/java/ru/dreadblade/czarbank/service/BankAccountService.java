@@ -4,7 +4,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.domain.BankAccount;
-import ru.dreadblade.czarbank.exception.BankAccountNotFoundException;
+import ru.dreadblade.czarbank.exception.EntityNotFoundException;
+import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 
 import java.math.BigDecimal;
@@ -25,7 +26,7 @@ public class BankAccountService {
 
     public BankAccount findById(Long id) {
         return bankAccountRepository.findById(id).orElseThrow(() ->
-                new BankAccountNotFoundException("Bank account doesn't exist")
+                new EntityNotFoundException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND)
         );
     }
 
@@ -41,7 +42,7 @@ public class BankAccountService {
         if (bankAccountRepository.existsById(id)) {
             bankAccountRepository.deleteById(id);
         } else {
-            throw new BankAccountNotFoundException("Bank account doesn't exist");
+            throw new EntityNotFoundException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND);
         }
     }
 }

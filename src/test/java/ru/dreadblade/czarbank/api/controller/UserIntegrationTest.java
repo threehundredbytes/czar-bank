@@ -17,6 +17,7 @@ import ru.dreadblade.czarbank.api.model.request.security.UserRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.security.UserResponseDTO;
 import ru.dreadblade.czarbank.domain.security.Role;
 import ru.dreadblade.czarbank.domain.security.User;
+import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 
@@ -47,8 +48,6 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     RoleMapper roleMapper;
 
     private static final String USERS_API_URL = "/api/users";
-    private static final String USER_WITH_SAME_USERNAME_ALREADY_EXISTS_MESSAGE = "User with username \"%s\" already exists";
-    private static final String USER_WITH_SAME_EMAIL_ALREADY_EXISTS_MESSAGE = "User with email \"%s\" already exists";
 
     @Nested
     @DisplayName("findAll() Tests")
@@ -139,8 +138,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value(String
-                            .format(USER_WITH_SAME_USERNAME_ALREADY_EXISTS_MESSAGE, requestDTO.getUsername())));
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.USERNAME_ALREADY_EXISTS.getMessage()));
         }
 
         @Test
@@ -157,8 +156,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value(String
-                            .format(USER_WITH_SAME_EMAIL_ALREADY_EXISTS_MESSAGE, requestDTO.getEmail())));
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS.getMessage()));
         }
     }
 
@@ -230,8 +229,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value(String
-                            .format(USER_WITH_SAME_USERNAME_ALREADY_EXISTS_MESSAGE, requestDTO.getUsername())));
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.USERNAME_ALREADY_EXISTS.getMessage()));
         }
 
         @Test
@@ -248,8 +247,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value(String
-                            .format(USER_WITH_SAME_EMAIL_ALREADY_EXISTS_MESSAGE, requestDTO.getEmail())));
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS.getMessage()));
         }
     }
 

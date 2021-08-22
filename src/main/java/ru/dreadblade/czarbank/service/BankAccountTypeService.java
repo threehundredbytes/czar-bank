@@ -5,10 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.api.model.request.BankAccountTypeRequestDTO;
 import ru.dreadblade.czarbank.domain.BankAccountType;
-import ru.dreadblade.czarbank.exception.BankAccountNotFoundException;
-import ru.dreadblade.czarbank.exception.BankAccountTypeInUseException;
-import ru.dreadblade.czarbank.exception.BankAccountTypeNameAlreadyExistsException;
-import ru.dreadblade.czarbank.exception.BankAccountTypeNotFoundException;
+import ru.dreadblade.czarbank.exception.*;
 import ru.dreadblade.czarbank.repository.BankAccountTypeRepository;
 
 import java.math.BigDecimal;
@@ -29,8 +26,7 @@ public class BankAccountTypeService {
 
     public BankAccountType create(BankAccountTypeRequestDTO requestDTO) {
         if (bankAccountTypeRepository.existsByName(requestDTO.getName())) {
-            throw new BankAccountTypeNameAlreadyExistsException("Bank account type with name \"" +
-                    requestDTO.getName() + "\" already exists");
+            throw new UniqueFieldAlreadyExistsException(ExceptionMessage.BANK_ACCOUNT_TYPE_NAME_ALREADY_EXISTS);
         }
 
         return bankAccountTypeRepository.save(BankAccountType.builder()
@@ -41,11 +37,10 @@ public class BankAccountTypeService {
 
     public BankAccountType updateById(long id, BankAccountTypeRequestDTO requestDTO) {
         BankAccountType bankAccountTypeToUpdate = bankAccountTypeRepository.findById(id)
-                .orElseThrow(() -> new BankAccountNotFoundException("Bank account type doesn't exist"));
+                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.BANK_ACCOUNT_TYPE_NOT_FOUND));
 
         if (bankAccountTypeRepository.existsByName(requestDTO.getName())) {
-            throw new BankAccountTypeNameAlreadyExistsException("Bank account type with name \"" +
-                    requestDTO.getName() + "\" already exists");
+            throw new UniqueFieldAlreadyExistsException(ExceptionMessage.BANK_ACCOUNT_TYPE_NAME_ALREADY_EXISTS);
         }
 
         String name = requestDTO.getName();
@@ -68,11 +63,10 @@ public class BankAccountTypeService {
             if (!bankAccountTypeRepository.isTypeUsedByBankAccount(id)) {
                 bankAccountTypeRepository.deleteById(id);
             } else {
-                String typeName = bankAccountTypeRepository.findById(id).orElseThrow().getName();
-                throw new BankAccountTypeInUseException("Bank account type \"" + typeName + "\" in use");
+                throw new EntityInUseException(ExceptionMessage.BANK_ACCOUNT_TYPE_IN_USE);
             }
         } else {
-            throw new BankAccountTypeNotFoundException("Bank account type doesn't exist");
+            throw new EntityInUseException(ExceptionMessage.BANK_ACCOUNT_TYPE_NOT_FOUND);
         }
     }
 }

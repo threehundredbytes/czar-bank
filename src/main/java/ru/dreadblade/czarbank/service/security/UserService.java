@@ -6,10 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.domain.security.Role;
 import ru.dreadblade.czarbank.domain.security.User;
-import ru.dreadblade.czarbank.exception.RoleNotFoundException;
-import ru.dreadblade.czarbank.exception.UserEmailAlreadyExists;
-import ru.dreadblade.czarbank.exception.UserNotFoundException;
-import ru.dreadblade.czarbank.exception.UserUsernameAlreadyExists;
+import ru.dreadblade.czarbank.exception.*;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 
@@ -37,16 +34,16 @@ public class UserService {
     }
 
     public User findUserById(Long userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User doesn't exist"));
+        return userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.USER_NOT_FOUND));
     }
 
     public User createUser(User user) {
         if (userRepository.existsByUsername(user.getUsername())) {
-            throw new UserUsernameAlreadyExists("User with username \"" + user.getUsername() + "\" already exists");
+            throw new UniqueFieldAlreadyExistsException(ExceptionMessage.USERNAME_ALREADY_EXISTS);
         }
 
         if (userRepository.existsByEmail(user.getEmail())) {
-            throw new UserUsernameAlreadyExists("User with email \"" + user.getEmail() + "\" already exists");
+            throw new UniqueFieldAlreadyExistsException(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS);
         }
 
         user.setUserId(RandomStringUtils.randomAlphanumeric(10));
@@ -56,7 +53,7 @@ public class UserService {
     }
 
     public User update(Long userId, User user) {
-        User userToUpdate = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User doesn't exist"));
+        User userToUpdate = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.USER_NOT_FOUND));
 
         String username = user.getUsername();
 
@@ -66,7 +63,7 @@ public class UserService {
             if (optionalUser.isEmpty() || optionalUser.get().getId().equals(userId)) {
                 userToUpdate.setUsername(username);
             } else {
-                throw new UserUsernameAlreadyExists("User with username \"" + username + "\" already exists");
+                throw new UniqueFieldAlreadyExistsException(ExceptionMessage.USERNAME_ALREADY_EXISTS);
             }
         }
 
@@ -78,7 +75,7 @@ public class UserService {
             if (optionalUser.isEmpty() || optionalUser.get().getId().equals(userId)) {
                 userToUpdate.setEmail(email);
             } else {
-                throw new UserEmailAlreadyExists("User with email \"" + email + "\" already exists");
+                throw new UniqueFieldAlreadyExistsException(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS);
             }
         }
 
@@ -96,7 +93,7 @@ public class UserService {
 
     public void deleteUserById(Long userId) {
         if (!userRepository.existsById(userId)) {
-            throw new UserNotFoundException("User doesn't exist");
+            throw new EntityNotFoundException(ExceptionMessage.USER_NOT_FOUND);
         }
 
         userRepository.deleteById(userId);

@@ -1,9 +1,7 @@
 package ru.dreadblade.czarbank.exception;
 
-import org.springframework.http.HttpStatus;
-
 public class NotEnoughBalanceException extends BaseException {
-    public NotEnoughBalanceException(String message) {
-        super(message, HttpStatus.BAD_REQUEST);
+    public NotEnoughBalanceException() {
+        super(ExceptionMessage.NOT_ENOUGH_BALANCE.getMessage(), ExceptionMessage.NOT_ENOUGH_BALANCE.getStatus());
     }
 }

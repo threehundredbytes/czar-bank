@@ -4,9 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.domain.security.Permission;
 import ru.dreadblade.czarbank.domain.security.Role;
-import ru.dreadblade.czarbank.exception.PermissionNotFoundException;
-import ru.dreadblade.czarbank.exception.RoleNameAlreadyExistsException;
-import ru.dreadblade.czarbank.exception.RoleNotFoundException;
+import ru.dreadblade.czarbank.exception.*;
 import ru.dreadblade.czarbank.repository.security.PermissionRepository;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
 
@@ -31,17 +29,17 @@ public class RoleService {
 
     public Role findRoleById(Long roleId) {
         return roleRepository.findById(roleId)
-                .orElseThrow(() -> new RoleNotFoundException("Role doesn't exist"));
+                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.ROLE_NOT_FOUND));
     }
 
     public Role findRoleByName(String name) {
         return roleRepository.findByName(name)
-                .orElseThrow(() -> new RoleNotFoundException("Role doesn't exist"));
+                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.ROLE_NOT_FOUND));
     }
 
     public Role createRole(Role role) {
         if (roleRepository.existsByName(role.getName())) {
-            throw new RoleNameAlreadyExistsException("Role with name \"" + role.getName() + "\" already exists");
+            throw new UniqueFieldAlreadyExistsException(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS);
         }
 
         Set<Permission> existingPermissions = filterAndFindPermissionsFromDb(role.getPermissions());
@@ -53,10 +51,10 @@ public class RoleService {
 
     public Role updateRoleById(Long roleId, Role role) {
         Role roleToUpdate = roleRepository.findById(roleId)
-                .orElseThrow(() -> new RoleNotFoundException("Role doesn't exist"));
+                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.ROLE_NOT_FOUND));
 
         if (roleRepository.existsByName(role.getName())) {
-            throw new RoleNameAlreadyExistsException("Role with name \"" + role.getName() + "\" already exists");
+            throw new UniqueFieldAlreadyExistsException(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS);
         }
 
         roleToUpdate.setName(role.getName());
@@ -70,20 +68,17 @@ public class RoleService {
 
     public void deleteRoleById(Long roleId) {
         if (!roleRepository.existsById(roleId)) {
-            throw new RoleNotFoundException("Role doesn't exist");
+            throw new EntityNotFoundException(ExceptionMessage.ROLE_NOT_FOUND);
         }
 
         roleRepository.deleteById(roleId);
     }
 
-    // filters only existing permissions
-    // get values
-
     private Set<Permission> filterAndFindPermissionsFromDb(Set<Permission> permissions) {
         return permissions.stream()
                 .filter(p -> permissionRepository.existsById(p.getId()))
                 .map(p -> permissionRepository.findById(p.getId())
-                        .orElseThrow(() -> new PermissionNotFoundException("Permission doesn't exist")))
+                        .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.PERMISSION_NOT_FOUND)))
                 .collect(Collectors.toSet());
     }
 }

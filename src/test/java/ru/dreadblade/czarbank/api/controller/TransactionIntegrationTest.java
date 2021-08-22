@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.model.request.TransactionRequestDTO;
 import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.domain.Transaction;
+import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 import ru.dreadblade.czarbank.repository.TransactionRepository;
 import ru.dreadblade.czarbank.util.MatchersUtils;
@@ -187,7 +188,8 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(transactionRequest)))
                     .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.message").value("Source bank account doesn't exist"));
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND.getMessage()));
 
         }
 
@@ -203,7 +205,8 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(transactionRequest)))
                     .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.message").value("Destination bank account doesn't exist"));
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND.getMessage()));
         }
 
         @Test
