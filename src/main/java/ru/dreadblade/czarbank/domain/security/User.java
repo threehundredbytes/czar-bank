@@ -37,10 +37,17 @@ public class User implements UserDetails {
             inverseJoinColumns = { @JoinColumn(name = "ROLE_ID", referencedColumnName = "ID" ) })
     private Set<Role> roles;
 
-    private boolean isAccountExpired;
-    private boolean isAccountLocked;
-    private boolean isCredentialsExpired;
-    private boolean isEnabled;
+    @Builder.Default
+    private boolean isAccountExpired = false;
+
+    @Builder.Default
+    private boolean isAccountLocked = false;
+
+    @Builder.Default
+    private boolean isCredentialsExpired = false;
+
+    @Builder.Default
+    private boolean isEnabled = true;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

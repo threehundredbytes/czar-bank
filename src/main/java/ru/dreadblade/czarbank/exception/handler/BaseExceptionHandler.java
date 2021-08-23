@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
 public class BaseExceptionHandler {
+
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ErrorResponse> handleBankAccountNotFoundException(BaseException exception, HttpServletRequest request) {
         return ExceptionHandlingUtils.createErrorResponse(exception, request);

@@ -3,6 +3,7 @@ package ru.dreadblade.czarbank.api.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.Arguments;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,7 +17,10 @@ import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.stream.Stream;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(initializers = BaseIntegrationTest.DockerPostgreDataSourceInitializer.class)
@@ -49,6 +53,7 @@ public abstract class BaseIntegrationTest {
     public void setUp() {
         mockMvc = MockMvcBuilders
                 .webAppContextSetup(webApplicationContext)
+                .apply(springSecurity())
                 .build();
     }
 
@@ -57,6 +62,12 @@ public abstract class BaseIntegrationTest {
         assertThat(webApplicationContext).isNotNull();
         assertThat(mockMvc).isNotNull();
         assertThat(objectMapper).isNotNull();
+    }
+
+    public static Stream<Arguments> getStreamAllUsers() {
+        return Stream.of(Arguments.of("admin", "password"),
+                Arguments.of("employee", "password"),
+                Arguments.of("client", "password"));
     }
 
     public static PostgreSQLContainer<?> postgresqlContainer = new PostgreSQLContainer<>("postgres:13")

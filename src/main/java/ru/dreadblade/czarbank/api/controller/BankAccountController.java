@@ -9,7 +9,6 @@ import ru.dreadblade.czarbank.api.model.request.BankAccountRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.BankAccountResponseDTO;
 import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.service.BankAccountService;
-
 import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.List;
@@ -28,7 +27,7 @@ public class BankAccountController {
     }
 
     @GetMapping
-    public ResponseEntity<List<BankAccountResponseDTO>> findAllAll() {
+    public ResponseEntity<List<BankAccountResponseDTO>> findAll() {
         return ResponseEntity.ok(bankAccountService.findAll().stream()
                 .map(bankAccountMapper::bankAccountToBankAccountResponse)
                 .collect(Collectors.toList()));
