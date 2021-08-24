@@ -12,7 +12,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.model.request.security.AuthenticationRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.security.AuthenticationResponseDTO;
 import ru.dreadblade.czarbank.domain.security.User;
@@ -103,7 +105,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         @Disabled
         @ParameterizedTest(name = "#{index} with [{arguments}]")
         @MethodSource("ru.dreadblade.czarbank.api.controller.AuthenticationIntegrationTest#getStreamAllUsers")
-        void accessToken_isValid(String username) throws Exception {
+        void accessToken_isValid_authIsSuccessful(String username) throws Exception {
             User user = userRepository.findByUsername(username).orElseThrow();
 
             String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
@@ -115,7 +117,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
         @ParameterizedTest(name = "#{index} with [{arguments}]")
         @MethodSource("ru.dreadblade.czarbank.api.controller.AuthenticationIntegrationTest#getStreamAllUsers")
-        void accessToken_withInvalidSignature_isFailed(String username) throws Exception {
+        void accessToken_withInvalidSignature_authIsFailed(String username) throws Exception {
             User user = userRepository.findByUsername(username).orElseThrow();
 
             String accessToken = headerPrefix + accessTokenService.generateAccessToken(user) + "someCorruption...";
@@ -128,7 +130,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
         @ParameterizedTest(name = "#{index} with [{arguments}]")
         @MethodSource("ru.dreadblade.czarbank.api.controller.AuthenticationIntegrationTest#getStreamAllUsers")
-        void accessToken_modified_isFailed(String username) throws Exception {
+        void accessToken_modified_authIsFailed(String username) throws Exception {
             User user = userRepository.findByUsername(username).orElseThrow();
 
             String accessTokenBeforeCorruption = accessTokenService.generateAccessToken(user);
@@ -145,7 +147,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void accessToken_isExpired_isFailed() throws Exception {
+        void accessToken_isExpired_authIsFailed() throws Exception {
             User user = userRepository.findById(BASE_USER_ID + 1L).orElseThrow();
 
             String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
@@ -156,6 +158,90 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     .header(HttpHeaders.AUTHORIZATION, accessToken))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message").value(ACCESS_TOKEN_EXPIRED_MESSAGE));
+        }
+
+        @Test
+        @Transactional
+        void accessToken_thenLockingTheUser_authIsFailed() throws Exception {
+            long testUserId = BASE_USER_ID + 1L;
+
+            User user = userRepository.findById(testUserId).orElseThrow();
+
+            Assertions.assertThat(user.isAccountLocked()).isFalse();
+
+            String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
+
+            user.setAccountLocked(true);
+
+            Assertions.assertThat(user.isAccountLocked()).isTrue();
+
+            mockMvc.perform(get(USERS_API_URL)
+                    .header(HttpHeaders.AUTHORIZATION, accessToken))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message").value("User's account is locked"));
+        }
+
+        @Test
+        @Transactional
+        void accessToken_thenDisablingTheUser_authIsFailed() throws Exception {
+            long testUserId = BASE_USER_ID + 1L;
+
+            User user = userRepository.findById(testUserId).orElseThrow();
+
+            Assertions.assertThat(user.isEnabled()).isTrue();
+
+            String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
+
+            user.setEnabled(false);
+
+            Assertions.assertThat(user.isEnabled()).isFalse();
+
+            mockMvc.perform(get(USERS_API_URL)
+                    .header(HttpHeaders.AUTHORIZATION, accessToken))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message").value("User's account is disabled"));
+        }
+
+        @Test
+        @Transactional
+        void accessToken_thenExpiringTheUsersAccount_authIsFailed() throws Exception {
+            long testUserId = BASE_USER_ID + 1L;
+
+            User user = userRepository.findById(testUserId).orElseThrow();
+
+            Assertions.assertThat(user.isAccountExpired()).isFalse();
+
+            String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
+
+            user.setAccountExpired(true);
+
+            Assertions.assertThat(user.isAccountExpired()).isTrue();
+
+            mockMvc.perform(get(USERS_API_URL)
+                    .header(HttpHeaders.AUTHORIZATION, accessToken))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message").value("User's account is expired"));
+        }
+
+        @Test
+        @Transactional
+        void accessToken_thenExpiringTheUsersCredentials_authIsFailed() throws Exception {
+            long testUserId = BASE_USER_ID + 1L;
+
+            User user = userRepository.findById(testUserId).orElseThrow();
+
+            Assertions.assertThat(user.isCredentialsExpired()).isFalse();
+
+            String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
+
+            user.setCredentialsExpired(true);
+
+            Assertions.assertThat(user.isCredentialsExpired()).isTrue();
+
+            mockMvc.perform(get(USERS_API_URL)
+                    .header(HttpHeaders.AUTHORIZATION, accessToken))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message").value("User's credentials are expired"));
         }
     }
 }
