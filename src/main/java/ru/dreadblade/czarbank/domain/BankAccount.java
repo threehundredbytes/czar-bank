@@ -1,6 +1,7 @@
 package ru.dreadblade.czarbank.domain;
 
 import lombok.*;
+import ru.dreadblade.czarbank.domain.security.User;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -19,7 +20,8 @@ public class BankAccount {
 
     private String number;
 
-    private String owner;
+    @ManyToOne(fetch = FetchType.EAGER)
+    private User owner;
 
     @Builder.Default
     private BigDecimal balance = BigDecimal.ZERO;

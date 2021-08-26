@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 public class BankAccountResponseDTO {
     private Long id;
     private String number;
-    private String owner;
+    private Long ownerId;
     private BigDecimal balance;
+    private Long bankAccountTypeId;
 }

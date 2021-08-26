@@ -3,11 +3,14 @@ package ru.dreadblade.czarbank.api.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.mapper.BankAccountMapper;
 import ru.dreadblade.czarbank.api.model.request.BankAccountRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.BankAccountResponseDTO;
 import ru.dreadblade.czarbank.domain.BankAccount;
+import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.service.BankAccountService;
 import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -41,9 +44,12 @@ public class BankAccountController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_CLIENT', 'BANK_ACCOUNT_CREATE')")
     @PostMapping
-    public ResponseEntity<BankAccountResponseDTO> createAccount(@RequestBody BankAccountRequestDTO bankAccount, HttpServletRequest request) {
-        BankAccount createdAccount = bankAccountService.create(bankAccount.getOwner());
+    public ResponseEntity<BankAccountResponseDTO> createAccount(@AuthenticationPrincipal User user,
+                                                                @RequestBody BankAccountRequestDTO bankAccount,
+                                                                HttpServletRequest request) {
+        BankAccount createdAccount = bankAccountService.create(user, bankAccount.getBankAccountTypeId());
         BankAccountResponseDTO responseDTO = bankAccountMapper.bankAccountToBankAccountResponse(createdAccount);
 
         return ResponseEntity.created(URI.create(request.getRequestURI() + "/" + createdAccount.getId()))

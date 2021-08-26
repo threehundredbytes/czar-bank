@@ -1,12 +1,16 @@
 package ru.dreadblade.czarbank.api.mapper;
 
 import org.mapstruct.Mapper;
-import ru.dreadblade.czarbank.api.model.request.BankAccountRequestDTO;
+import org.mapstruct.Mapping;
+import org.mapstruct.Mappings;
 import ru.dreadblade.czarbank.api.model.response.BankAccountResponseDTO;
 import ru.dreadblade.czarbank.domain.BankAccount;
 
 @Mapper
 public interface BankAccountMapper {
-    BankAccount bankAccountRequestToBankAccount(BankAccountRequestDTO bankAccountRequestDTO);
+    @Mappings({
+            @Mapping(target = "ownerId", source = "owner.id"),
+            @Mapping(target = "bankAccountTypeId", source = "bankAccountType.id")
+    })
     BankAccountResponseDTO bankAccountToBankAccountResponse(BankAccount bankAccount);
 }

@@ -8,5 +8,5 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BankAccountRequestDTO {
-    private String owner;
+    private Long bankAccountTypeId;
 }

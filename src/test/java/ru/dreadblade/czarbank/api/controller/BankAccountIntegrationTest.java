@@ -1,31 +1,39 @@
 package ru.dreadblade.czarbank.api.controller;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.mapper.BankAccountMapper;
 import ru.dreadblade.czarbank.api.model.request.BankAccountRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.BankAccountResponseDTO;
 import ru.dreadblade.czarbank.domain.BankAccount;
+import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
+import ru.dreadblade.czarbank.repository.security.UserRepository;
 
+import java.math.BigDecimal;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @DisplayName("BankAccount Integration Tests")
-@Sql(value = "/bank-account/bank-accounts-insertion.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-@Sql(value = "/bank-account/bank-accounts-deletion.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@Sql(value = { "/user/users-insertion.sql", "/bank-account/bank-accounts-insertion.sql" }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(value = { "/bank-account/bank-accounts-deletion.sql", "/user/users-deletion.sql" }, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class BankAccountIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
@@ -34,11 +42,14 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
     @Autowired
     BankAccountMapper bankAccountMapper;
 
+    @Autowired
+    UserRepository userRepository;
+
     private static final String BANK_ACCOUNTS_API_URL = "/api/bank-accounts";
 
     @Nested
     @DisplayName("getAll() Tests")
-    class getAllTests {
+    class findAllTests {
         @Test
         void findAll_isSuccessful() throws Exception {
             Set<BankAccountResponseDTO> expectedBankAccounts = bankAccountRepository.findAll().stream()
@@ -72,7 +83,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("findById() Tests")
-    class findById {
+    class findByIdTests {
         @Test
         void findById_isSuccessful() throws Exception {
             BankAccount expectedBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 4L).orElseThrow();
@@ -97,22 +108,82 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         }
     }
 
-    @Test
-    void createAccount_isSuccessful() throws Exception {
-        BankAccountRequestDTO requestDTO = BankAccountRequestDTO.builder().owner("Owner #6").build();
+    @Nested
+    @DisplayName("createAccount() Tests")
+    class createAccountTests {
+        @WithUserDetails(value = "client")
+        @Test
+        void createAccount_withAuthAndPermission_isSuccessful() throws Exception {
+            Long expectedBankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
 
-        String expectedResponse = objectMapper.writeValueAsString(requestDTO);
+            User userForTest = userRepository.findByUsername("client").orElseThrow();
 
-        mockMvc.perform(post(BANK_ACCOUNTS_API_URL)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestDTO)))
-                .andExpect(status().isCreated())
-                .andExpect(content().json(expectedResponse));
+            Assertions.assertThat(userForTest.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .collect(Collectors.toSet()))
+                    .containsAnyElementsOf(Set.of("ROLE_CLIENT", "BANK_ACCOUNT_CREATE"));
+
+            BankAccountRequestDTO requestDTO = BankAccountRequestDTO.builder()
+                    .bankAccountTypeId(expectedBankAccountTypeId)
+                    .build();
+
+            String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+            mockMvc.perform(post(BANK_ACCOUNTS_API_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestContent))
+                    .andExpect(status().isCreated())
+                    .andExpect(header().exists(HttpHeaders.LOCATION))
+                    .andExpect(header().string(HttpHeaders.LOCATION, containsString(BANK_ACCOUNTS_API_URL)))
+                    .andExpect(jsonPath("$.id").isNumber())
+                    .andExpect(jsonPath("$.number", hasLength(20)))
+                    .andExpect(jsonPath("$.balance").value(BigDecimal.ZERO))
+                    .andExpect(jsonPath("$.ownerId").value(userForTest.getId()))
+                    .andExpect(jsonPath("$.bankAccountTypeId").value(expectedBankAccountTypeId));
+        }
+
+        @WithMockUser(username = "user", roles = {})
+        @Transactional
+        @Test
+        void createAccount_withAuthAndWithoutPermission_isFailed() throws Exception {
+            Long expectedBankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
+
+            BankAccountRequestDTO requestDTO = BankAccountRequestDTO.builder()
+                    .bankAccountTypeId(expectedBankAccountTypeId)
+                    .build();
+
+            String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+            mockMvc.perform(post(BANK_ACCOUNTS_API_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestContent))
+                    .andExpect(status().isForbidden())
+                    .andExpect(header().doesNotExist(HttpHeaders.LOCATION))
+                    .andExpect(jsonPath("$.message").value("Access is denied"));
+        }
+
+        @Test
+        void createAccount_withoutAuth_isFailed() throws Exception {
+            Long expectedBankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
+
+            BankAccountRequestDTO requestDTO = BankAccountRequestDTO.builder()
+                    .bankAccountTypeId(expectedBankAccountTypeId)
+                    .build();
+
+            String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+            mockMvc.perform(post(BANK_ACCOUNTS_API_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestContent))
+                    .andExpect(status().isForbidden())
+                    .andExpect(header().doesNotExist(HttpHeaders.LOCATION))
+                    .andExpect(jsonPath("$.message").value("Access is denied"));
+        }
     }
 
     @Nested
     @DisplayName("deleteAccount() Tests")
-    class deleteAccount {
+    class deleteAccountTests {
         @Test
         @Transactional
         void deleteAccount_isSuccessful() throws Exception {

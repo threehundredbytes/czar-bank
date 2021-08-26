@@ -28,8 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @DisplayName("Transaction Integration Tests")
-@Sql(value = { "/bank-account/bank-accounts-insertion.sql", "/transaction/transactions-insertion.sql" }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-@Sql(value = { "/transaction/transactions-deletion.sql", "/bank-account/bank-accounts-deletion.sql" }, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@Sql(value = { "/user/users-insertion.sql", "/bank-account/bank-accounts-insertion.sql", "/transaction/transactions-insertion.sql" }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(value = { "/transaction/transactions-deletion.sql", "/bank-account/bank-accounts-deletion.sql", "/user/users-deletion.sql" }, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class TransactionIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
