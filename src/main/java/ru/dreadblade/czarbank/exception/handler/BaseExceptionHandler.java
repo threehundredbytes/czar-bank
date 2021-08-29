@@ -13,7 +13,7 @@ import javax.servlet.http.HttpServletRequest;
 public class BaseExceptionHandler {
 
     @ExceptionHandler(BaseException.class)
-    public ResponseEntity<ErrorResponse> handleBankAccountNotFoundException(BaseException exception, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleBaseException(BaseException exception, HttpServletRequest request) {
         return ExceptionHandlingUtils.createErrorResponse(exception, request);
     }
 }

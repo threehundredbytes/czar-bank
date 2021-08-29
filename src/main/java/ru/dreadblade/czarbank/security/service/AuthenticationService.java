@@ -12,12 +12,10 @@ import ru.dreadblade.czarbank.exception.ExceptionMessage;
 
 @Service
 public class AuthenticationService {
-    private final AccessTokenService accessTokenService;
     private final AuthenticationManager authenticationManager;
 
     @Autowired
-    public AuthenticationService(AccessTokenService accessTokenService, AuthenticationManager authenticationManager) {
-        this.accessTokenService = accessTokenService;
+    public AuthenticationService(AuthenticationManager authenticationManager) {
         this.authenticationManager = authenticationManager;
     }
 
@@ -36,9 +34,5 @@ public class AuthenticationService {
         }
 
         throw new EntityNotFoundException(ExceptionMessage.USER_NOT_FOUND);
-    }
-
-    public String getAccessToken(User user) {
-        return accessTokenService.generateAccessToken(user);
     }
 }

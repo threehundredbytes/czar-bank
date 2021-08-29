@@ -1,16 +1,16 @@
 delete from bank_account;
 delete from bank_account_type;
 
-insert into bank_account_type (id, name, transaction_commission) values (22, 'Czar', 0.01);
-insert into bank_account_type (id, name, transaction_commission) values (23, 'Nobleman', 0.02);
-insert into bank_account_type (id, name, transaction_commission) values (24, 'Junker', 0.03);
-insert into bank_account_type (id, name, transaction_commission) values (25, 'Standard', 0.04);
-insert into bank_account_type (id, name, transaction_commission) values (26, 'Unused account type', 0.10);
+insert into bank_account_type (id, name, transaction_commission) values (21, 'Czar', 0.01);
+insert into bank_account_type (id, name, transaction_commission) values (22, 'Nobleman', 0.02);
+insert into bank_account_type (id, name, transaction_commission) values (23, 'Junker', 0.03);
+insert into bank_account_type (id, name, transaction_commission) values (24, 'Standard', 0.04);
+insert into bank_account_type (id, name, transaction_commission) values (25, 'Unused account type', 0.10);
 
-insert into bank_account (id, balance, is_closed, number, owner_id, bank_account_type_id) values (27, 15000, false, '39903336089073190794', 19, 22);
-insert into bank_account (id, balance, is_closed, number, owner_id, bank_account_type_id) values (28, 5000, false, '33390474811219980161', 20, 23);
-insert into bank_account (id, balance, is_closed, number, owner_id, bank_account_type_id) values (29, 2000, false, '38040432731497506063', 18, 24);
-insert into bank_account (id, balance, is_closed, number, owner_id, bank_account_type_id) values (30, 500, false, '36264421013439107929', 20, 25);
-insert into bank_account (id, balance, is_closed, number, owner_id, bank_account_type_id) values (31, 1500, false, '32541935657215432384', 19, 25);
+insert into bank_account (id, balance, is_closed, number, owner_id, bank_account_type_id) values (26, 15000, false, '39903336089073190794', 19, 21);
+insert into bank_account (id, balance, is_closed, number, owner_id, bank_account_type_id) values (27, 5000, false, '33390474811219980161', 20, 22);
+insert into bank_account (id, balance, is_closed, number, owner_id, bank_account_type_id) values (28, 2000, false, '38040432731497506063', 18, 23);
+insert into bank_account (id, balance, is_closed, number, owner_id, bank_account_type_id) values (29, 500, false, '36264421013439107929', 20, 24);
+insert into bank_account (id, balance, is_closed, number, owner_id, bank_account_type_id) values (30, 1500, false, '32541935657215432384', 19, 24);
 
-alter sequence hibernate_sequence restart 32;
+alter sequence hibernate_sequence restart 31;

@@ -6,6 +6,7 @@ import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import ru.dreadblade.czarbank.exception.RefreshTokenException;
 import ru.dreadblade.czarbank.exception.model.ErrorResponse;
 
 import javax.servlet.http.HttpServletRequest;
@@ -27,6 +28,16 @@ public class AuthenticationExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value()).body(ErrorResponse.builder()
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
+                .message(exception.getMessage())
+                .path(request.getRequestURI())
+                .build());
+    }
+
+    @ExceptionHandler(RefreshTokenException.class)
+    public ResponseEntity<ErrorResponse> handleTokenExpiredException(RefreshTokenException exception, HttpServletRequest request) {
+        return ResponseEntity.status(exception.getStatus()).body(ErrorResponse.builder()
+                .status(exception.getStatus().value())
+                .error(exception.getStatus().getReasonPhrase())
                 .message(exception.getMessage())
                 .path(request.getRequestURI())
                 .build());
