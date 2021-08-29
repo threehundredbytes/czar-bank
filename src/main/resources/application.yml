@@ -17,3 +17,6 @@ czar-bank:
         secret-key: 'czar-bank-secret-key'
         header:
           prefix: 'Bearer '
+      refresh-token:
+        expiration-seconds: 604800
+        limit-per-user: 5

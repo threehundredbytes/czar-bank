@@ -18,7 +18,10 @@ public enum ExceptionMessage {
 
     BANK_ACCOUNT_TYPE_IN_USE("Bank account type in use", HttpStatus.BAD_REQUEST),
 
-    NOT_ENOUGH_BALANCE("Not enough balance", HttpStatus.BAD_REQUEST);
+    NOT_ENOUGH_BALANCE("Not enough balance", HttpStatus.BAD_REQUEST),
+
+    REFRESH_TOKEN_EXPIRED("Refresh token expired", HttpStatus.BAD_REQUEST),
+    INVALID_REFRESH_TOKEN("Invalid refresh token", HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatus status;

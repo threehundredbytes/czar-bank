@@ -9,4 +9,5 @@ import lombok.*;
 @AllArgsConstructor
 public class AuthenticationResponseDTO {
     private String accessToken;
+    private String refreshToken;
 }

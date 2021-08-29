@@ -37,9 +37,9 @@ public abstract class BaseIntegrationTest {
     protected final long BASE_PERMISSION_ID = 0L;
     protected final long BASE_ROLE_ID = 12L;
     protected final long BASE_USER_ID = 15L;
-    protected final long BASE_BANK_ACCOUNT_TYPE_ID = 21L;
-    protected final long BASE_BANK_ACCOUNT_ID = 26L;
-    protected final long BASE_TRANSACTION_ID = 31L;
+    protected final long BASE_BANK_ACCOUNT_TYPE_ID = 20L;
+    protected final long BASE_BANK_ACCOUNT_ID = 25L;
+    protected final long BASE_TRANSACTION_ID = 30L;
 
     @Autowired
     WebApplicationContext webApplicationContext;

@@ -1,10 +1,8 @@
 package ru.dreadblade.czarbank.api.controller;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,15 +10,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.model.request.security.AuthenticationRequestDTO;
+import ru.dreadblade.czarbank.api.model.request.security.RefreshTokensRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.security.AuthenticationResponseDTO;
+import ru.dreadblade.czarbank.domain.security.RefreshTokenSession;
 import ru.dreadblade.czarbank.domain.security.User;
+import ru.dreadblade.czarbank.exception.ExceptionMessage;
+import ru.dreadblade.czarbank.repository.security.RefreshTokenSessionRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 import ru.dreadblade.czarbank.security.service.AccessTokenService;
+import ru.dreadblade.czarbank.security.service.RefreshTokenService;
 
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
@@ -29,13 +32,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = { "czar-bank.security.json-web-token.access-token.expiration-seconds=5"})
+@SpringBootTest(properties = {
+        "czar-bank.security.json-web-token.access-token.expiration-seconds=5",
+        "czar-bank.security.json-web-token.refresh-token.expiration-seconds=5",
+})
 @DisplayName("Authentication Integration Tests")
 @Sql(value = "/user/users-insertion.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(value = "/user/users-deletion.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
     private static final String LOGIN_API_URL = "/api/auth/login";
+    private static final String REFRESH_TOKENS_API_URL = "/api/auth/refresh-tokens";
     private static final String USERS_API_URL = "/api/users";
     private static final String ACCESS_TOKEN_IS_INVALID_MESSAGE = "Access token is invalid";
     private static final String ACCESS_TOKEN_EXPIRED_MESSAGE = "Access token expired";
@@ -43,11 +50,20 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
     @Value("${czar-bank.security.json-web-token.access-token.header.prefix}")
     private String headerPrefix;
 
+    @Value("${czar-bank.security.json-web-token.refresh-token.expiration-seconds}")
+    private int refreshTokensPerUser;
+
     @Autowired
     UserRepository userRepository;
 
     @Autowired
     AccessTokenService accessTokenService;
+
+    @Autowired
+    RefreshTokenService refreshTokenService;
+
+    @Autowired
+    RefreshTokenSessionRepository refreshTokenSessionRepository;
 
     @Nested
     @DisplayName("login() Tests")
@@ -242,6 +258,154 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     .header(HttpHeaders.AUTHORIZATION, accessToken))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message").value("User's credentials are expired"));
+        }
+    }
+
+    @Nested
+    @DisplayName("refreshTokens() Tests")
+    class refreshTokenTests {
+        @Test
+        @Transactional
+        void refreshTokens_refreshTokenIsValid_isSuccessful() throws Exception {
+            long testUserId = BASE_USER_ID + 1L;
+            User user = userRepository.findById(testUserId).orElseThrow();
+
+            String refreshToken = refreshTokenService.generateRefreshToken(user);
+
+            RefreshTokensRequestDTO requestDTO = new RefreshTokensRequestDTO(refreshToken);
+
+            String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+            String responseContent = mockMvc.perform(post(REFRESH_TOKENS_API_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestContent))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.accessToken").isString())
+                    .andExpect(jsonPath("$.refreshToken").isString())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            RefreshTokenSession revokedSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken)
+                    .orElseThrow();
+
+            Assertions.assertThat(revokedSession.getRefreshToken()).isEqualTo(refreshToken);
+            Assertions.assertThat(revokedSession.getUser()).isEqualTo(user);
+            Assertions.assertThat(revokedSession.getCreatedAt()).isBeforeOrEqualTo(Instant.now());
+            Assertions.assertThat(revokedSession.getIsRevoked()).isTrue();
+
+            AuthenticationResponseDTO responseDTO = objectMapper.readValue(responseContent, AuthenticationResponseDTO.class);
+
+            Assertions.assertThat(user).isEqualTo(accessTokenService.getUserFromToken(responseDTO.getAccessToken()));
+
+            RefreshTokenSession createdSession = refreshTokenSessionRepository
+                    .findByRefreshToken(responseDTO.getRefreshToken()).orElseThrow();
+
+            Assertions.assertThat(createdSession.getUser()).isEqualTo(user);
+            Assertions.assertThat(createdSession.getCreatedAt()).isBeforeOrEqualTo(Instant.now());
+            Assertions.assertThat(createdSession.getIsRevoked()).isFalse();
+        }
+
+        @Transactional
+        @Test
+        void refreshToken_refreshTokenLimit_isSuccessful() throws Exception {
+            long testUserId = BASE_USER_ID + 1L;
+            User user = userRepository.findById(testUserId).orElseThrow();
+
+            int currentRepetition = 0;
+
+            while (currentRepetition <= refreshTokensPerUser) {
+                currentRepetition++;
+
+                String refreshToken = refreshTokenService.generateRefreshToken(user);
+
+                Assertions.assertThat(refreshTokenSessionRepository.existsByRefreshToken(refreshToken)).isTrue();
+
+                int refreshTokenSessionsCount = Math.toIntExact(refreshTokenSessionRepository.countByUser(user));
+
+                if (currentRepetition <= refreshTokensPerUser) {
+                    Assertions.assertThat(refreshTokenSessionsCount).isEqualTo(currentRepetition);
+                } else {
+                    Assertions.assertThat(refreshTokenSessionsCount).isOne();
+                }
+            }
+        }
+
+        @Test
+        @Transactional
+        void refreshToken_refreshTokenIsRevoked_isFailed() throws Exception {
+            long testUserId = BASE_USER_ID + 1L;
+            User user = userRepository.findById(testUserId).orElseThrow();
+
+            String refreshToken = refreshTokenService.generateRefreshToken(user);
+
+            RefreshTokensRequestDTO requestDTO = new RefreshTokensRequestDTO(refreshToken);
+
+            String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+            RefreshTokenSession revokedSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken)
+                    .orElseThrow();
+
+            Assertions.assertThat(revokedSession.getUser()).isEqualTo(user);
+
+            revokedSession.setIsRevoked(true);
+
+            mockMvc.perform(post(REFRESH_TOKENS_API_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestContent))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.INVALID_REFRESH_TOKEN.getMessage()));
+        }
+
+        @Test
+        @Transactional
+        void refreshToken_refreshTokenIsModified_isFailed() throws Exception {
+            long testUserId = BASE_USER_ID + 1L;
+            User user = userRepository.findById(testUserId).orElseThrow();
+
+            String refreshToken = refreshTokenService.generateRefreshToken(user);
+
+            String modifiedRefreshToken = refreshToken + RandomStringUtils.randomAlphanumeric(1, 10);
+
+            Assertions.assertThat(modifiedRefreshToken).isNotEqualTo(refreshToken);
+
+            RefreshTokensRequestDTO requestDTO = new RefreshTokensRequestDTO(modifiedRefreshToken);
+
+            String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+            mockMvc.perform(post(REFRESH_TOKENS_API_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestContent))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.INVALID_REFRESH_TOKEN.getMessage()));
+        }
+
+        @Test
+        void refreshToken_refreshTokenIsExpired_isFailed() throws Exception {
+            long testUserId = BASE_USER_ID + 1L;
+            User user = userRepository.findById(testUserId).orElseThrow();
+
+            String refreshToken = refreshTokenService.generateRefreshToken(user);
+
+            RefreshTokensRequestDTO requestDTO = new RefreshTokensRequestDTO(refreshToken);
+
+            String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+            TimeUnit.SECONDS.sleep(6);
+
+            RefreshTokenSession refreshTokenSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken)
+                    .orElseThrow();
+
+            Assertions.assertThat(refreshTokenSession.getIsRevoked()).isFalse();
+
+            mockMvc.perform(post(REFRESH_TOKENS_API_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestContent))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.REFRESH_TOKEN_EXPIRED.getMessage()));
         }
     }
 }
