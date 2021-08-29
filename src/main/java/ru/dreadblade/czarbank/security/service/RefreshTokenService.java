@@ -17,6 +17,9 @@ public class RefreshTokenService {
     @Value("${czar-bank.security.json-web-token.refresh-token.expiration-seconds}")
     private Long expirationSeconds;
 
+    @Value("${czar-bank.security.json-web-token.refresh-token.limit-per-user}")
+    private Long refreshTokensPerUser;
+
     private final AccessTokenService accessTokenService;
     private final RefreshTokenSessionRepository refreshTokenSessionRepository;
 
@@ -26,6 +29,10 @@ public class RefreshTokenService {
     }
 
     public String generateRefreshToken(User user) {
+        if (refreshTokenSessionRepository.countByUser(user) >= refreshTokensPerUser) {
+            refreshTokenSessionRepository.markRevokedAllByUser(user);
+        }
+
         RefreshTokenSession session = RefreshTokenSession.builder()
                 .refreshToken(generateRefreshToken())
                 .user(user)

@@ -19,3 +19,4 @@ czar-bank:
           prefix: 'Bearer '
       refresh-token:
         expiration-seconds: 604800
+        limit-per-user: 5

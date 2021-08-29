@@ -2,10 +2,7 @@ package ru.dreadblade.czarbank.api.controller;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {
         "czar-bank.security.json-web-token.access-token.expiration-seconds=5",
-        "czar-bank.security.json-web-token.refresh-token.expiration-seconds=5"
+        "czar-bank.security.json-web-token.refresh-token.expiration-seconds=5",
 })
 @DisplayName("Authentication Integration Tests")
 @Sql(value = "/user/users-insertion.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
@@ -52,6 +49,9 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
     @Value("${czar-bank.security.json-web-token.access-token.header.prefix}")
     private String headerPrefix;
+
+    @Value("${czar-bank.security.json-web-token.refresh-token.expiration-seconds}")
+    private int refreshTokensPerUser;
 
     @Autowired
     UserRepository userRepository;
@@ -306,6 +306,31 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(createdSession.getIsRevoked()).isFalse();
         }
 
+        @Transactional
+        @Test
+        void refreshToken_refreshTokenLimit_isSuccessful() throws Exception {
+            long testUserId = BASE_USER_ID + 1L;
+            User user = userRepository.findById(testUserId).orElseThrow();
+
+            int currentRepetition = 0;
+
+            while (currentRepetition <= refreshTokensPerUser) {
+                currentRepetition++;
+
+                String refreshToken = refreshTokenService.generateRefreshToken(user);
+
+                Assertions.assertThat(refreshTokenSessionRepository.existsByRefreshToken(refreshToken)).isTrue();
+
+                int refreshTokenSessionsCount = Math.toIntExact(refreshTokenSessionRepository.countByUser(user));
+
+                if (currentRepetition <= refreshTokensPerUser) {
+                    Assertions.assertThat(refreshTokenSessionsCount).isEqualTo(currentRepetition);
+                } else {
+                    Assertions.assertThat(refreshTokenSessionsCount).isOne();
+                }
+            }
+        }
+
         @Test
         @Transactional
         void refreshToken_refreshTokenIsRevoked_isFailed() throws Exception {
@@ -334,6 +359,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
+        @Transactional
         void refreshToken_refreshTokenIsModified_isFailed() throws Exception {
             long testUserId = BASE_USER_ID + 1L;
             User user = userRepository.findById(testUserId).orElseThrow();
