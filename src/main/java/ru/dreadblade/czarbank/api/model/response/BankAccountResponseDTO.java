@@ -13,6 +13,7 @@ public class BankAccountResponseDTO {
     private Long id;
     private String number;
     private Long ownerId;
+    private Long usedCurrencyId;
     private BigDecimal balance;
     private Long bankAccountTypeId;
 }

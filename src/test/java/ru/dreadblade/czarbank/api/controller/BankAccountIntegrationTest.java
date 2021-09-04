@@ -20,6 +20,7 @@ import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
+import ru.dreadblade.czarbank.repository.CurrencyRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 
 import java.math.BigDecimal;
@@ -44,6 +45,9 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    CurrencyRepository currencyRepository;
 
     private static final String BANK_ACCOUNTS_API_URL = "/api/bank-accounts";
 
@@ -115,6 +119,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @Test
         void createAccount_withAuthAndPermission_isSuccessful() throws Exception {
             Long expectedBankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
+            Long expectedCurrencyId = BASE_CURRENCY_ID + 1L;
 
             User userForTest = userRepository.findByUsername("client").orElseThrow();
 
@@ -125,6 +130,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
 
             BankAccountRequestDTO requestDTO = BankAccountRequestDTO.builder()
                     .bankAccountTypeId(expectedBankAccountTypeId)
+                    .usedCurrencyId(expectedCurrencyId)
                     .build();
 
             String requestContent = objectMapper.writeValueAsString(requestDTO);
@@ -139,6 +145,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.number", hasLength(20)))
                     .andExpect(jsonPath("$.balance").value(BigDecimal.ZERO))
                     .andExpect(jsonPath("$.ownerId").value(userForTest.getId()))
+                    .andExpect(jsonPath("$.usedCurrencyId").value(expectedCurrencyId))
                     .andExpect(jsonPath("$.bankAccountTypeId").value(expectedBankAccountTypeId));
         }
 
@@ -150,6 +157,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
 
             BankAccountRequestDTO requestDTO = BankAccountRequestDTO.builder()
                     .bankAccountTypeId(expectedBankAccountTypeId)
+                    .usedCurrencyId(BASE_CURRENCY_ID + 1L)
                     .build();
 
             String requestContent = objectMapper.writeValueAsString(requestDTO);
@@ -168,6 +176,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
 
             BankAccountRequestDTO requestDTO = BankAccountRequestDTO.builder()
                     .bankAccountTypeId(expectedBankAccountTypeId)
+                    .usedCurrencyId(BASE_CURRENCY_ID + 1L)
                     .build();
 
             String requestContent = objectMapper.writeValueAsString(requestDTO);

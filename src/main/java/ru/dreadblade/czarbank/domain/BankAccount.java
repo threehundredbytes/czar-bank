@@ -23,6 +23,9 @@ public class BankAccount {
     @ManyToOne(fetch = FetchType.EAGER)
     private User owner;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    private Currency usedCurrency;
+
     @Builder.Default
     private BigDecimal balance = BigDecimal.ZERO;
 

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.mapper.TransactionMapper;
@@ -15,7 +16,10 @@ import ru.dreadblade.czarbank.api.model.response.TransactionResponseDTO;
 import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
+import ru.dreadblade.czarbank.repository.CurrencyRepository;
 import ru.dreadblade.czarbank.repository.TransactionRepository;
+import ru.dreadblade.czarbank.repository.security.UserRepository;
+import ru.dreadblade.czarbank.service.BankAccountService;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,6 +28,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -40,6 +45,12 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     TransactionMapper transactionMapper;
+
+    @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    BankAccountService bankAccountService;
 
     private static final String TRANSACTIONS_API_URL = "/api/transactions";
     private static final String BANK_ACCOUNTS_API_URL = "/api/bank-accounts";
@@ -225,6 +236,30 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .content(objectMapper.writeValueAsString(transactionRequest)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value(ExceptionMessage.NOT_ENOUGH_BALANCE.getMessage()));
+        }
+
+        @Test
+        @Rollback
+        void createTransaction_currenciesDiffer_isFailed() throws Exception {
+            BankAccount sourceBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
+
+            BankAccount destinationBankAccount = bankAccountService
+                    .create(userRepository.findById(BASE_USER_ID + 1L).orElseThrow(),
+                            BASE_BANK_ACCOUNT_TYPE_ID + 1L,
+                            BASE_CURRENCY_ID + 2L);
+
+            TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
+                    .amount(BigDecimal.valueOf(10000L))
+                    .sourceBankAccountNumber(sourceBankAccount.getNumber())
+                    .destinationBankAccountNumber(destinationBankAccount.getNumber())
+                    .build();
+
+            mockMvc.perform(post(TRANSACTIONS_API_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(transactionRequest)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("Currency exchange has not yet been implemented"));
         }
     }
 }

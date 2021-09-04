@@ -47,9 +47,9 @@ public class BankAccountController {
     @PreAuthorize("hasAnyAuthority('ROLE_CLIENT', 'BANK_ACCOUNT_CREATE')")
     @PostMapping
     public ResponseEntity<BankAccountResponseDTO> createAccount(@AuthenticationPrincipal User user,
-                                                                @RequestBody BankAccountRequestDTO bankAccount,
+                                                                @RequestBody BankAccountRequestDTO requestDTO,
                                                                 HttpServletRequest request) {
-        BankAccount createdAccount = bankAccountService.create(user, bankAccount.getBankAccountTypeId());
+        BankAccount createdAccount = bankAccountService.create(user, requestDTO.getBankAccountTypeId(), requestDTO.getUsedCurrencyId());
         BankAccountResponseDTO responseDTO = bankAccountMapper.bankAccountToBankAccountResponse(createdAccount);
 
         return ResponseEntity.created(URI.create(request.getRequestURI() + "/" + createdAccount.getId()))

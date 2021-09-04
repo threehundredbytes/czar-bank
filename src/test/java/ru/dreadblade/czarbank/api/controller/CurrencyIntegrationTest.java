@@ -10,6 +10,7 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import ru.dreadblade.czarbank.api.mapper.CurrencyMapper;
 import ru.dreadblade.czarbank.api.model.response.CurrencyResponseDTO;
+import ru.dreadblade.czarbank.repository.BankAccountRepository;
 import ru.dreadblade.czarbank.repository.CurrencyRepository;
 
 import java.util.List;
@@ -25,6 +26,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(value = { "/bank-account/bank-accounts-deletion.sql", "/user/users-deletion.sql" }, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class CurrencyIntegrationTest extends BaseIntegrationTest {
     public static final String CURRENCIES_API_URL = "/api/currencies";
+
+    @Autowired
+    BankAccountRepository bankAccountRepository;
 
     @Autowired
     CurrencyRepository currencyRepository;
@@ -54,6 +58,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
         @Test
         @Rollback
         void findAll_isEmpty() throws Exception {
+            bankAccountRepository.deleteAll();
             currencyRepository.deleteAll();
 
             long expectedSize = 0L;
