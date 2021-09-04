@@ -10,6 +10,7 @@ import ru.dreadblade.czarbank.domain.BankAccount;
 public interface BankAccountMapper {
     @Mappings({
             @Mapping(target = "ownerId", source = "owner.id"),
+            @Mapping(target = "usedCurrencyId", source = "usedCurrency.id"),
             @Mapping(target = "bankAccountTypeId", source = "bankAccountType.id")
     })
     BankAccountResponseDTO bankAccountToBankAccountResponse(BankAccount bankAccount);

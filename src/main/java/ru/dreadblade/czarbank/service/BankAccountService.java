@@ -5,11 +5,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.domain.BankAccountType;
+import ru.dreadblade.czarbank.domain.Currency;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.EntityNotFoundException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 import ru.dreadblade.czarbank.repository.BankAccountTypeRepository;
+import ru.dreadblade.czarbank.repository.CurrencyRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -18,11 +20,13 @@ import java.util.List;
 public class BankAccountService {
     private final BankAccountRepository bankAccountRepository;
     private final BankAccountTypeRepository bankAccountTypeRepository;
+    private final CurrencyRepository currencyRepository;
 
     @Autowired
-    public BankAccountService(BankAccountRepository bankAccountRepository, BankAccountTypeRepository bankAccountTypeRepository) {
+    public BankAccountService(BankAccountRepository bankAccountRepository, BankAccountTypeRepository bankAccountTypeRepository, CurrencyRepository currencyRepository) {
         this.bankAccountRepository = bankAccountRepository;
         this.bankAccountTypeRepository = bankAccountTypeRepository;
+        this.currencyRepository = currencyRepository;
     }
 
     public List<BankAccount> findAll() {
@@ -35,14 +39,18 @@ public class BankAccountService {
         );
     }
 
-    public BankAccount create(User owner, Long bankAccountTypeId) {
+    public BankAccount create(User owner, Long bankAccountTypeId, Long currencyId) {
         BankAccountType bankAccountType = bankAccountTypeRepository.findById(bankAccountTypeId)
                 .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.BANK_ACCOUNT_TYPE_NOT_FOUND));
+
+        Currency currency = currencyRepository.findById(currencyId)
+                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.CURRENCY_NOT_FOUND));
 
         return bankAccountRepository.save(BankAccount.builder()
                 .balance(BigDecimal.ZERO)
                 .number(RandomStringUtils.randomNumeric(20))
                 .bankAccountType(bankAccountType)
+                .usedCurrency(currency)
                 .owner(owner)
                 .build());
     }

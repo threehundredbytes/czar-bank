@@ -1,5 +1,6 @@
 package ru.dreadblade.czarbank.service;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.api.model.request.TransactionRequestDTO;
@@ -52,6 +53,10 @@ public class TransactionService {
 
         BankAccount destination = bankAccountRepository.findByNumber(transactionRequest.getDestinationBankAccountNumber())
                 .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND));
+
+        if (!source.getUsedCurrency().equals(destination.getUsedCurrency())) {
+            throw new NotImplementedException("Currency exchange has not yet been implemented");
+        }
 
         Transaction transaction = Transaction.builder()
                 .amount(transactionAmount)

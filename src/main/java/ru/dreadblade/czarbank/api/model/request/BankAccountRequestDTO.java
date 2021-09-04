@@ -9,4 +9,5 @@ import lombok.*;
 @AllArgsConstructor
 public class BankAccountRequestDTO {
     private Long bankAccountTypeId;
+    private Long usedCurrencyId;
 }

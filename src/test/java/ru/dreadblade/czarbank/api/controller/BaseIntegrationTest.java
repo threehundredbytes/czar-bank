@@ -28,18 +28,19 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 @SpringBootTest
 public abstract class BaseIntegrationTest {
     /**
-     * Base entity ID values according by .SQL scripts (from test resource package)
-     * Usage:
-     * To get N entity from the repository: <code>repository.findById(BASE_<ENTITY_NAME>_ID + N)</code>
-     * Example:
-     * To get 2-nd transaction from repository: <code>transactionRepository(BASE_TRANSACTION_ID + 2L)</code>
+     * <p>Base entity ID values according by .SQL scripts (from test resource package)</p>
+     * <p>Usage:</p>
+     * <p>To get N entity from the repository: <code>repository.findById(BASE_%ENTITY_NAME%_ID + N)</code></p>
+     * <p>Example:</p>
+     * <p>To get 2-nd transaction from repository: <code>transactionRepository(BASE_TRANSACTION_ID + 2L)</code></p>
      */
     protected final long BASE_PERMISSION_ID = 0L;
     protected final long BASE_ROLE_ID = 12L;
     protected final long BASE_USER_ID = 15L;
     protected final long BASE_BANK_ACCOUNT_TYPE_ID = 20L;
-    protected final long BASE_BANK_ACCOUNT_ID = 25L;
-    protected final long BASE_TRANSACTION_ID = 30L;
+    protected final long BASE_CURRENCY_ID = 25L;
+    protected final long BASE_BANK_ACCOUNT_ID = 28L;
+    protected final long BASE_TRANSACTION_ID = 33L;
 
     @Autowired
     WebApplicationContext webApplicationContext;
