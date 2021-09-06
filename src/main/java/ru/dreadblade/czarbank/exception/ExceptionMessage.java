@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 public enum ExceptionMessage {
     BANK_ACCOUNT_TYPE_NOT_FOUND("Bank account type doesn't exist", HttpStatus.NOT_FOUND),
     CURRENCY_NOT_FOUND("Currency doesn't exist", HttpStatus.NOT_FOUND),
+    LATEST_EXCHANGE_RATES_NOT_FOUND("Error while loading the latest currency rates", HttpStatus.INTERNAL_SERVER_ERROR),
+    EXCHANGE_RATES_AT_DATE_NOT_FOUND("No exchange rates found for the date ", HttpStatus.NOT_FOUND),
     BANK_ACCOUNT_NOT_FOUND("Bank account doesn't exist", HttpStatus.NOT_FOUND),
     PERMISSION_NOT_FOUND("Permission doesn't exist", HttpStatus.NOT_FOUND),
     ROLE_NOT_FOUND("Role doesn't exist", HttpStatus.NOT_FOUND),

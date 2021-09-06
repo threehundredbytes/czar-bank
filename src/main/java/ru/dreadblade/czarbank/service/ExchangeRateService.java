@@ -1,84 +1,55 @@
 package ru.dreadblade.czarbank.service;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
-import ru.dreadblade.czarbank.api.model.response.external.CbrExchangeRatesResponseDTO;
-import ru.dreadblade.czarbank.domain.Currency;
 import ru.dreadblade.czarbank.domain.ExchangeRate;
 import ru.dreadblade.czarbank.exception.EntityNotFoundException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.CurrencyRepository;
 import ru.dreadblade.czarbank.repository.ExchangeRateRepository;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 public class ExchangeRateService {
-
-    private static final String EXCHANGE_RATE_API_URL = "https://www.cbr.ru/scripts/XML_daily.asp";
-
     private final ExchangeRateRepository exchangeRateRepository;
     private final CurrencyRepository currencyRepository;
-    private final RestTemplate restTemplate;
 
+    @Autowired
     public ExchangeRateService(ExchangeRateRepository exchangeRateRepository, CurrencyRepository currencyRepository) {
         this.exchangeRateRepository = exchangeRateRepository;
         this.currencyRepository = currencyRepository;
-        this.restTemplate = new RestTemplate();
     }
 
-    @Transactional
-    @Scheduled(fixedRateString = "${czar-bank.currency.exchange-rate.update-rate-in-millis:3600000}")
-    public void fetchExchangeRatesFromCentralBankOfRussia() {
-        ResponseEntity<CbrExchangeRatesResponseDTO> response = restTemplate
-                .getForEntity(EXCHANGE_RATE_API_URL, CbrExchangeRatesResponseDTO.class);
+    public List<ExchangeRate> findAllLatest() {
+        List<ExchangeRate> exchangeRates = exchangeRateRepository.findAllLatest();
 
-        CbrExchangeRatesResponseDTO responseDTO = response.getBody();
-
-        if (!response.getStatusCode().is2xxSuccessful() || responseDTO == null || responseDTO.getRates() == null ||
-                responseDTO.getRates().isEmpty()) {
-            log.error("Error when fetching currency exchange rates from the API of the Central Bank of Russia");
-            return;
+        if (exchangeRates.isEmpty()) {
+            throw new EntityNotFoundException(ExceptionMessage.LATEST_EXCHANGE_RATES_NOT_FOUND);
         }
 
-        List<String> usedCurrencies = currencyRepository.findAll().stream()
-                .map(Currency::getCode)
-                .collect(Collectors.toList());
+        return exchangeRates;
+    }
 
-        List<ExchangeRate> exchangeRates = responseDTO.getRates().stream()
-                .filter(dto -> usedCurrencies.contains(dto.getCurrencyCode()))
-                .map(dto -> {
-                    if (dto.getNominal() > 1) {
-                        dto.setRate(dto.getRate().divide(BigDecimal.valueOf(dto.getNominal()), RoundingMode.HALF_UP));
-                    }
+    public List<ExchangeRate> findAllByDate(LocalDate date) {
+        List<ExchangeRate> exchangeRates = exchangeRateRepository.findAllByDate(date);
 
-                    Currency currency = currencyRepository.findByCode(dto.getCurrencyCode())
-                            .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.CURRENCY_NOT_FOUND));
-
-                    return ExchangeRate.builder()
-                            .currency(currency)
-                            .exchangeRate(dto.getRate())
-                            .date(responseDTO.getDate())
-                            .build();
-                })
-                .collect(Collectors.toList());
-
-        for (ExchangeRate exchangeRate : exchangeRates) {
-            if (exchangeRateRepository.existsByCurrencyAndDate(exchangeRate.getCurrency(), exchangeRate.getDate())) {
-                exchangeRateRepository.deleteByCurrencyAndDate(exchangeRate.getCurrency(), exchangeRate.getDate());
-            }
+        if (exchangeRates.isEmpty()) {
+            throw new EntityNotFoundException(ExceptionMessage.EXCHANGE_RATES_AT_DATE_NOT_FOUND);
         }
 
-        exchangeRateRepository.saveAll(exchangeRates);
+        return exchangeRates;
+    }
 
-        log.info("Fetching currency exchange rates from the API of the Central Bank of Russia completed successfully");
+    public List<ExchangeRate> findAllInTimeSeries(LocalDate startDate, LocalDate endDate) {
+        List<ExchangeRate> exchangeRates = exchangeRateRepository.findAllInTimeSeries(startDate, endDate);
+
+        if (exchangeRates.isEmpty() || ChronoUnit.DAYS.between(startDate, endDate) + 1L > exchangeRates.size()) {
+            throw new EntityNotFoundException(ExceptionMessage.EXCHANGE_RATES_AT_DATE_NOT_FOUND);
+        }
+
+        return exchangeRates;
     }
 }

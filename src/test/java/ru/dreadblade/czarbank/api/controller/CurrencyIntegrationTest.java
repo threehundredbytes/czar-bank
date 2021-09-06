@@ -12,6 +12,7 @@ import ru.dreadblade.czarbank.api.mapper.CurrencyMapper;
 import ru.dreadblade.czarbank.api.model.response.CurrencyResponseDTO;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 import ru.dreadblade.czarbank.repository.CurrencyRepository;
+import ru.dreadblade.czarbank.repository.ExchangeRateRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +30,9 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     BankAccountRepository bankAccountRepository;
+
+    @Autowired
+    ExchangeRateRepository exchangeRateRepository;
 
     @Autowired
     CurrencyRepository currencyRepository;
@@ -59,6 +63,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
         @Rollback
         void findAll_isEmpty() throws Exception {
             bankAccountRepository.deleteAll();
+            exchangeRateRepository.deleteAll();
             currencyRepository.deleteAll();
 
             long expectedSize = 0L;
