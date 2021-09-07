@@ -46,7 +46,9 @@ public class ExchangeRateService {
     public List<ExchangeRate> findAllInTimeSeries(LocalDate startDate, LocalDate endDate) {
         List<ExchangeRate> exchangeRates = exchangeRateRepository.findAllInTimeSeries(startDate, endDate);
 
-        if (exchangeRates.isEmpty() || ChronoUnit.DAYS.between(startDate, endDate) + 1L > exchangeRates.size()) {
+        long exchangeRatesPerCurrency = exchangeRates.size() / (currencyRepository.count() - 1L);
+
+        if (exchangeRates.isEmpty() || ChronoUnit.DAYS.between(startDate, endDate) + 1L > exchangeRatesPerCurrency) {
             throw new EntityNotFoundException(ExceptionMessage.EXCHANGE_RATES_AT_DATE_NOT_FOUND);
         }
 

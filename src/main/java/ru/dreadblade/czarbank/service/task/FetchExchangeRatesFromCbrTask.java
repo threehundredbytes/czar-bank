@@ -1,10 +1,10 @@
-package ru.dreadblade.czarbank.service;
+package ru.dreadblade.czarbank.service.task;
 
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import ru.dreadblade.czarbank.api.model.response.external.CbrExchangeRatesResponseDTO;
 import ru.dreadblade.czarbank.domain.Currency;
@@ -20,9 +20,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
-@Service
-public class FetchExchangeRateService {
+@Component
+public class FetchExchangeRatesFromCbrTask implements Task {
 
     private static final String EXCHANGE_RATE_API_URL = "https://www.cbr.ru/scripts/XML_daily.asp";
 
@@ -30,24 +29,28 @@ public class FetchExchangeRateService {
     private final CurrencyRepository currencyRepository;
     private final RestTemplate restTemplate;
 
-    public FetchExchangeRateService(ExchangeRateRepository exchangeRateRepository, CurrencyRepository currencyRepository) {
+    @Autowired
+    public FetchExchangeRatesFromCbrTask(ExchangeRateRepository exchangeRateRepository, CurrencyRepository currencyRepository, RestTemplate restTemplate) {
         this.exchangeRateRepository = exchangeRateRepository;
         this.currencyRepository = currencyRepository;
-        this.restTemplate = new RestTemplate();
+        this.restTemplate = restTemplate;
     }
 
     @Transactional
-    @Scheduled(fixedRateString = "${czar-bank.currency.exchange-rate.update-rate-in-millis:3600000}")
-    public void fetchExchangeRatesFromCentralBankOfRussia() {
-        ResponseEntity<CbrExchangeRatesResponseDTO> response = restTemplate
-                .getForEntity(EXCHANGE_RATE_API_URL, CbrExchangeRatesResponseDTO.class);
+    @Override
+    public boolean execute() {
+        ResponseEntity<CbrExchangeRatesResponseDTO> response;
+
+        try {
+            response = restTemplate.getForEntity(EXCHANGE_RATE_API_URL, CbrExchangeRatesResponseDTO.class);
+        } catch (RestClientException e) {
+            return false;
+        }
 
         CbrExchangeRatesResponseDTO responseDTO = response.getBody();
 
-        if (!response.getStatusCode().is2xxSuccessful() || responseDTO == null || responseDTO.getRates() == null ||
-                responseDTO.getRates().isEmpty()) {
-            log.error("Error when fetching currency exchange rates from the API of the Central Bank of Russia");
-            return;
+        if (responseDTO == null || responseDTO.getRates() == null || responseDTO.getRates().isEmpty()) {
+            return false;
         }
 
         if (responseDTO.getDate().isBefore(LocalDate.now())) {
@@ -62,7 +65,7 @@ public class FetchExchangeRateService {
                 .filter(dto -> usedCurrencies.contains(dto.getCurrencyCode()))
                 .map(dto -> {
                     if (dto.getNominal() > 1) {
-                        dto.setRate(dto.getRate().divide(BigDecimal.valueOf(dto.getNominal()), RoundingMode.HALF_UP));
+                        dto.setRate(dto.getRate().divide(BigDecimal.valueOf(dto.getNominal()), RoundingMode.UP));
                     }
 
                     Currency currency = currencyRepository.findByCode(dto.getCurrencyCode())
@@ -84,6 +87,6 @@ public class FetchExchangeRateService {
 
         exchangeRateRepository.saveAll(exchangeRates);
 
-        log.info("Fetching currency exchange rates from the API of the Central Bank of Russia completed successfully");
+        return true;
     }
 }

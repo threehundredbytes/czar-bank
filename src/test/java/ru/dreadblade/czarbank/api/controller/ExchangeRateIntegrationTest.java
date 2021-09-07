@@ -1,14 +1,11 @@
 package ru.dreadblade.czarbank.api.controller;
 
 import org.assertj.core.api.Assertions;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
@@ -18,13 +15,11 @@ import ru.dreadblade.czarbank.api.model.response.ExchangeRateResponseDTO;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.CurrencyRepository;
 import ru.dreadblade.czarbank.repository.ExchangeRateRepository;
-import ru.dreadblade.czarbank.service.FetchExchangeRateService;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -52,17 +47,6 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     ExchangeRateMapper exchangeRateMapper;
-
-    @SpyBean
-    FetchExchangeRateService fetchExchangeRateService;
-
-    @Test
-    void fetchExchangeRatesFromCentralBankOfRussia_runsAndIsSuccessful() {
-        Awaitility.await().atMost(10, TimeUnit.SECONDS).untilAsserted(() ->
-                Mockito.verify(fetchExchangeRateService, Mockito.atLeastOnce()).fetchExchangeRatesFromCentralBankOfRussia());
-
-        Assertions.assertThat(exchangeRateRepository.count()).isGreaterThanOrEqualTo(currencyRepository.count() - 1L);
-    }
 
     @Nested
     @DisplayName("findAllLatest() Tests")
@@ -174,6 +158,28 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
         void findAllInTimeSeries_dataDoesNotExistOnTheGivenDate() throws Exception {
             LocalDate startDate = LocalDate.of(2009, 6, 10);
             LocalDate endDate = LocalDate.of(2010, 6, 10);
+
+            String startDateStr = startDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            String endDateStr = endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+            String URL = UriComponentsBuilder.fromUriString(EXCHANGE_RATES_API_URL + TIME_SERIES)
+                    .queryParam(START_DATE_PARAM, startDateStr)
+                    .queryParam(END_DATE_PARAM, endDateStr)
+                    .encode()
+                    .build()
+                    .toUriString();
+
+            mockMvc.perform(get(URL)
+                    .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.EXCHANGE_RATES_AT_DATE_NOT_FOUND.getMessage()));
+        }
+
+        @Test
+        void findAllInTimeSeries_dataIsNotCompleteOnTheGivenDate() throws Exception {
+            LocalDate startDate = LocalDate.of(2009, 6, 10);
+            LocalDate endDate = exchangeRateRepository.findById(BASE_EXCHANGE_RATE_ID + 4L).orElseThrow().getDate();
 
             String startDateStr = startDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             String endDateStr = endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
