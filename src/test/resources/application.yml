@@ -6,6 +6,9 @@ spring:
       ddl-auto: create-drop
 
 czar-bank:
+  currency:
+    exchange-rate:
+      update-rate-in-millis: 3600000
   security:
     json-web-token:
       access-token:

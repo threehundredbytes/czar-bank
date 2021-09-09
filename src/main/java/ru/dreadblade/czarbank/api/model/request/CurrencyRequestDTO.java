@@ -1,4 +1,4 @@
-package ru.dreadblade.czarbank.api.model.response;
+package ru.dreadblade.czarbank.api.model.request;
 
 import lombok.*;
 
@@ -7,8 +7,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CurrencyResponseDTO {
-    private Long id;
+public class CurrencyRequestDTO {
     private String code;
     private String symbol;
 }

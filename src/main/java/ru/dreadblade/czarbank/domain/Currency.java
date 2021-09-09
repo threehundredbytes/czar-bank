@@ -20,5 +20,5 @@ public class Currency {
 
     private String code;
 
-    private Character symbol;
+    private String symbol;
 }
