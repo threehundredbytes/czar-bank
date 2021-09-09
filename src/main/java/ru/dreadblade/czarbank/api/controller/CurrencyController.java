@@ -2,13 +2,15 @@ package ru.dreadblade.czarbank.api.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.mapper.CurrencyMapper;
+import ru.dreadblade.czarbank.api.model.request.CurrencyRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.CurrencyResponseDTO;
+import ru.dreadblade.czarbank.domain.Currency;
 import ru.dreadblade.czarbank.service.CurrencyService;
 
+import javax.servlet.http.HttpServletRequest;
+import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,5 +31,16 @@ public class CurrencyController {
         return ResponseEntity.ok(currencyService.findAll().stream()
                 .map(currencyMapper::entityToResponseDTO)
                 .collect(Collectors.toList()));
+    }
+
+    @PostMapping
+    public ResponseEntity<CurrencyResponseDTO> createCurrency(@RequestBody CurrencyRequestDTO requestDTO, HttpServletRequest request) {
+        String currencyCode = requestDTO.getCode();
+        String currencySymbol = requestDTO.getSymbol();
+
+        Currency createdCurrency = currencyService.createCurrency(currencyCode, currencySymbol);
+
+        return ResponseEntity.created(URI.create(request.getRequestURI() + "/" + createdCurrency.getId()))
+                .body(currencyMapper.entityToResponseDTO(createdCurrency));
     }
 }

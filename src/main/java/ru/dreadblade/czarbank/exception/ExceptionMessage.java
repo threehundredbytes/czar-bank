@@ -15,6 +15,8 @@ public enum ExceptionMessage {
     USER_NOT_FOUND("User doesn't exist", HttpStatus.NOT_FOUND),
 
     BANK_ACCOUNT_TYPE_NAME_ALREADY_EXISTS("Bank account type with same name already exists", HttpStatus.BAD_REQUEST),
+    CURRENCY_CODE_ALREADY_EXISTS("Currency with same code already exists", HttpStatus.BAD_REQUEST),
+    CURRENCY_SYMBOL_ALREADY_EXISTS("Currency with same symbol already exists", HttpStatus.BAD_REQUEST),
     ROLE_NAME_ALREADY_EXISTS("Role with same name already exists", HttpStatus.BAD_REQUEST),
     USERNAME_ALREADY_EXISTS("User with same username already exists", HttpStatus.BAD_REQUEST),
     USER_EMAIL_ALREADY_EXISTS("Role with same email already exists", HttpStatus.BAD_REQUEST),
@@ -22,6 +24,8 @@ public enum ExceptionMessage {
     BANK_ACCOUNT_TYPE_IN_USE("Bank account type in use", HttpStatus.BAD_REQUEST),
 
     NOT_ENOUGH_BALANCE("Not enough balance", HttpStatus.BAD_REQUEST),
+
+    UNSUPPORTED_CURRENCY("Currency is not supported", HttpStatus.BAD_REQUEST),
 
     REFRESH_TOKEN_EXPIRED("Refresh token expired", HttpStatus.BAD_REQUEST),
     INVALID_REFRESH_TOKEN("Invalid refresh token", HttpStatus.BAD_REQUEST);
