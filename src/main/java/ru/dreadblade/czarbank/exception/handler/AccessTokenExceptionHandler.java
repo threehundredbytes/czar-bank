@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import ru.dreadblade.czarbank.exception.model.ErrorResponse;
+import ru.dreadblade.czarbank.api.model.response.CzarBankErrorResponseDTO;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -14,8 +14,8 @@ import javax.servlet.http.HttpServletRequest;
 public class AccessTokenExceptionHandler {
 
     @ExceptionHandler(TokenExpiredException.class)
-    public ResponseEntity<ErrorResponse> handleJsonWebTokenExpiredException(TokenExpiredException exception, HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value()).body(ErrorResponse.builder()
+    public ResponseEntity<CzarBankErrorResponseDTO> handleJsonWebTokenExpiredException(TokenExpiredException exception, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value()).body(CzarBankErrorResponseDTO.builder()
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
                 .message("Access token expired")
@@ -24,8 +24,8 @@ public class AccessTokenExceptionHandler {
     }
 
     @ExceptionHandler(JWTVerificationException.class)
-    public ResponseEntity<ErrorResponse> handleJsonWebTokenVerificationException(JWTVerificationException exception, HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value()).body(ErrorResponse.builder()
+    public ResponseEntity<CzarBankErrorResponseDTO> handleJsonWebTokenVerificationException(JWTVerificationException exception, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value()).body(CzarBankErrorResponseDTO.builder()
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
                 .message("Access token is invalid")

@@ -1,4 +1,4 @@
-package ru.dreadblade.czarbank.exception.model;
+package ru.dreadblade.czarbank.api.model.response;
 
 import lombok.*;
 
@@ -9,7 +9,7 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ErrorResponse {
+public class CzarBankErrorResponseDTO {
     @Builder.Default
     private Date timestamp = new Date();
     private int status;

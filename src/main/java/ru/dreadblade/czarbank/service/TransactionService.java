@@ -6,9 +6,8 @@ import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.api.model.request.TransactionRequestDTO;
 import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.domain.Transaction;
-import ru.dreadblade.czarbank.exception.EntityNotFoundException;
+import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
-import ru.dreadblade.czarbank.exception.NotEnoughBalanceException;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 import ru.dreadblade.czarbank.repository.TransactionRepository;
 
@@ -37,22 +36,22 @@ public class TransactionService {
             return transactionRepository.findAllByBankAccountId(bankAccountId);
         }
 
-        throw new EntityNotFoundException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND);
+        throw new CzarBankException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND);
     }
 
     @Transactional
     public Transaction createTransaction(TransactionRequestDTO transactionRequest) {
         BankAccount source = bankAccountRepository.findByNumber(transactionRequest.getSourceBankAccountNumber())
-                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new CzarBankException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND));
 
         BigDecimal transactionAmount = transactionRequest.getAmount();
 
         if (source.getBalance().compareTo(transactionAmount) < 0) {
-            throw new NotEnoughBalanceException();
+            throw new CzarBankException(ExceptionMessage.NOT_ENOUGH_BALANCE);
         }
 
         BankAccount destination = bankAccountRepository.findByNumber(transactionRequest.getDestinationBankAccountNumber())
-                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new CzarBankException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND));
 
         if (!source.getUsedCurrency().equals(destination.getUsedCurrency())) {
             throw new NotImplementedException("Currency exchange has not yet been implemented");

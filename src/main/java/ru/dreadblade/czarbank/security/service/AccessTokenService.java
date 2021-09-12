@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.domain.security.User;
-import ru.dreadblade.czarbank.exception.EntityNotFoundException;
+import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 
@@ -63,6 +63,6 @@ public class AccessTokenService {
         String username = decodedJWT.getSubject();
 
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.USER_NOT_FOUND));
+                .orElseThrow(() -> new CzarBankException(ExceptionMessage.USER_NOT_FOUND));
     }
 }

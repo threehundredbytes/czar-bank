@@ -7,7 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.api.model.request.security.AuthenticationRequestDTO;
 import ru.dreadblade.czarbank.domain.security.User;
-import ru.dreadblade.czarbank.exception.EntityNotFoundException;
+import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 
 @Service
@@ -33,6 +33,6 @@ public class AuthenticationService {
             return (User) principal;
         }
 
-        throw new EntityNotFoundException(ExceptionMessage.USER_NOT_FOUND);
+        throw new CzarBankException(ExceptionMessage.USER_NOT_FOUND);
     }
 }

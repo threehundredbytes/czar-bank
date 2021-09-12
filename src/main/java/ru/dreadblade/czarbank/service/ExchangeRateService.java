@@ -3,7 +3,7 @@ package ru.dreadblade.czarbank.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.domain.ExchangeRate;
-import ru.dreadblade.czarbank.exception.EntityNotFoundException;
+import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.CurrencyRepository;
 import ru.dreadblade.czarbank.repository.ExchangeRateRepository;
@@ -27,7 +27,7 @@ public class ExchangeRateService {
         List<ExchangeRate> exchangeRates = exchangeRateRepository.findAllLatest();
 
         if (exchangeRates.isEmpty()) {
-            throw new EntityNotFoundException(ExceptionMessage.LATEST_EXCHANGE_RATES_NOT_FOUND);
+            throw new CzarBankException(ExceptionMessage.LATEST_EXCHANGE_RATES_NOT_FOUND);
         }
 
         return exchangeRates;
@@ -37,7 +37,7 @@ public class ExchangeRateService {
         List<ExchangeRate> exchangeRates = exchangeRateRepository.findAllByDate(date);
 
         if (exchangeRates.isEmpty()) {
-            throw new EntityNotFoundException(ExceptionMessage.EXCHANGE_RATES_AT_DATE_NOT_FOUND);
+            throw new CzarBankException(ExceptionMessage.EXCHANGE_RATES_AT_DATE_NOT_FOUND);
         }
 
         return exchangeRates;
@@ -49,7 +49,7 @@ public class ExchangeRateService {
         long exchangeRatesPerCurrency = exchangeRates.size() / (currencyRepository.count() - 1L);
 
         if (exchangeRates.isEmpty() || ChronoUnit.DAYS.between(startDate, endDate) + 1L > exchangeRatesPerCurrency) {
-            throw new EntityNotFoundException(ExceptionMessage.EXCHANGE_RATES_AT_DATE_NOT_FOUND);
+            throw new CzarBankException(ExceptionMessage.EXCHANGE_RATES_AT_DATE_NOT_FOUND);
         }
 
         return exchangeRates;

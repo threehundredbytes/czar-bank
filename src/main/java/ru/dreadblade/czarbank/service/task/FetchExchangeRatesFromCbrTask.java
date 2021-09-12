@@ -9,7 +9,7 @@ import org.springframework.web.client.RestTemplate;
 import ru.dreadblade.czarbank.api.model.response.external.CbrExchangeRatesResponseDTO;
 import ru.dreadblade.czarbank.domain.Currency;
 import ru.dreadblade.czarbank.domain.ExchangeRate;
-import ru.dreadblade.czarbank.exception.EntityNotFoundException;
+import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.CurrencyRepository;
 import ru.dreadblade.czarbank.repository.ExchangeRateRepository;
@@ -69,7 +69,7 @@ public class FetchExchangeRatesFromCbrTask implements Task {
                     }
 
                     Currency currency = currencyRepository.findByCode(dto.getCurrencyCode())
-                            .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.CURRENCY_NOT_FOUND));
+                            .orElseThrow(() -> new CzarBankException(ExceptionMessage.CURRENCY_NOT_FOUND));
 
                     return ExchangeRate.builder()
                             .currency(currency)

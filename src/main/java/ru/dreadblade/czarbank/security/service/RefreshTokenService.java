@@ -4,8 +4,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.domain.security.RefreshTokenSession;
 import ru.dreadblade.czarbank.domain.security.User;
+import ru.dreadblade.czarbank.exception.CzarBankSecurityException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
-import ru.dreadblade.czarbank.exception.RefreshTokenException;
 import ru.dreadblade.czarbank.repository.security.RefreshTokenSessionRepository;
 
 import java.time.Instant;
@@ -46,10 +46,10 @@ public class RefreshTokenService {
     public String updateAccessToken(String refreshToken) {
         RefreshTokenSession session = refreshTokenSessionRepository.findByRefreshToken(refreshToken)
                 .filter(Predicate.not(RefreshTokenSession::getIsRevoked))
-                .orElseThrow(() -> new RefreshTokenException(ExceptionMessage.INVALID_REFRESH_TOKEN));
+                .orElseThrow(() -> new CzarBankSecurityException(ExceptionMessage.INVALID_REFRESH_TOKEN));
 
         if (session.getCreatedAt().plusSeconds(expirationSeconds).isBefore(Instant.now())) {
-            throw new RefreshTokenException(ExceptionMessage.REFRESH_TOKEN_EXPIRED);
+            throw new CzarBankSecurityException(ExceptionMessage.REFRESH_TOKEN_EXPIRED);
         }
 
         User user = session.getUser();
@@ -60,10 +60,10 @@ public class RefreshTokenService {
     public String updateRefreshToken(String refreshToken) {
         RefreshTokenSession session = refreshTokenSessionRepository.findByRefreshToken(refreshToken)
                 .filter(Predicate.not(RefreshTokenSession::getIsRevoked))
-                .orElseThrow(() -> new RefreshTokenException(ExceptionMessage.INVALID_REFRESH_TOKEN));
+                .orElseThrow(() -> new CzarBankSecurityException(ExceptionMessage.INVALID_REFRESH_TOKEN));
 
         if (session.getCreatedAt().plusSeconds(expirationSeconds).isBefore(Instant.now())) {
-            throw new RefreshTokenException(ExceptionMessage.REFRESH_TOKEN_EXPIRED);
+            throw new CzarBankSecurityException(ExceptionMessage.REFRESH_TOKEN_EXPIRED);
         }
 
         session.setIsRevoked(true);

@@ -29,17 +29,17 @@ public class RoleService {
 
     public Role findRoleById(Long roleId) {
         return roleRepository.findById(roleId)
-                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.ROLE_NOT_FOUND));
+                .orElseThrow(() -> new CzarBankException(ExceptionMessage.ROLE_NOT_FOUND));
     }
 
     public Role findRoleByName(String name) {
         return roleRepository.findByName(name)
-                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.ROLE_NOT_FOUND));
+                .orElseThrow(() -> new CzarBankException(ExceptionMessage.ROLE_NOT_FOUND));
     }
 
     public Role createRole(Role role) {
         if (roleRepository.existsByName(role.getName())) {
-            throw new UniqueFieldAlreadyExistsException(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS);
+            throw new CzarBankException(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS);
         }
 
         Set<Permission> existingPermissions = filterAndFindPermissionsFromDb(role.getPermissions());
@@ -51,10 +51,10 @@ public class RoleService {
 
     public Role updateRoleById(Long roleId, Role role) {
         Role roleToUpdate = roleRepository.findById(roleId)
-                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.ROLE_NOT_FOUND));
+                .orElseThrow(() -> new CzarBankException(ExceptionMessage.ROLE_NOT_FOUND));
 
         if (roleRepository.existsByName(role.getName())) {
-            throw new UniqueFieldAlreadyExistsException(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS);
+            throw new CzarBankException(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS);
         }
 
         roleToUpdate.setName(role.getName());
@@ -68,7 +68,7 @@ public class RoleService {
 
     public void deleteRoleById(Long roleId) {
         if (!roleRepository.existsById(roleId)) {
-            throw new EntityNotFoundException(ExceptionMessage.ROLE_NOT_FOUND);
+            throw new CzarBankException(ExceptionMessage.ROLE_NOT_FOUND);
         }
 
         roleRepository.deleteById(roleId);
@@ -78,7 +78,7 @@ public class RoleService {
         return permissions.stream()
                 .filter(p -> permissionRepository.existsById(p.getId()))
                 .map(p -> permissionRepository.findById(p.getId())
-                        .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.PERMISSION_NOT_FOUND)))
+                        .orElseThrow(() -> new CzarBankException(ExceptionMessage.PERMISSION_NOT_FOUND)))
                 .collect(Collectors.toSet());
     }
 }

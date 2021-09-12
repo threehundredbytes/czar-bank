@@ -7,7 +7,7 @@ import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.domain.BankAccountType;
 import ru.dreadblade.czarbank.domain.Currency;
 import ru.dreadblade.czarbank.domain.security.User;
-import ru.dreadblade.czarbank.exception.EntityNotFoundException;
+import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 import ru.dreadblade.czarbank.repository.BankAccountTypeRepository;
@@ -35,16 +35,16 @@ public class BankAccountService {
 
     public BankAccount findById(Long id) {
         return bankAccountRepository.findById(id).orElseThrow(() ->
-                new EntityNotFoundException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND)
+                new CzarBankException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND)
         );
     }
 
     public BankAccount create(User owner, Long bankAccountTypeId, Long currencyId) {
         BankAccountType bankAccountType = bankAccountTypeRepository.findById(bankAccountTypeId)
-                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.BANK_ACCOUNT_TYPE_NOT_FOUND));
+                .orElseThrow(() -> new CzarBankException(ExceptionMessage.BANK_ACCOUNT_TYPE_NOT_FOUND));
 
         Currency currency = currencyRepository.findById(currencyId)
-                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.CURRENCY_NOT_FOUND));
+                .orElseThrow(() -> new CzarBankException(ExceptionMessage.CURRENCY_NOT_FOUND));
 
         return bankAccountRepository.save(BankAccount.builder()
                 .balance(BigDecimal.ZERO)
@@ -59,7 +59,7 @@ public class BankAccountService {
         if (bankAccountRepository.existsById(id)) {
             bankAccountRepository.deleteById(id);
         } else {
-            throw new EntityNotFoundException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND);
+            throw new CzarBankException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND);
         }
     }
 }

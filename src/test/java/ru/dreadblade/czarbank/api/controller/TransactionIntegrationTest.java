@@ -258,7 +258,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(transactionRequest)))
                     .andDo(print())
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isInternalServerError())
                     .andExpect(jsonPath("$.message").value("Currency exchange has not yet been implemented"));
         }
     }

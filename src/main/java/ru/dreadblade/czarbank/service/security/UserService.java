@@ -34,16 +34,16 @@ public class UserService {
     }
 
     public User findUserById(Long userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.USER_NOT_FOUND));
+        return userRepository.findById(userId).orElseThrow(() -> new CzarBankException(ExceptionMessage.USER_NOT_FOUND));
     }
 
     public User createUser(User user) {
         if (userRepository.existsByUsername(user.getUsername())) {
-            throw new UniqueFieldAlreadyExistsException(ExceptionMessage.USERNAME_ALREADY_EXISTS);
+            throw new CzarBankException(ExceptionMessage.USERNAME_ALREADY_EXISTS);
         }
 
         if (userRepository.existsByEmail(user.getEmail())) {
-            throw new UniqueFieldAlreadyExistsException(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS);
+            throw new CzarBankException(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS);
         }
 
         user.setUserId(RandomStringUtils.randomAlphanumeric(10));
@@ -53,7 +53,7 @@ public class UserService {
     }
 
     public User update(Long userId, User user) {
-        User userToUpdate = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.USER_NOT_FOUND));
+        User userToUpdate = userRepository.findById(userId).orElseThrow(() -> new CzarBankException(ExceptionMessage.USER_NOT_FOUND));
 
         String username = user.getUsername();
 
@@ -63,7 +63,7 @@ public class UserService {
             if (optionalUser.isEmpty() || optionalUser.get().getId().equals(userId)) {
                 userToUpdate.setUsername(username);
             } else {
-                throw new UniqueFieldAlreadyExistsException(ExceptionMessage.USERNAME_ALREADY_EXISTS);
+                throw new CzarBankException(ExceptionMessage.USERNAME_ALREADY_EXISTS);
             }
         }
 
@@ -75,7 +75,7 @@ public class UserService {
             if (optionalUser.isEmpty() || optionalUser.get().getId().equals(userId)) {
                 userToUpdate.setEmail(email);
             } else {
-                throw new UniqueFieldAlreadyExistsException(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS);
+                throw new CzarBankException(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS);
             }
         }
 
@@ -93,7 +93,7 @@ public class UserService {
 
     public void deleteUserById(Long userId) {
         if (!userRepository.existsById(userId)) {
-            throw new EntityNotFoundException(ExceptionMessage.USER_NOT_FOUND);
+            throw new CzarBankException(ExceptionMessage.USER_NOT_FOUND);
         }
 
         userRepository.deleteById(userId);

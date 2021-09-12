@@ -26,7 +26,7 @@ public class BankAccountTypeService {
 
     public BankAccountType create(BankAccountTypeRequestDTO requestDTO) {
         if (bankAccountTypeRepository.existsByName(requestDTO.getName())) {
-            throw new UniqueFieldAlreadyExistsException(ExceptionMessage.BANK_ACCOUNT_TYPE_NAME_ALREADY_EXISTS);
+            throw new CzarBankException(ExceptionMessage.BANK_ACCOUNT_TYPE_NAME_ALREADY_EXISTS);
         }
 
         return bankAccountTypeRepository.save(BankAccountType.builder()
@@ -37,10 +37,10 @@ public class BankAccountTypeService {
 
     public BankAccountType updateById(long id, BankAccountTypeRequestDTO requestDTO) {
         BankAccountType bankAccountTypeToUpdate = bankAccountTypeRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(ExceptionMessage.BANK_ACCOUNT_TYPE_NOT_FOUND));
+                .orElseThrow(() -> new CzarBankException(ExceptionMessage.BANK_ACCOUNT_TYPE_NOT_FOUND));
 
         if (bankAccountTypeRepository.existsByName(requestDTO.getName())) {
-            throw new UniqueFieldAlreadyExistsException(ExceptionMessage.BANK_ACCOUNT_TYPE_NAME_ALREADY_EXISTS);
+            throw new CzarBankException(ExceptionMessage.BANK_ACCOUNT_TYPE_NAME_ALREADY_EXISTS);
         }
 
         String name = requestDTO.getName();
@@ -63,10 +63,10 @@ public class BankAccountTypeService {
             if (!bankAccountTypeRepository.isTypeUsedByBankAccount(id)) {
                 bankAccountTypeRepository.deleteById(id);
             } else {
-                throw new EntityInUseException(ExceptionMessage.BANK_ACCOUNT_TYPE_IN_USE);
+                throw new CzarBankException(ExceptionMessage.BANK_ACCOUNT_TYPE_IN_USE);
             }
         } else {
-            throw new EntityInUseException(ExceptionMessage.BANK_ACCOUNT_TYPE_NOT_FOUND);
+            throw new CzarBankException(ExceptionMessage.BANK_ACCOUNT_TYPE_NOT_FOUND);
         }
     }
 }
