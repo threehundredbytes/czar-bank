@@ -25,6 +25,9 @@ public class Transaction {
     @Column(updatable = false)
     private BigDecimal amount;
 
+    @Column(updatable = false)
+    private BigDecimal receivedAmount;
+
     @ManyToOne(fetch = FetchType.EAGER)
     private BankAccount sourceBankAccount;
 

@@ -6,21 +6,24 @@ import ru.dreadblade.czarbank.domain.Currency;
 import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.CurrencyRepository;
-import ru.dreadblade.czarbank.repository.ExchangeRateRepository;
 import ru.dreadblade.czarbank.service.task.Task;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 @Service
 public class CurrencyService {
+    public static final String BASE_CURRENCY = "RUB";
+
     private final CurrencyRepository currencyRepository;
-    private final ExchangeRateRepository exchangeRateRepository;
+    private final ExchangeRateService exchangeRateService;
     private final Task fetchExchangeRatesFromCbrTask;
 
     @Autowired
-    public CurrencyService(CurrencyRepository currencyRepository, ExchangeRateRepository exchangeRateRepository, Task fetchExchangeRatesFromCbrTask) {
+    public CurrencyService(CurrencyRepository currencyRepository, ExchangeRateService exchangeRateService, Task fetchExchangeRatesFromCbrTask) {
         this.currencyRepository = currencyRepository;
-        this.exchangeRateRepository = exchangeRateRepository;
+        this.exchangeRateService = exchangeRateService;
         this.fetchExchangeRatesFromCbrTask = fetchExchangeRatesFromCbrTask;
     }
 
@@ -44,10 +47,9 @@ public class CurrencyService {
 
         fetchExchangeRatesFromCbrTask.execute();
 
-        boolean exchangeRateForCurrencyExists = exchangeRateRepository.findAllLatest()
+        boolean exchangeRateForCurrencyExists = exchangeRateService.findAllLatest()
                 .stream()
-                .filter(exchangeRate -> exchangeRate.getCurrency().getCode().equals(createdCurrency.getCode()))
-                .count() == 1;
+                .anyMatch(exchangeRate -> exchangeRate.getCurrency().getCode().equals(createdCurrency.getCode()));
 
         if (!exchangeRateForCurrencyExists) {
             currencyRepository.deleteById(createdCurrency.getId());
@@ -55,5 +57,37 @@ public class CurrencyService {
         }
 
         return createdCurrency;
+    }
+
+    public BigDecimal exchangeCurrency(Currency source, BigDecimal amount, Currency target) {
+        if (source.getCode().equals(target.getCode())) {
+            return amount;
+        }
+
+        if (source.getCode().equals(BASE_CURRENCY)) {
+            BigDecimal rate = getExchangeRateByCurrency(target);
+            return amount.divide(rate, RoundingMode.HALF_EVEN);
+        }
+
+        if (target.getCode().equals(BASE_CURRENCY)) {
+            BigDecimal rate = getExchangeRateByCurrency(source);
+            return amount.multiply(rate);
+        }
+
+        BigDecimal rateToRub = getExchangeRateByCurrency(source);
+
+        BigDecimal amountInRub = amount.multiply(rateToRub);
+
+        BigDecimal rateToTarget = getExchangeRateByCurrency(target);
+
+        return amountInRub.divide(rateToTarget, RoundingMode.HALF_EVEN);
+    }
+
+    private BigDecimal getExchangeRateByCurrency(Currency currency) {
+        return exchangeRateService.findAllLatest().stream()
+                .filter(exchangeRate -> exchangeRate.getCurrency().getCode().equals(currency.getCode()))
+                .findFirst()
+                .orElseThrow(() -> new CzarBankException(ExceptionMessage.LATEST_EXCHANGE_RATES_NOT_FOUND))
+                .getExchangeRate();
     }
 }

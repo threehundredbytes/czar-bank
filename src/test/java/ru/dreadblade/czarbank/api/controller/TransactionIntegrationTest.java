@@ -14,12 +14,14 @@ import ru.dreadblade.czarbank.api.mapper.TransactionMapper;
 import ru.dreadblade.czarbank.api.model.request.TransactionRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.TransactionResponseDTO;
 import ru.dreadblade.czarbank.domain.BankAccount;
+import ru.dreadblade.czarbank.domain.BankAccountType;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 import ru.dreadblade.czarbank.repository.CurrencyRepository;
 import ru.dreadblade.czarbank.repository.TransactionRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 import ru.dreadblade.czarbank.service.BankAccountService;
+import ru.dreadblade.czarbank.service.CurrencyService;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -51,6 +53,9 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     BankAccountService bankAccountService;
+
+    @Autowired
+    CurrencyService currencyService;
 
     private static final String TRANSACTIONS_API_URL = "/api/transactions";
     private static final String BANK_ACCOUNTS_API_URL = "/api/bank-accounts";
@@ -134,10 +139,9 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
     @Nested
     @DisplayName("createTransaction() Tests")
     class createTransactionTests {
-
         @Test
         @Transactional
-        void createTransaction_isSuccessful() throws Exception {
+        void createTransaction_sameCurrencies_isSuccessful() throws Exception {
             BankAccount sourceBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
             BankAccount destinationBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 2L).orElseThrow();
 
@@ -166,6 +170,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(expectedId))
                     .andExpect(jsonPath("$.amount").value(transactionRequest.getAmount()))
+                    .andExpect(jsonPath("$.receivedAmount").value(transactionRequest.getAmount()))
                     .andExpect(jsonPath("$.sourceBankAccount.number")
                             .value(transactionRequest.getSourceBankAccountNumber()))
                     .andExpect(jsonPath("$.destinationBankAccount.number")
@@ -188,6 +193,70 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
 
             Assertions.assertThat(destinationBankAccountBalanceAfterTransaction)
                     .isEqualTo(destinationBankAccountBalanceBeforeTransaction.add(transactionRequest.getAmount()));
+        }
+
+        @Test
+        @Transactional
+        void createTransaction_currenciesDiffer_isSuccessful() throws Exception {
+            BankAccount sourceBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
+
+            long bankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
+            long currencyId = BASE_CURRENCY_ID + 2L;
+
+            BankAccount destinationBankAccount = bankAccountService.create(
+                    userRepository.findById(BASE_USER_ID + 1L).orElseThrow(), bankAccountTypeId, currencyId);
+
+            TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
+                    .amount(BigDecimal.valueOf(10000L))
+                    .sourceBankAccountNumber(sourceBankAccount.getNumber())
+                    .destinationBankAccountNumber(destinationBankAccount.getNumber())
+                    .build();
+
+            BigDecimal sourceBankAccountBalanceBeforeTransaction = sourceBankAccount.getBalance();
+            BigDecimal destinationBankAccountBalanceBeforeTransaction = destinationBankAccount.getBalance();
+
+            BigDecimal transactionAmount = transactionRequest.getAmount();
+
+            BankAccountType sourceBankAccountType = sourceBankAccount.getBankAccountType();
+
+            BigDecimal commission = sourceBankAccountType.getTransactionCommission()
+                    .add(sourceBankAccountType.getCurrencyExchangeCommission());
+
+            BigDecimal transactionAmountWithCommission = transactionAmount.add(transactionAmount
+                    .multiply(commission));
+
+            Assertions.assertThat(sourceBankAccountBalanceBeforeTransaction)
+                    .isGreaterThanOrEqualTo(transactionAmountWithCommission);
+
+            BigDecimal expectedReceivedAmount = currencyService.exchangeCurrency(sourceBankAccount.getUsedCurrency(),
+                    transactionAmount, destinationBankAccount.getUsedCurrency());
+
+            mockMvc.perform(post(TRANSACTIONS_API_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(transactionRequest)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.id").isNumber())
+                    .andExpect(jsonPath("$.amount").value(transactionRequest.getAmount()))
+                    .andExpect(jsonPath("$.receivedAmount").value(expectedReceivedAmount))
+                    .andExpect(jsonPath("$.sourceBankAccount.number")
+                            .value(transactionRequest.getSourceBankAccountNumber()))
+                    .andExpect(jsonPath("$.destinationBankAccount.number")
+                            .value(transactionRequest.getDestinationBankAccountNumber()));
+
+            BigDecimal sourceBankAccountBalanceAfterTransaction = sourceBankAccount.getBalance();
+            BigDecimal destinationBankAccountBalanceAfterTransaction = destinationBankAccount.getBalance();
+
+            Assertions.assertThat(sourceBankAccountBalanceBeforeTransaction)
+                    .isGreaterThan(sourceBankAccountBalanceAfterTransaction);
+
+            Assertions.assertThat(destinationBankAccountBalanceBeforeTransaction)
+                    .isLessThan(destinationBankAccountBalanceAfterTransaction);
+
+            Assertions.assertThat(sourceBankAccountBalanceAfterTransaction)
+                    .isEqualTo(sourceBankAccountBalanceBeforeTransaction.subtract(transactionAmountWithCommission));
+
+            Assertions.assertThat(destinationBankAccountBalanceAfterTransaction)
+                    .isEqualTo(destinationBankAccountBalanceBeforeTransaction.add(expectedReceivedAmount));
         }
 
         @Test
@@ -236,30 +305,6 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .content(objectMapper.writeValueAsString(transactionRequest)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value(ExceptionMessage.NOT_ENOUGH_BALANCE.getMessage()));
-        }
-
-        @Test
-        @Rollback
-        void createTransaction_currenciesDiffer_isFailed() throws Exception {
-            BankAccount sourceBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
-
-            BankAccount destinationBankAccount = bankAccountService
-                    .create(userRepository.findById(BASE_USER_ID + 1L).orElseThrow(),
-                            BASE_BANK_ACCOUNT_TYPE_ID + 1L,
-                            BASE_CURRENCY_ID + 2L);
-
-            TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
-                    .amount(BigDecimal.valueOf(10000L))
-                    .sourceBankAccountNumber(sourceBankAccount.getNumber())
-                    .destinationBankAccountNumber(destinationBankAccount.getNumber())
-                    .build();
-
-            mockMvc.perform(post(TRANSACTIONS_API_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(transactionRequest)))
-                    .andDo(print())
-                    .andExpect(status().isInternalServerError())
-                    .andExpect(jsonPath("$.message").value("Currency exchange has not yet been implemented"));
         }
     }
 }

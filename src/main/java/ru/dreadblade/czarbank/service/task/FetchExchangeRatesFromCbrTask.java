@@ -65,7 +65,7 @@ public class FetchExchangeRatesFromCbrTask implements Task {
                 .filter(dto -> usedCurrencies.contains(dto.getCurrencyCode()))
                 .map(dto -> {
                     if (dto.getNominal() > 1) {
-                        dto.setRate(dto.getRate().divide(BigDecimal.valueOf(dto.getNominal()), RoundingMode.UP));
+                        dto.setRate(dto.getRate().divide(BigDecimal.valueOf(dto.getNominal()), RoundingMode.HALF_EVEN));
                     }
 
                     Currency currency = currencyRepository.findByCode(dto.getCurrencyCode())

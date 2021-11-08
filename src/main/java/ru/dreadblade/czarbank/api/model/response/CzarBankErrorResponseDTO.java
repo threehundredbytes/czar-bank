@@ -2,6 +2,7 @@ package ru.dreadblade.czarbank.api.model.response;
 
 import lombok.*;
 
+import java.time.Instant;
 import java.util.Date;
 
 @Getter
@@ -11,7 +12,7 @@ import java.util.Date;
 @AllArgsConstructor
 public class CzarBankErrorResponseDTO {
     @Builder.Default
-    private Date timestamp = new Date();
+    private Instant timestamp = Instant.now();
     private int status;
     private String error;
     private String message;

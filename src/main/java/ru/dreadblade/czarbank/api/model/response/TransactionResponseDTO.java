@@ -14,6 +14,7 @@ public class TransactionResponseDTO {
     private Long id;
     private Instant datetime;
     private BigDecimal amount;
+    private BigDecimal receivedAmount;
     private BankAccountResponseDTO sourceBankAccount;
     private BankAccountResponseDTO destinationBankAccount;
 }
