@@ -35,13 +35,13 @@ public abstract class BaseIntegrationTest {
      * <p>To get 2-nd transaction from repository: <code>transactionRepository(BASE_TRANSACTION_ID + 2L)</code></p>
      */
     protected final long BASE_PERMISSION_ID = 0L;
-    protected final long BASE_ROLE_ID = 12L;
-    protected final long BASE_USER_ID = 15L;
-    protected final long BASE_BANK_ACCOUNT_TYPE_ID = 20L;
-    protected final long BASE_CURRENCY_ID = 25L;
-    protected final long BASE_EXCHANGE_RATE_ID = 30L;
-    protected final long BASE_BANK_ACCOUNT_ID = 45L;
-    protected final long BASE_TRANSACTION_ID = 50L;
+    protected final long BASE_ROLE_ID = 21L;
+    protected final long BASE_USER_ID = 24L;
+    protected final long BASE_BANK_ACCOUNT_TYPE_ID = 29L;
+    protected final long BASE_CURRENCY_ID = 34L;
+    protected final long BASE_EXCHANGE_RATE_ID = 38L;
+    protected final long BASE_BANK_ACCOUNT_ID = 53L;
+    protected final long BASE_TRANSACTION_ID = 58L;
 
     @Autowired
     WebApplicationContext webApplicationContext;
