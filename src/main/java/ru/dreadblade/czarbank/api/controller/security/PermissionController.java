@@ -2,6 +2,7 @@ package ru.dreadblade.czarbank.api.controller.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +25,7 @@ public class PermissionController {
         this.permissionMapper = permissionMapper;
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_CREATE', 'ROLE_UPDATE')")
     @GetMapping
     public ResponseEntity<List<PermissionResponseDTO>> findAll() {
         return ResponseEntity.ok(permissionService.findAll().stream()
