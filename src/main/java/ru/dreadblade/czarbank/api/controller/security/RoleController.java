@@ -3,6 +3,7 @@ package ru.dreadblade.czarbank.api.controller.security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.mapper.security.RoleMapper;
 import ru.dreadblade.czarbank.api.model.request.security.RoleRequestDTO;
@@ -27,6 +28,7 @@ public class RoleController {
         this.roleMapper = roleMapper;
     }
 
+    @PreAuthorize("hasAuthority('ROLE_READ')")
     @GetMapping
     public ResponseEntity<List<RoleResponseDTO>> findAll() {
         return ResponseEntity.ok(roleService.findAll().stream()
@@ -34,6 +36,7 @@ public class RoleController {
                 .collect(Collectors.toList()));
     }
 
+    @PreAuthorize("hasAuthority('ROLE_READ')")
     @GetMapping("/{roleId}")
     public ResponseEntity<RoleResponseDTO> findRoleById(@PathVariable Long roleId) {
         Role role = roleService.findRoleById(roleId);
@@ -41,6 +44,7 @@ public class RoleController {
         return ResponseEntity.ok(roleMapper.roleTeRoleResponse(role));
     }
 
+    @PreAuthorize("hasAuthority('ROLE_CREATE')")
     @PostMapping
     public ResponseEntity<RoleResponseDTO> createRole(@RequestBody RoleRequestDTO requestDTO,
                                                       HttpServletRequest request) {
@@ -50,6 +54,7 @@ public class RoleController {
                 .body(roleMapper.roleTeRoleResponse(createdRole));
     }
 
+    @PreAuthorize("hasAuthority('ROLE_UPDATE')")
     @PutMapping("/{roleId}")
     public ResponseEntity<RoleResponseDTO> updateRoleById(@PathVariable Long roleId,
                                                           @RequestBody RoleRequestDTO requestDTO) {
@@ -58,6 +63,7 @@ public class RoleController {
         return ResponseEntity.ok(roleMapper.roleTeRoleResponse(updatedRole));
     }
 
+    @PreAuthorize("hasAuthority('ROLE_DELETE')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{roleId}")
     public void deleteRoleById(@PathVariable Long roleId) {
