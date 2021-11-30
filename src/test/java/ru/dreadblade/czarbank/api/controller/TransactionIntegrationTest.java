@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.mapper.TransactionMapper;
@@ -17,7 +16,6 @@ import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.domain.BankAccountType;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
-import ru.dreadblade.czarbank.repository.CurrencyRepository;
 import ru.dreadblade.czarbank.repository.TransactionRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 import ru.dreadblade.czarbank.service.BankAccountService;
@@ -30,7 +28,6 @@ import java.util.stream.Collectors;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -200,11 +197,11 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         void createTransaction_currenciesDiffer_isSuccessful() throws Exception {
             BankAccount sourceBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
 
+            long ownerId = BASE_USER_ID + 1L;
             long bankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
             long currencyId = BASE_CURRENCY_ID + 2L;
 
-            BankAccount destinationBankAccount = bankAccountService.create(
-                    userRepository.findById(BASE_USER_ID + 1L).orElseThrow(), bankAccountTypeId, currencyId);
+            BankAccount destinationBankAccount = bankAccountService.create(ownerId, bankAccountTypeId, currencyId);
 
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(10000L))
