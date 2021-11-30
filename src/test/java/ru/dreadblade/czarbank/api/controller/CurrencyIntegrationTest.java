@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import ru.dreadblade.czarbank.api.mapper.CurrencyMapper;
@@ -69,7 +70,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
     @DisplayName("findAll() Tests")
     class findAllTests {
         @Test
-        void findAll_isSuccessful() throws Exception {
+        void findAll_withoutAuth_isSuccessful() throws Exception {
             long expectedSize = currencyRepository.count();
 
             List<CurrencyResponseDTO> expectedDTOs = currencyRepository.findAll().stream()
@@ -105,8 +106,9 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
     @DisplayName("createCurrency() Tests")
     class createCurrencyTests {
         @Test
+        @WithUserDetails("admin")
         @Rollback
-        void createCurrency_isSuccessful() throws Exception {
+        void createCurrency_withAuth_withPermission_isSuccessful() throws Exception {
             CurrencyRequestDTO requestDTO = CurrencyRequestDTO.builder()
                     .code("SEK")
                     .symbol("kr")
@@ -128,7 +130,47 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void createCurrency_currencyCodeAlreadyExists_isFailed() throws Exception {
+        @WithUserDetails("client")
+        void createCurrency_withAuth_isFailed() throws Exception {
+            CurrencyRequestDTO requestDTO = CurrencyRequestDTO.builder()
+                    .code("SEK")
+                    .symbol("kr")
+                    .build();
+
+            Assertions.assertThat(currencyRepository.existsByCode(requestDTO.getCode())).isFalse();
+            Assertions.assertThat(currencyRepository.existsBySymbol(requestDTO.getSymbol())).isFalse();
+
+            String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+            mockMvc.perform(post(CURRENCIES_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message").value("Access is denied"));
+        }
+
+        @Test
+        void createCurrency_withoutAuth_isFailed() throws Exception {
+            CurrencyRequestDTO requestDTO = CurrencyRequestDTO.builder()
+                    .code("SEK")
+                    .symbol("kr")
+                    .build();
+
+            Assertions.assertThat(currencyRepository.existsByCode(requestDTO.getCode())).isFalse();
+            Assertions.assertThat(currencyRepository.existsBySymbol(requestDTO.getSymbol())).isFalse();
+
+            String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+            mockMvc.perform(post(CURRENCIES_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message").value("Access is denied"));
+        }
+
+        @Test
+        @WithUserDetails("admin")
+        void createCurrency_withAuth_withPermission_currencyCodeAlreadyExists_isFailed() throws Exception {
             CurrencyRequestDTO requestDTO = CurrencyRequestDTO.builder()
                     .code("RUB")
                     .symbol("₽")
@@ -148,7 +190,8 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void createCurrency_currencySymbolAlreadyExists_isFailed() throws Exception {
+        @WithUserDetails("admin")
+        void createCurrency_withAuth_withPermission_currencySymbolAlreadyExists_isFailed() throws Exception {
             CurrencyRequestDTO requestDTO = CurrencyRequestDTO.builder()
                     .code("newUSD")
                     .symbol("$")
@@ -168,7 +211,8 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void createCurrency_currencyDoesNotExistOnCbr_isFailed() throws Exception {
+        @WithUserDetails("admin")
+        void createCurrency_withAuth_withPermission_currencyDoesNotExistOnCbr_isFailed() throws Exception {
             CurrencyRequestDTO requestDTO = CurrencyRequestDTO.builder()
                     .code("MNT")
                     .symbol("₮")
