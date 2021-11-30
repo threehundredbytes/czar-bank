@@ -3,6 +3,7 @@ package ru.dreadblade.czarbank.api.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.mapper.BankAccountTypeMapper;
 import ru.dreadblade.czarbank.api.model.request.BankAccountTypeRequestDTO;
@@ -34,6 +35,7 @@ public class BankAccountTypeController {
                 .collect(Collectors.toList()));
     }
 
+    @PreAuthorize("hasAuthority('BANK_ACCOUNT_TYPE_CREATE')")
     @PostMapping
     public ResponseEntity<BankAccountTypeResponseDTO> createBankAccountType(
             @RequestBody BankAccountTypeRequestDTO requestDTO,
@@ -46,6 +48,7 @@ public class BankAccountTypeController {
                 .body(responseDTO);
     }
 
+    @PreAuthorize("hasAuthority('BANK_ACCOUNT_TYPE_UPDATE')")
     @PutMapping("/{bankAccountTypeId}")
     public ResponseEntity<BankAccountTypeResponseDTO> updateBankAccountTypeById(
             @PathVariable long bankAccountTypeId,
@@ -57,6 +60,7 @@ public class BankAccountTypeController {
                 .bankAccountTypeToBankAccountTypeResponse(updatedType));
     }
 
+    @PreAuthorize("hasAuthority('BANK_ACCOUNT_TYPE_DELETE')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{bankAccountTypeId}")
     public void deleteBankAccountById(@PathVariable long bankAccountTypeId) {

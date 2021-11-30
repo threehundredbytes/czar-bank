@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.mapper.BankAccountTypeMapper;
@@ -44,9 +46,9 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("findAll() Tests")
-    class findAllTests {
+    class FindAllTests {
         @Test
-        void findAll_isSuccessful() throws Exception {
+        void findAll_withoutAuth_isSuccessful() throws Exception {
             List<BankAccountTypeResponseDTO> expectedTypes = bankAccountTypeRepository.findAll().stream()
                     .map(bankAccountTypeMapper::bankAccountTypeToBankAccountTypeResponse)
                     .collect(Collectors.toList());
@@ -62,8 +64,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        @Transactional
-        void findAll_isEmpty() throws Exception {
+        @Rollback
+        void findAll_withoutAuth_isEmpty() throws Exception {
             bankAccountRepository.deleteAll();
             bankAccountTypeRepository.deleteAll();
 
@@ -77,10 +79,11 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
     
     @Nested
     @DisplayName("createBankAccountType() Tests")
-    class createBankAccountTypeTests {
+    class CreateBankAccountTypeTests {
         @Test
-        @Transactional
-        void createBankAccountType_isSuccessful() throws Exception {
+        @WithUserDetails("admin")
+        @Rollback
+        void createBankAccountType_withAuth_withPermission_isSuccessful() throws Exception {
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name("New BankAccountType")
                     .transactionCommission(new BigDecimal("0.07"))
@@ -104,7 +107,41 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void createBankAccountType_bankAccountTypeWithThisNameAlreadyExists() throws Exception {
+        @WithUserDetails("client")
+        void createBankAccountType_withAuth_isFailed() throws Exception {
+            BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
+                    .name("New BankAccountType")
+                    .transactionCommission(new BigDecimal("0.07"))
+                    .build();
+
+            mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message").value("Access is denied"));
+
+            Assertions.assertThat(bankAccountTypeRepository.existsByName(bankAccountTypeRequest.getName())).isFalse();
+        }
+
+        @Test
+        void createBankAccountType_withoutAuth_isFailed() throws Exception {
+            BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
+                    .name("New BankAccountType")
+                    .transactionCommission(new BigDecimal("0.07"))
+                    .build();
+
+            mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message").value("Access is denied"));
+
+            Assertions.assertThat(bankAccountTypeRepository.existsByName(bankAccountTypeRequest.getName())).isFalse();
+        }
+
+        @Test
+        @WithUserDetails("admin")
+        void createBankAccountType_withAuth_withPermission_bankAccountTypeWithThisNameAlreadyExists() throws Exception {
             BankAccountType typeFromDb = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 3L)
                     .orElseThrow();
 
@@ -124,10 +161,11 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("updateBankAccountType() Tests")
-    class updateBankAccountTypeTests {
+    class UpdateBankAccountTypeTests {
         @Test
+        @WithUserDetails("admin")
         @Transactional
-        void updateBankAccountType_isSuccessful() throws Exception {
+        void updateBankAccountType_withAuth_withPermission_isSuccessful() throws Exception {
             BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
                     .orElseThrow();
 
@@ -156,7 +194,49 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void updateBankAccountType_bankAccountTypeWithThisNameAlreadyExists() throws Exception {
+        @WithUserDetails("client")
+        void updateBankAccountType_withAuth_isFailed() throws Exception {
+            BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
+                    .orElseThrow();
+
+            BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
+                    .name("New BankAccountType (old name is \"" + unusedBankAccountType.getName() + "\")")
+                    .transactionCommission(new BigDecimal("0.07"))
+                    .build();
+
+            mockMvc.perform(put(BANK_ACCOUNT_TYPES_API_URL + "/" + unusedBankAccountType.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message").value("Access is denied"));
+
+            Assertions.assertThat(bankAccountTypeRepository.existsByName(unusedBankAccountType.getName())).isTrue();
+            Assertions.assertThat(bankAccountTypeRepository.existsByName(bankAccountTypeRequest.getName())).isFalse();
+        }
+
+        @Test
+        void updateBankAccountType_withoutAuth_isFailed() throws Exception {
+            BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
+                    .orElseThrow();
+
+            BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
+                    .name("New BankAccountType (old name is \"" + unusedBankAccountType.getName() + "\")")
+                    .transactionCommission(new BigDecimal("0.07"))
+                    .build();
+
+            mockMvc.perform(put(BANK_ACCOUNT_TYPES_API_URL + "/" + unusedBankAccountType.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message").value("Access is denied"));
+
+            Assertions.assertThat(bankAccountTypeRepository.existsByName(unusedBankAccountType.getName())).isTrue();
+            Assertions.assertThat(bankAccountTypeRepository.existsByName(bankAccountTypeRequest.getName())).isFalse();
+        }
+
+        @Test
+        @WithUserDetails("admin")
+        void updateBankAccountType_withAuth_withPermission_bankAccountTypeWithThisNameAlreadyExists() throws Exception {
             BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
                     .orElseThrow();
 
@@ -177,7 +257,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void updateBankAccountType_isNotFound() throws Exception {
+        @WithUserDetails("admin")
+        void updateBankAccountType_withAuth_withPermission_isNotFound() throws Exception {
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name("Updating type that doesn't exist")
                     .transactionCommission(new BigDecimal("0.07"))
@@ -193,10 +274,11 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("deleteBankAccountType() Tests")
-    class deleteBankAccountType {
+    class DeleteBankAccountType {
         @Test
-        @Transactional
-        void deleteBankAccountType_isSuccessful() throws Exception {
+        @WithUserDetails("admin")
+        @Rollback
+        void deleteBankAccountType_withAuth_withPermission_isSuccessful() throws Exception {
             long bankAccountTypeDeletionId = BASE_BANK_ACCOUNT_TYPE_ID + 5L;
 
             mockMvc.perform(delete(BANK_ACCOUNT_TYPES_API_URL + "/" + bankAccountTypeDeletionId))
@@ -206,7 +288,34 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void deleteBankAccountType_isFailed_bankAccountTypeIsUsed() throws Exception {
+        @WithUserDetails("client")
+        @Rollback
+        void deleteBankAccountType_withAuth_isFailed() throws Exception {
+            long bankAccountTypeDeletionId = BASE_BANK_ACCOUNT_TYPE_ID + 5L;
+
+            mockMvc.perform(delete(BANK_ACCOUNT_TYPES_API_URL + "/" + bankAccountTypeDeletionId))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message").value("Access is denied"));
+
+            Assertions.assertThat(bankAccountTypeRepository.existsById(bankAccountTypeDeletionId)).isTrue();
+        }
+
+        @Test
+        @Rollback
+        void deleteBankAccountType_withoutAuth_isFailed() throws Exception {
+            long bankAccountTypeDeletionId = BASE_BANK_ACCOUNT_TYPE_ID + 5L;
+
+            mockMvc.perform(delete(BANK_ACCOUNT_TYPES_API_URL + "/" + bankAccountTypeDeletionId))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message").value("Access is denied"));
+
+            Assertions.assertThat(bankAccountTypeRepository.existsById(bankAccountTypeDeletionId)).isTrue();
+        }
+
+
+        @Test
+        @WithUserDetails("admin")
+        void deleteBankAccountType_withAuth_withPermission_isFailed_bankAccountTypeIsUsed() throws Exception {
             long bankAccountTypeDeletionId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
 
             mockMvc.perform(delete(BANK_ACCOUNT_TYPES_API_URL + "/" + bankAccountTypeDeletionId))
@@ -218,7 +327,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void deleteBankAccountType_isNotFound() throws Exception {
+        @WithUserDetails("admin")
+        void deleteBankAccountType_withAuth_withPermission_isNotFound() throws Exception {
             long bankAccountTypeDeletionId = BASE_BANK_ACCOUNT_TYPE_ID + 123L;
 
             mockMvc.perform(delete(BANK_ACCOUNT_TYPES_API_URL + "/" + bankAccountTypeDeletionId))
