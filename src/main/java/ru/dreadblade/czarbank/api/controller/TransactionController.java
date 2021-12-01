@@ -2,6 +2,7 @@ package ru.dreadblade.czarbank.api.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.mapper.TransactionMapper;
 import ru.dreadblade.czarbank.api.model.request.TransactionRequestDTO;
@@ -26,6 +27,7 @@ public class TransactionController {
         this.transactionMapper = transactionMapper;
     }
 
+    @PreAuthorize("hasAuthority('TRANSACTION_READ')")
     @GetMapping("/transactions")
     public ResponseEntity<List<TransactionResponseDTO>> findAllTransactions() {
         return ResponseEntity.ok(transactionService.findAll().stream()
@@ -33,6 +35,7 @@ public class TransactionController {
                 .collect(Collectors.toList()));
     }
 
+    @PreAuthorize("hasAuthority('TRANSACTION_READ') or @transactionAuthorizationManager.isCurrentUserTheOwnerOfBankAccount(#bankAccountId)")
     @GetMapping("/bank-accounts/{bankAccountId}/transactions")
     public ResponseEntity<List<TransactionResponseDTO>> findAllByBankAccountId(@PathVariable Long bankAccountId) {
         return ResponseEntity.ok(transactionService.findAllByBankAccountId(bankAccountId).stream()
@@ -40,6 +43,7 @@ public class TransactionController {
                 .collect(Collectors.toList()));
     }
 
+    @PreAuthorize("hasAuthority('TRANSACTION_CREATE') or @transactionAuthorizationManager.isCurrentUserTheOwnerOfSourceBankAccount(#transactionRequest.sourceBankAccountNumber)")
     @PostMapping("/transactions")
     public ResponseEntity<TransactionResponseDTO> createTransaction(@RequestBody TransactionRequestDTO transactionRequest,
                                                                     HttpServletRequest request) {

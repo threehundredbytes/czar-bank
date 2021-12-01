@@ -21,10 +21,10 @@ public enum ExceptionMessage {
     USERNAME_ALREADY_EXISTS("User with same username already exists", HttpStatus.BAD_REQUEST),
     USER_EMAIL_ALREADY_EXISTS("Role with same email already exists", HttpStatus.BAD_REQUEST),
 
+    SOURCE_BANK_ACCOUNT_DOESNT_EXIST("Source bank account doesn't exist", HttpStatus.BAD_REQUEST),
+    DESTINATION_BANK_ACCOUNT_DOESNT_EXIST("Destination bank account doesn't exist", HttpStatus.BAD_REQUEST),
     BANK_ACCOUNT_TYPE_IN_USE("Bank account type in use", HttpStatus.BAD_REQUEST),
-
     NOT_ENOUGH_BALANCE("Not enough balance", HttpStatus.BAD_REQUEST),
-
     UNSUPPORTED_CURRENCY("Currency is not supported", HttpStatus.BAD_REQUEST),
 
     REFRESH_TOKEN_EXPIRED("Refresh token expired", HttpStatus.BAD_REQUEST),
