@@ -12,6 +12,7 @@ import ru.dreadblade.czarbank.api.model.response.BankAccountResponseDTO;
 import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.service.BankAccountService;
+
 import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.List;
@@ -29,33 +30,40 @@ public class BankAccountController {
         this.bankAccountMapper = bankAccountMapper;
     }
 
+    @PreAuthorize("hasAuthority('BANK_ACCOUNT_READ') or isAuthenticated()")
     @GetMapping
-    public ResponseEntity<List<BankAccountResponseDTO>> findAll() {
-        return ResponseEntity.ok(bankAccountService.findAll().stream()
+    public ResponseEntity<List<BankAccountResponseDTO>> findAllForUser(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(bankAccountService.findAllForUser(currentUser).stream()
                 .map(bankAccountMapper::bankAccountToBankAccountResponse)
                 .collect(Collectors.toList()));
     }
 
+    @PreAuthorize("hasAuthority('BANK_ACCOUNT_READ') or (isAuthenticated() and @bankAccountService.findById(#accountId).getOwner().getId() == principal.id)")
     @GetMapping("/{accountId}")
     public ResponseEntity<BankAccountResponseDTO> findById(@PathVariable Long accountId) {
         BankAccount bankAccount = bankAccountService.findById(accountId);
-        BankAccountResponseDTO responseDTO = bankAccountMapper.bankAccountToBankAccountResponse(bankAccount);
 
+        BankAccountResponseDTO responseDTO = bankAccountMapper.bankAccountToBankAccountResponse(bankAccount);
         return ResponseEntity.ok(responseDTO);
     }
 
-    @PreAuthorize("hasAnyAuthority('ROLE_CLIENT', 'BANK_ACCOUNT_CREATE')")
+    @PreAuthorize("hasAuthority('BANK_ACCOUNT_CREATE') or (isAuthenticated() and #currentUser.id == #requestDTO.ownerId)")
     @PostMapping
-    public ResponseEntity<BankAccountResponseDTO> createAccount(@AuthenticationPrincipal User user,
+    public ResponseEntity<BankAccountResponseDTO> createAccount(@AuthenticationPrincipal User currentUser,
                                                                 @RequestBody BankAccountRequestDTO requestDTO,
                                                                 HttpServletRequest request) {
-        BankAccount createdAccount = bankAccountService.create(user, requestDTO.getBankAccountTypeId(), requestDTO.getUsedCurrencyId());
+        Long ownerId = requestDTO.getOwnerId();
+        Long bankAccountTypeId = requestDTO.getBankAccountTypeId();
+        Long usedCurrencyId = requestDTO.getUsedCurrencyId();
+
+        BankAccount createdAccount = bankAccountService.create(ownerId, bankAccountTypeId, usedCurrencyId);
         BankAccountResponseDTO responseDTO = bankAccountMapper.bankAccountToBankAccountResponse(createdAccount);
 
         return ResponseEntity.created(URI.create(request.getRequestURI() + "/" + createdAccount.getId()))
                 .body(responseDTO);
     }
 
+    @PreAuthorize("hasAuthority('BANK_ACCOUNT_DELETE') or (isAuthenticated() and @bankAccountService.findById(#accountId).getOwner().getId() == principal.id)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{accountId}")
     public void deleteAccountById(@PathVariable Long accountId) {

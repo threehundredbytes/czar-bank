@@ -64,6 +64,10 @@ public class User implements UserDetails {
         return authorities;
     }
 
+    public boolean hasAuthority(String authority) {
+        return this.getAuthorities().contains(new SimpleGrantedAuthority(authority));
+    }
+
     @Override
     public boolean isAccountNonExpired() {
         return !isAccountExpired;

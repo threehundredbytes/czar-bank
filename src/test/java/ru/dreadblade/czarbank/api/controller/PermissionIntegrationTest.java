@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.mapper.security.PermissionMapper;
@@ -38,9 +40,10 @@ public class PermissionIntegrationTest extends BaseIntegrationTest  {
 
     @Nested
     @DisplayName("findAll() Tests")
-    class findAllTests {
+    class FindAllTests {
         @Test
-        void findAll_isSuccessful() throws Exception {
+        @WithUserDetails("admin")
+        void findAll_withAuth_withPermission_isSuccessful() throws Exception {
             List<PermissionResponseDTO> expectedPermissions = permissionRepository.findAll().stream()
                     .map(permissionMapper::permissionToPermissionResponse)
                     .collect(Collectors.toList());
@@ -56,17 +59,38 @@ public class PermissionIntegrationTest extends BaseIntegrationTest  {
         }
 
         @Test
+        @WithUserDetails("client")
+        void findAll_withAuth_isFailed() throws Exception {
+            mockMvc.perform(get(PERMISSIONS_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message").value("Access is denied"));
+        }
+
+        @Test
+        void findAll_withoutAuth_isFailed() throws Exception {
+            mockMvc.perform(get(PERMISSIONS_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message").value("Access is denied"));
+        }
+
+        @Test
+        @WithUserDetails("admin")
         @Transactional
-        void findAll_isEmpty() throws Exception {
+        void findAll_withAuth_withPermission_isEmpty() throws Exception {
             roleRepository.findAll().forEach(role -> role.setPermissions(Collections.emptySet()));
 
             permissionRepository.deleteAll();
 
-            long expectedSize = 0;
+            long expectedSize = permissionRepository.count();
+
+            String expectedResponse = objectMapper.writeValueAsString(Collections.emptySet());
 
             mockMvc.perform(get(PERMISSIONS_API_URL))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(Math.toIntExact(expectedSize))));
+                    .andExpect(jsonPath("$", hasSize(Math.toIntExact(expectedSize))))
+                    .andExpect(content().json(expectedResponse));
         }
     }
 }

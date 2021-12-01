@@ -2,6 +2,7 @@ package ru.dreadblade.czarbank.security.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.domain.security.RefreshTokenSession;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.CzarBankSecurityException;
@@ -28,6 +29,7 @@ public class RefreshTokenService {
         this.refreshTokenSessionRepository = refreshTokenSessionRepository;
     }
 
+    @Transactional
     public String generateRefreshToken(User user) {
         if (refreshTokenSessionRepository.countByUser(user) >= refreshTokensPerUser) {
             refreshTokenSessionRepository.markRevokedAllByUser(user);

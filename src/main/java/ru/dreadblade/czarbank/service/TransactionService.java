@@ -43,10 +43,10 @@ public class TransactionService {
     @Transactional
     public Transaction createTransaction(TransactionRequestDTO transactionRequest) {
         BankAccount source = bankAccountRepository.findByNumber(transactionRequest.getSourceBankAccountNumber())
-                .orElseThrow(() -> new CzarBankException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new CzarBankException(ExceptionMessage.SOURCE_BANK_ACCOUNT_DOESNT_EXIST));
 
         BankAccount destination = bankAccountRepository.findByNumber(transactionRequest.getDestinationBankAccountNumber())
-                .orElseThrow(() -> new CzarBankException(ExceptionMessage.BANK_ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new CzarBankException(ExceptionMessage.DESTINATION_BANK_ACCOUNT_DOESNT_EXIST));
 
         BigDecimal transactionAmount = transactionRequest.getAmount();
         BigDecimal transactionCommissionAmount = transactionAmount.multiply(source.getBankAccountType()

@@ -3,10 +3,12 @@ package ru.dreadblade.czarbank.service.security;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.domain.security.Role;
 import ru.dreadblade.czarbank.domain.security.User;
-import ru.dreadblade.czarbank.exception.*;
+import ru.dreadblade.czarbank.exception.CzarBankException;
+import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 
@@ -21,12 +23,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleService roleService;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserService(UserRepository userRepository, RoleService roleService, RoleRepository roleRepository) {
+    public UserService(UserRepository userRepository, RoleService roleService, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleService = roleService;
         this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<User> findAll() {
@@ -37,25 +41,41 @@ public class UserService {
         return userRepository.findById(userId).orElseThrow(() -> new CzarBankException(ExceptionMessage.USER_NOT_FOUND));
     }
 
-    public User createUser(User user) {
-        if (userRepository.existsByUsername(user.getUsername())) {
+    public User createUser(User userToCreate, User currentUser) {
+        if (userRepository.existsByUsername(userToCreate.getUsername())) {
             throw new CzarBankException(ExceptionMessage.USERNAME_ALREADY_EXISTS);
         }
 
-        if (userRepository.existsByEmail(user.getEmail())) {
+        if (userRepository.existsByEmail(userToCreate.getEmail())) {
             throw new CzarBankException(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS);
         }
 
-        user.setUserId(RandomStringUtils.randomAlphanumeric(10));
-        user.setRoles(Collections.singleton(roleService.findRoleByName("CLIENT")));
+        userToCreate.setUserId(RandomStringUtils.randomAlphanumeric(10));
 
-        return userRepository.save(user);
+        Set<Role> roles = userToCreate.getRoles();
+
+        if (currentUser != null && currentUser.hasAuthority("USER_CREATE") && roles != null && !roles.isEmpty()) {
+            roles = roles.stream()
+                    .filter(r -> roleRepository.existsByName(r.getName()))
+                    .map(r -> roleRepository.findByName(r.getName()).orElseThrow())
+                    .collect(Collectors.toSet());
+
+            userToCreate.setRoles(roles);
+        } else {
+            userToCreate.setRoles(Collections.emptySet());
+        }
+
+        String encodedPassword = passwordEncoder.encode(userToCreate.getPassword());
+
+        userToCreate.setPassword(encodedPassword);
+
+        return userRepository.save(userToCreate);
     }
 
-    public User update(Long userId, User user) {
+    public User update(Long userId, User updatedUser, User currentUser) {
         User userToUpdate = userRepository.findById(userId).orElseThrow(() -> new CzarBankException(ExceptionMessage.USER_NOT_FOUND));
 
-        String username = user.getUsername();
+        String username = updatedUser.getUsername();
 
         if (StringUtils.isNotBlank(username)) {
             Optional<User> optionalUser = userRepository.findByUsername(username);
@@ -67,7 +87,7 @@ public class UserService {
             }
         }
 
-        String email = user.getEmail();
+        String email = updatedUser.getEmail();
 
         if (StringUtils.isNotBlank(email)) {
             Optional<User> optionalUser = userRepository.findByEmail(email);
@@ -79,12 +99,12 @@ public class UserService {
             }
         }
 
-        Set<Role> roles = user.getRoles().stream()
+        Set<Role> roles = updatedUser.getRoles().stream()
                 .filter(r -> roleRepository.existsByName(r.getName()))
-                .map(r -> roleRepository.findByName(r.getName()).get())
+                .map(r -> roleRepository.findByName(r.getName()).orElseThrow())
                 .collect(Collectors.toSet());
 
-        if (roles.size() > 0) {
+        if (roles.size() > 0 && currentUser.hasAuthority("USER_UPDATE")) {
             userToUpdate.setRoles(roles);
         }
 

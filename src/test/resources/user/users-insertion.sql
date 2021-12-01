@@ -20,31 +20,47 @@ insert into permission (id, name) values (10, 'TRANSACTION_READ');
 insert into permission (id, name) values (11, 'TRANSACTION_UPDATE');
 insert into permission (id, name) values (12, 'TRANSACTION_DELETE');
 
-insert into role (id, name) values (13, 'ADMIN');
-insert into role (id, name) values (14, 'EMPLOYEE');
-insert into role (id, name) values (15, 'CLIENT');
+insert into permission (id, name) values (13, 'ROLE_CREATE');
+insert into permission (id, name) values (14, 'ROLE_READ');
+insert into permission (id, name) values (15, 'ROLE_UPDATE');
+insert into permission (id, name) values (16, 'ROLE_DELETE');
+
+insert into permission (id, name) values (17, 'USER_CREATE');
+insert into permission (id, name) values (18, 'USER_READ');
+insert into permission (id, name) values (19, 'USER_UPDATE');
+insert into permission (id, name) values (20, 'USER_DELETE');
+
+insert into permission (id, name) values (21, 'CURRENCY_CREATE');
+
+insert into role (id, name) values (22, 'ADMIN');
+insert into role (id, name) values (23, 'EMPLOYEE');
+insert into role (id, name) values (24, 'CLIENT');
 
 insert into role_permission (role_id, permission_id)
-values (13, 1), (13, 2), (13, 3), (13, 4),
-       (13, 5), (13, 6), (13, 7), (13, 8),
-       (13, 9), (13, 10), (13, 11), (13, 12);
+values (22, 1), (22, 2), (22, 3), (22, 4),
+       (22, 5), (22, 6), (22, 7), (22, 8),
+       (22, 9), (22, 10), (22, 11), (22, 12),
+       (22, 13), (22, 14), (22, 15), (22, 16),
+       (22, 17), (22, 18), (22, 19), (22, 20),
+       (22, 21);
 
 insert into role_permission (role_id, permission_id)
-values (14, 5), (14, 6), (14, 7), (14, 8),
-       (14, 9), (14, 10), (14, 11), (14, 12);
+values (23, 5), (23, 6), (23, 7), (23, 8),
+       (23, 9), (23, 10), (23, 11), (23, 12),
+       (23, 19);
 
 insert into users (id, user_id, username, email, password, is_account_expired, is_account_locked, is_credentials_expired, is_enabled) values
-(16, '1234567890', 'admin', 'admin@czarbank.org', 'password', false, false, false, true),
-(17, '0192837465', 'employee', 'employee@czarbank.org', 'password', false, false, false, true),
-(18, '6574832910', 'client', 'client@czarbank.org', 'password', false, false, false, true),
-(19, '6574832910', 'alekseev', 'alekseev@czarbank.org', 'password', false, false, false, true),
-(20, '6574832910', 'markov', 'markov@czarbank.org', 'password', false, false, false, true);
+(25, '1234567890', 'admin', 'admin@czarbank.org', 'password', false, false, false, true),
+(26, '0192837465', 'employee', 'employee@czarbank.org', 'password', false, false, false, true),
+(27, '6574832910', 'client', 'client@czarbank.org', 'password', false, false, false, true),
+(28, '6574832910', 'alekseev', 'alekseev@czarbank.org', 'password', false, false, false, true),
+(29, '6574832910', 'markov', 'markov@czarbank.org', 'password', false, false, false, true);
 
 insert into user_role (user_id, role_id)
-values (16, 13),
-       (17, 14),
-       (18, 15),
-       (19, 15),
-       (20, 15);
+values (25, 22),
+       (26, 23),
+       (27, 24),
+       (28, 24),
+       (29, 24);
 
-alter sequence hibernate_sequence restart 21;
+alter sequence hibernate_sequence restart 30;

@@ -2,7 +2,10 @@ package ru.dreadblade.czarbank.api.controller;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.model.request.security.AuthenticationRequestDTO;
@@ -306,15 +310,15 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(createdSession.getIsRevoked()).isFalse();
         }
 
-        @Transactional
         @Test
+        @Rollback
         void refreshToken_refreshTokenLimit_isSuccessful() throws Exception {
             long testUserId = BASE_USER_ID + 1L;
             User user = userRepository.findById(testUserId).orElseThrow();
 
             int currentRepetition = 0;
 
-            while (currentRepetition <= refreshTokensPerUser) {
+            while (currentRepetition < refreshTokensPerUser + 1) {
                 currentRepetition++;
 
                 String refreshToken = refreshTokenService.generateRefreshToken(user);

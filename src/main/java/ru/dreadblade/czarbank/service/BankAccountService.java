@@ -12,6 +12,7 @@ import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.BankAccountRepository;
 import ru.dreadblade.czarbank.repository.BankAccountTypeRepository;
 import ru.dreadblade.czarbank.repository.CurrencyRepository;
+import ru.dreadblade.czarbank.service.security.UserService;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -21,16 +22,22 @@ public class BankAccountService {
     private final BankAccountRepository bankAccountRepository;
     private final BankAccountTypeRepository bankAccountTypeRepository;
     private final CurrencyRepository currencyRepository;
+    private final UserService userService;
 
     @Autowired
-    public BankAccountService(BankAccountRepository bankAccountRepository, BankAccountTypeRepository bankAccountTypeRepository, CurrencyRepository currencyRepository) {
+    public BankAccountService(BankAccountRepository bankAccountRepository, BankAccountTypeRepository bankAccountTypeRepository, CurrencyRepository currencyRepository, UserService userService) {
         this.bankAccountRepository = bankAccountRepository;
         this.bankAccountTypeRepository = bankAccountTypeRepository;
         this.currencyRepository = currencyRepository;
+        this.userService = userService;
     }
 
-    public List<BankAccount> findAll() {
-        return bankAccountRepository.findAll();
+    public List<BankAccount> findAllForUser(User user) {
+        if (user.hasAuthority("BANK_ACCOUNT_READ")) {
+            return bankAccountRepository.findAll();
+        }
+
+        return bankAccountRepository.findAllByOwnerId(user.getId());
     }
 
     public BankAccount findById(Long id) {
@@ -39,7 +46,7 @@ public class BankAccountService {
         );
     }
 
-    public BankAccount create(User owner, Long bankAccountTypeId, Long currencyId) {
+    public BankAccount create(Long ownerId, Long bankAccountTypeId, Long currencyId) {
         BankAccountType bankAccountType = bankAccountTypeRepository.findById(bankAccountTypeId)
                 .orElseThrow(() -> new CzarBankException(ExceptionMessage.BANK_ACCOUNT_TYPE_NOT_FOUND));
 
@@ -51,7 +58,7 @@ public class BankAccountService {
                 .number(RandomStringUtils.randomNumeric(20))
                 .bankAccountType(bankAccountType)
                 .usedCurrency(currency)
-                .owner(owner)
+                .owner(userService.findUserById(ownerId))
                 .build());
     }
 

@@ -2,6 +2,7 @@ package ru.dreadblade.czarbank.api.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.mapper.CurrencyMapper;
 import ru.dreadblade.czarbank.api.model.request.CurrencyRequestDTO;
@@ -33,6 +34,7 @@ public class CurrencyController {
                 .collect(Collectors.toList()));
     }
 
+    @PreAuthorize("hasAuthority('CURRENCY_CREATE')")
     @PostMapping
     public ResponseEntity<CurrencyResponseDTO> createCurrency(@RequestBody CurrencyRequestDTO requestDTO, HttpServletRequest request) {
         String currencyCode = requestDTO.getCode();
