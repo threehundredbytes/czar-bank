@@ -1,18 +1,21 @@
 package ru.dreadblade.czarbank.api.controller.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.model.request.security.AuthenticationRequestDTO;
+import ru.dreadblade.czarbank.api.model.request.security.LogoutRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.RefreshTokensRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.security.AuthenticationResponseDTO;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.security.service.AccessTokenService;
 import ru.dreadblade.czarbank.security.service.AuthenticationService;
 import ru.dreadblade.czarbank.security.service.RefreshTokenService;
+
+import javax.servlet.http.HttpServletRequest;
 
 @RequestMapping("/api/auth")
 @RestController
@@ -49,5 +52,16 @@ public class AuthenticationController {
                 .accessToken(refreshTokenService.updateAccessToken(refreshToken))
                 .refreshToken(refreshTokenService.updateRefreshToken(refreshToken))
                 .build());
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @ResponseStatus(HttpStatus.OK)
+    @PostMapping("/logout")
+    public void logout(@RequestBody LogoutRequestDTO logoutRequestDTO,
+                       HttpServletRequest request) {
+        String accessToken = request.getHeader(HttpHeaders.AUTHORIZATION);
+        String refreshToken = logoutRequestDTO.getRefreshToken();
+
+        authenticationService.logout(accessToken, refreshToken);
     }
 }

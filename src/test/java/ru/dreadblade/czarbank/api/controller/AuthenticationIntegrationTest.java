@@ -17,12 +17,14 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.model.request.security.AuthenticationRequestDTO;
+import ru.dreadblade.czarbank.api.model.request.security.LogoutRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.RefreshTokensRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.security.AuthenticationResponseDTO;
 import ru.dreadblade.czarbank.domain.security.RefreshTokenSession;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.RefreshTokenSessionRepository;
+import ru.dreadblade.czarbank.repository.security.RevokedAccessTokenRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 import ru.dreadblade.czarbank.security.service.AccessTokenService;
 import ru.dreadblade.czarbank.security.service.RefreshTokenService;
@@ -47,6 +49,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
     private static final String LOGIN_API_URL = "/api/auth/login";
     private static final String REFRESH_TOKENS_API_URL = "/api/auth/refresh-tokens";
+    private static final String LOGOUT_API_URL = "/api/auth/logout";
     private static final String USERS_API_URL = "/api/users";
     private static final String ACCESS_TOKEN_IS_INVALID_MESSAGE = "Access token is invalid";
     private static final String ACCESS_TOKEN_EXPIRED_MESSAGE = "Access token expired";
@@ -69,9 +72,12 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
     @Autowired
     RefreshTokenSessionRepository refreshTokenSessionRepository;
 
+    @Autowired
+    RevokedAccessTokenRepository revokedAccessTokenRepository;
+
     @Nested
     @DisplayName("login() Tests")
-    class loginTests {
+    class LoginTests {
         @ParameterizedTest(name = "#{index} with [{arguments}]")
         @MethodSource("ru.dreadblade.czarbank.api.controller.AuthenticationIntegrationTest#getStreamAllUsers")
         void login_isSuccessful(String username, String password) throws Exception {
@@ -117,7 +123,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("Access Token Tests")
-    class accessTokenTests {
+    class AccessTokenTests {
 
         /**
          * Disabled due to https://github.com/spring-projects/spring-security/issues/4516
@@ -267,7 +273,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("refreshTokens() Tests")
-    class refreshTokenTests {
+    class RefreshTokenTests {
         @Test
         @Transactional
         void refreshTokens_refreshTokenIsValid_isSuccessful() throws Exception {
@@ -410,6 +416,108 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.REFRESH_TOKEN_EXPIRED.getMessage()));
+        }
+    }
+
+
+    @Nested
+    @DisplayName("logout() Tests")
+    class LogoutTests {
+        @Test
+        @Rollback
+        void logout_isSuccessful() throws Exception {
+
+            Long userId = BASE_USER_ID + 1L;
+
+            User user = userRepository.findById(userId).orElseThrow();
+
+            String accessToken = accessTokenService.generateAccessToken(user);
+            String refreshToken = refreshTokenService.generateRefreshToken(user);
+
+            Assertions.assertThat(accessTokenService.getUserFromToken(accessToken).getId()).isEqualTo(userId);
+
+            RefreshTokenSession refreshTokenSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken).orElseThrow();
+            Assertions.assertThat(refreshTokenSession.getIsRevoked()).isFalse();
+
+            LogoutRequestDTO logoutRequestDTO = new LogoutRequestDTO(refreshToken);
+
+            String requestContent = objectMapper.writeValueAsString(logoutRequestDTO);
+
+            String accessTokenWithPrefix = headerPrefix + accessToken;
+
+            mockMvc.perform(post(LOGOUT_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .header(HttpHeaders.AUTHORIZATION, accessTokenWithPrefix)
+                            .content(requestContent))
+                    .andExpect(status().isOk());
+
+            Assertions.assertThat(revokedAccessTokenRepository.existsByAccessToken(accessToken)).isTrue();
+
+            refreshTokenSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken).orElseThrow();
+            Assertions.assertThat(refreshTokenSession.getIsRevoked()).isTrue();
+
+            mockMvc.perform(post(LOGOUT_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .header(HttpHeaders.AUTHORIZATION, accessTokenWithPrefix)
+                            .content(requestContent))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value(ExceptionMessage.INVALID_ACCESS_TOKEN.getMessage()));
+        }
+
+        @Test
+        void logout_revokedRefreshToken_isFailed() throws Exception {
+            Long userId = BASE_USER_ID + 1L;
+
+            User user = userRepository.findById(userId).orElseThrow();
+
+            String accessToken = accessTokenService.generateAccessToken(user);
+            String refreshToken = refreshTokenService.generateRefreshToken(user);
+
+            Assertions.assertThat(accessTokenService.getUserFromToken(accessToken).getId()).isEqualTo(userId);
+
+            RefreshTokenSession refreshTokenSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken).orElseThrow();
+            refreshTokenSession.setIsRevoked(true);
+            Assertions.assertThat(refreshTokenSession.getIsRevoked()).isTrue();
+
+            refreshTokenSessionRepository.save(refreshTokenSession);
+
+            LogoutRequestDTO logoutRequestDTO = new LogoutRequestDTO(refreshToken);
+
+            String requestContent = objectMapper.writeValueAsString(logoutRequestDTO);
+
+            String accessTokenWithPrefix = headerPrefix + accessToken;
+
+            mockMvc.perform(post(LOGOUT_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .header(HttpHeaders.AUTHORIZATION, accessTokenWithPrefix)
+                            .content(requestContent))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value(ExceptionMessage.INVALID_REFRESH_TOKEN.getMessage()));
+        }
+
+        @Test
+        void logout_invalidRefreshToken_isFailed() throws Exception {
+            Long userId = BASE_USER_ID + 1L;
+
+            User user = userRepository.findById(userId).orElseThrow();
+
+            String accessToken = accessTokenService.generateAccessToken(user);
+            String refreshToken = "someRandomRefreshToken";
+
+            Assertions.assertThat(accessTokenService.getUserFromToken(accessToken).getId()).isEqualTo(userId);
+
+            LogoutRequestDTO logoutRequestDTO = new LogoutRequestDTO(refreshToken);
+
+            String requestContent = objectMapper.writeValueAsString(logoutRequestDTO);
+
+            String accessTokenWithPrefix = headerPrefix + accessToken;
+
+            mockMvc.perform(post(LOGOUT_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .header(HttpHeaders.AUTHORIZATION, accessTokenWithPrefix)
+                            .content(requestContent))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value(ExceptionMessage.INVALID_REFRESH_TOKEN.getMessage()));
         }
     }
 }
