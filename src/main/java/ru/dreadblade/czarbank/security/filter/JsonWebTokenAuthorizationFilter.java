@@ -10,6 +10,9 @@ import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import ru.dreadblade.czarbank.domain.security.User;
+import ru.dreadblade.czarbank.exception.CzarBankSecurityException;
+import ru.dreadblade.czarbank.exception.ExceptionMessage;
+import ru.dreadblade.czarbank.repository.security.RevokedAccessTokenRepository;
 import ru.dreadblade.czarbank.security.service.AccessTokenService;
 
 import javax.servlet.FilterChain;
@@ -24,10 +27,12 @@ public class JsonWebTokenAuthorizationFilter extends OncePerRequestFilter {
     private String headerPrefix;
 
     private final AccessTokenService accessTokenService;
+    private final RevokedAccessTokenRepository revokedAccessTokenRepository;
 
     @Autowired
-    public JsonWebTokenAuthorizationFilter(AccessTokenService accessTokenService) {
+    public JsonWebTokenAuthorizationFilter(AccessTokenService accessTokenService, RevokedAccessTokenRepository revokedAccessTokenRepository) {
         this.accessTokenService = accessTokenService;
+        this.revokedAccessTokenRepository = revokedAccessTokenRepository;
     }
 
     @Override
@@ -45,6 +50,11 @@ public class JsonWebTokenAuthorizationFilter extends OncePerRequestFilter {
         }
 
         accessToken = accessToken.substring(headerPrefix.length());
+
+        if (revokedAccessTokenRepository.existsByAccessToken(accessToken)) {
+            throw new CzarBankSecurityException(ExceptionMessage.INVALID_ACCESS_TOKEN);
+        }
+
         User user = accessTokenService.getUserFromToken(accessToken);
 
         if (user.isAccountLocked()) {

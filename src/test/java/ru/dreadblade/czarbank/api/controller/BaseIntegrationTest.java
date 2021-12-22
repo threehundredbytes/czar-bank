@@ -14,8 +14,10 @@ import org.springframework.test.context.support.TestPropertySourceUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import java.util.stream.Stream;
 
@@ -23,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@ContextConfiguration(initializers = BaseIntegrationTest.DockerPostgreDataSourceInitializer.class)
+@ContextConfiguration(initializers = BaseIntegrationTest.DockerDataSourceInitializer.class)
 @Testcontainers
 @SpringBootTest
 public abstract class BaseIntegrationTest {
@@ -72,14 +74,20 @@ public abstract class BaseIntegrationTest {
                 Arguments.of("client", "password"));
     }
 
-    public static PostgreSQLContainer<?> postgresqlContainer = new PostgreSQLContainer<>("postgres:13")
+    public static PostgreSQLContainer<?> postgresqlContainer = new PostgreSQLContainer<>(DockerImageName.parse("postgres:13"))
+            .withCreateContainerCmdModifier(cmd -> cmd.withName("czar-bank-test-postgresql"))
             .withDatabaseName("czar_bank_test");
+
+    public static GenericContainer<?> redisContainer = new GenericContainer<>(DockerImageName.parse("redis:6.2.6"))
+            .withCreateContainerCmdModifier(cmd -> cmd.withName("czar-bank-test-redis"))
+            .withExposedPorts(6379);
 
     static {
         postgresqlContainer.start();
+        redisContainer.start();
     }
 
-    public static class DockerPostgreDataSourceInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+    public static class DockerDataSourceInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
         @Override
         public void initialize(ConfigurableApplicationContext applicationContext) {
@@ -87,7 +95,9 @@ public abstract class BaseIntegrationTest {
                     applicationContext,
                     "spring.datasource.url=" + postgresqlContainer.getJdbcUrl(),
                     "spring.datasource.username=" + postgresqlContainer.getUsername(),
-                    "spring.datasource.password=" + postgresqlContainer.getPassword()
+                    "spring.datasource.password=" + postgresqlContainer.getPassword(),
+                    "czar-bank.redis.host-name=" + redisContainer.getHost(),
+                    "czar-bank.redis.port=" + redisContainer.getFirstMappedPort()
             );
         }
     }

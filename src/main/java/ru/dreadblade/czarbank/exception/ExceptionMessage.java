@@ -28,7 +28,8 @@ public enum ExceptionMessage {
     UNSUPPORTED_CURRENCY("Currency is not supported", HttpStatus.BAD_REQUEST),
 
     REFRESH_TOKEN_EXPIRED("Refresh token expired", HttpStatus.BAD_REQUEST),
-    INVALID_REFRESH_TOKEN("Invalid refresh token", HttpStatus.BAD_REQUEST);
+    INVALID_REFRESH_TOKEN("Invalid refresh token", HttpStatus.BAD_REQUEST),
+    INVALID_ACCESS_TOKEN("Invalid access token", HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatus status;
