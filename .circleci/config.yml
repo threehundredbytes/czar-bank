@@ -13,9 +13,6 @@ jobs:
       - run: sudo apt-get install openjdk-11-jdk
       - checkout
       - run:
-          name: Start all services declared in docker-compose.yml
-          command: docker-compose up -d
-      - run:
           name: Build
           command: mvn -B -DskipTests clean package
       - run:
