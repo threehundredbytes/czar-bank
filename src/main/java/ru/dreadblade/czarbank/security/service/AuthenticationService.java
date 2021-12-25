@@ -9,31 +9,31 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.api.model.request.security.AuthenticationRequestDTO;
 import ru.dreadblade.czarbank.domain.security.RefreshTokenSession;
+import ru.dreadblade.czarbank.domain.security.BlacklistedAccessToken;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.CzarBankSecurityException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.RefreshTokenSessionRepository;
-import ru.dreadblade.czarbank.repository.security.RevokedAccessTokenRepository;
+import ru.dreadblade.czarbank.repository.security.BlacklistedAccessTokenRepository;
 
 import java.util.function.Predicate;
 
 @Service
 public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
-    private final AccessTokenService accessTokenService;
-    private final RevokedAccessTokenRepository revokedAccessTokenRepository;
+    private final BlacklistedAccessTokenRepository blacklistedAccessTokenRepository;
     private final RefreshTokenSessionRepository refreshTokenSessionRepository;
 
     @Value("${czar-bank.security.json-web-token.access-token.header.prefix}")
     private String authenticationHeaderPrefix;
 
     @Autowired
-    public AuthenticationService(AuthenticationManager authenticationManager, AccessTokenService accessTokenService,
-                                 RevokedAccessTokenRepository revokedAccessTokenRepository, RefreshTokenSessionRepository refreshTokenSessionRepository) {
+    public AuthenticationService(AuthenticationManager authenticationManager,
+                                 BlacklistedAccessTokenRepository blacklistedAccessTokenRepository,
+                                 RefreshTokenSessionRepository refreshTokenSessionRepository) {
         this.authenticationManager = authenticationManager;
-        this.accessTokenService = accessTokenService;
-        this.revokedAccessTokenRepository = revokedAccessTokenRepository;
+        this.blacklistedAccessTokenRepository = blacklistedAccessTokenRepository;
         this.refreshTokenSessionRepository = refreshTokenSessionRepository;
     }
 
@@ -61,12 +61,16 @@ public class AuthenticationService {
             accessToken = accessToken.substring(authenticationHeaderPrefix.length());
         }
 
+        BlacklistedAccessToken blacklistedAccessToken = BlacklistedAccessToken.builder()
+                .accessToken(accessToken)
+                .build();
+
         RefreshTokenSession refreshTokenSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken)
                 .filter(Predicate.not(RefreshTokenSession::getIsRevoked))
                 .filter(session -> session.getUser().getId().equals(currentUser.getId()))
                 .orElseThrow(() -> new CzarBankSecurityException(ExceptionMessage.INVALID_REFRESH_TOKEN));
 
-        revokedAccessTokenRepository.save(accessToken);
+        blacklistedAccessTokenRepository.save(blacklistedAccessToken);
 
         refreshTokenSession.setIsRevoked(true);
         refreshTokenSessionRepository.save(refreshTokenSession);
