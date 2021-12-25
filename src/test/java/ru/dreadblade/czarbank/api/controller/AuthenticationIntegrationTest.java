@@ -24,10 +24,11 @@ import ru.dreadblade.czarbank.domain.security.RefreshTokenSession;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.RefreshTokenSessionRepository;
-import ru.dreadblade.czarbank.repository.security.RevokedAccessTokenRepository;
+import ru.dreadblade.czarbank.repository.security.BlacklistedAccessTokenRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 import ru.dreadblade.czarbank.security.service.AccessTokenService;
 import ru.dreadblade.czarbank.security.service.RefreshTokenService;
+import ru.dreadblade.czarbank.service.task.ReleaseBlacklistedAccessTokensTask;
 
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -73,7 +74,10 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
     RefreshTokenSessionRepository refreshTokenSessionRepository;
 
     @Autowired
-    RevokedAccessTokenRepository revokedAccessTokenRepository;
+    BlacklistedAccessTokenRepository blacklistedAccessTokenRepository;
+
+    @Autowired
+    ReleaseBlacklistedAccessTokensTask releaseBlacklistedAccessTokensTask;
 
     @Nested
     @DisplayName("login() Tests")
@@ -426,7 +430,6 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         @Test
         @Rollback
         void logout_isSuccessful() throws Exception {
-
             Long userId = BASE_USER_ID + 1L;
 
             User user = userRepository.findById(userId).orElseThrow();
@@ -451,7 +454,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                             .content(requestContent))
                     .andExpect(status().isOk());
 
-            Assertions.assertThat(revokedAccessTokenRepository.existsByAccessToken(accessToken)).isTrue();
+            Assertions.assertThat(blacklistedAccessTokenRepository.existsByAccessToken(accessToken)).isTrue();
 
             refreshTokenSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken).orElseThrow();
             Assertions.assertThat(refreshTokenSession.getIsRevoked()).isTrue();
@@ -462,9 +465,15 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                             .content(requestContent))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value(ExceptionMessage.INVALID_ACCESS_TOKEN.getMessage()));
+
+            TimeUnit.SECONDS.sleep(6);
+
+            Assertions.assertThat(releaseBlacklistedAccessTokensTask.execute()).isTrue();
+            Assertions.assertThat(blacklistedAccessTokenRepository.existsByAccessToken(accessToken)).isFalse();
         }
 
         @Test
+        @Rollback
         void logout_revokedRefreshToken_isFailed() throws Exception {
             Long userId = BASE_USER_ID + 1L;
 

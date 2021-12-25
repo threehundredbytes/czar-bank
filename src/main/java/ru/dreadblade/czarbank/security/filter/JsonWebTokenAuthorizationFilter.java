@@ -12,7 +12,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.CzarBankSecurityException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
-import ru.dreadblade.czarbank.repository.security.RevokedAccessTokenRepository;
+import ru.dreadblade.czarbank.repository.security.BlacklistedAccessTokenRepository;
 import ru.dreadblade.czarbank.security.service.AccessTokenService;
 
 import javax.servlet.FilterChain;
@@ -27,12 +27,12 @@ public class JsonWebTokenAuthorizationFilter extends OncePerRequestFilter {
     private String headerPrefix;
 
     private final AccessTokenService accessTokenService;
-    private final RevokedAccessTokenRepository revokedAccessTokenRepository;
+    private final BlacklistedAccessTokenRepository blacklistedAccessTokenRepository;
 
     @Autowired
-    public JsonWebTokenAuthorizationFilter(AccessTokenService accessTokenService, RevokedAccessTokenRepository revokedAccessTokenRepository) {
+    public JsonWebTokenAuthorizationFilter(AccessTokenService accessTokenService, BlacklistedAccessTokenRepository blacklistedAccessTokenRepository) {
         this.accessTokenService = accessTokenService;
-        this.revokedAccessTokenRepository = revokedAccessTokenRepository;
+        this.blacklistedAccessTokenRepository = blacklistedAccessTokenRepository;
     }
 
     @Override
@@ -51,7 +51,7 @@ public class JsonWebTokenAuthorizationFilter extends OncePerRequestFilter {
 
         accessToken = accessToken.substring(headerPrefix.length());
 
-        if (revokedAccessTokenRepository.existsByAccessToken(accessToken)) {
+        if (blacklistedAccessTokenRepository.existsByAccessToken(accessToken)) {
             throw new CzarBankSecurityException(ExceptionMessage.INVALID_ACCESS_TOKEN);
         }
 

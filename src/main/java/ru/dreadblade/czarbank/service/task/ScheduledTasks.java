@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ScheduledTasks {
     private final FetchExchangeRatesFromCbrTask fetchExchangeRatesFromCbrTask;
+    private final ReleaseBlacklistedAccessTokensTask releaseBlacklistedAccessTokensTask;
 
     @Scheduled(fixedRateString = "${czar-bank.currency.exchange-rate.update-rate-in-millis:3600000}")
     public void fetchExchangeRatesFromCbr() {
@@ -17,6 +18,15 @@ public class ScheduledTasks {
             log.info("Fetching currency exchange rates from the API of the Central Bank of Russia completed successfully");
         } else {
             log.error("Error when fetching currency exchange rates from the API of the Central Bank of Russia");
+        }
+    }
+
+    @Scheduled(fixedRateString = "#{${czar-bank.security.json-web-token.access-token.expiration-seconds:900} * 1000}")
+    public void releaseBlacklistedAccessTokens() {
+        if (releaseBlacklistedAccessTokensTask.execute()) {
+            log.info("Released blacklisted access tokens");
+        } else {
+            log.info("Error when releasing blacklisted access tokens");
         }
     }
 }
