@@ -8,16 +8,15 @@ spring:
 czar-bank:
   currency:
     exchange-rate:
-      update-rate-in-millis: 3600000
+      update-rate-in-seconds: 3600
   security:
-    json-web-token:
-      access-token:
-        issuer: 'Czar Bank'
-        audience: 'Czar Bank clients and staff'
-        expiration-seconds: 900
-        secret-key: 'czar-bank-secret-key'
-        header:
-          prefix: 'Bearer '
-      refresh-token:
-        expiration-seconds: 604800
-        limit-per-user: 5
+    access-token:
+      issuer: 'Czar Bank'
+      audience: 'Czar Bank clients and staff'
+      expiration-seconds: 900
+      secret-key: 'czar-bank-secret-key'
+      header:
+        prefix: 'Bearer '
+    refresh-token:
+      expiration-seconds: 604800
+      limit-per-user: 5

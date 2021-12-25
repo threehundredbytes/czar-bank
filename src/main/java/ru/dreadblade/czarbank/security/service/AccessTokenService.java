@@ -18,21 +18,21 @@ import java.util.stream.Collectors;
 
 @Service
 public class AccessTokenService {
-    @Value("${czar-bank.security.json-web-token.access-token.issuer}")
+    @Value("${czar-bank.security.access-token.issuer}")
     private String issuer;
 
-    @Value("${czar-bank.security.json-web-token.access-token.audience}")
+    @Value("${czar-bank.security.access-token.audience}")
     private String audience;
 
-    @Value("${czar-bank.security.json-web-token.access-token.expiration-seconds}")
-    private int expirationSeconds;
+    @Value("${czar-bank.security.access-token.expiration-seconds}")
+    private int accessTokenExpirationSeconds;
 
-    private String secretKey;
+    private final String secretKey;
 
     private final UserRepository userRepository;
     private final JWTVerifier verifier;
 
-    public AccessTokenService(@Value("${czar-bank.security.json-web-token.access-token.secret-key}") String secretKey,
+    public AccessTokenService(@Value("${czar-bank.security.access-token.secret-key}") String secretKey,
                               UserRepository userRepository) {
         this.userRepository = userRepository;
         this.secretKey = secretKey;
@@ -45,7 +45,7 @@ public class AccessTokenService {
                 .collect(Collectors.toList());
 
         Date issuedAt = new Date();
-        Date expiresAt = new Date(System.currentTimeMillis() + expirationSeconds * 1000L);
+        Date expiresAt = new Date(System.currentTimeMillis() + accessTokenExpirationSeconds * 1000L);
 
         return JWT.create()
                 .withIssuer(issuer)
@@ -63,6 +63,6 @@ public class AccessTokenService {
         String username = decodedJWT.getSubject();
 
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new CzarBankException(ExceptionMessage.USER_NOT_FOUND));
+                .orElseThrow(() -> new CzarBankException(ExceptionMessage.INVALID_ACCESS_TOKEN));
     }
 }

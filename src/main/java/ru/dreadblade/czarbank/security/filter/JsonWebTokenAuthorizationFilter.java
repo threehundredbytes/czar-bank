@@ -23,8 +23,8 @@ import java.io.IOException;
 
 @Component
 public class JsonWebTokenAuthorizationFilter extends OncePerRequestFilter {
-    @Value("${czar-bank.security.json-web-token.access-token.header.prefix}")
-    private String headerPrefix;
+    @Value("${czar-bank.security.access-token.header.prefix}")
+    private String authorizationHeaderPrefix;
 
     private final AccessTokenService accessTokenService;
     private final BlacklistedAccessTokenRepository blacklistedAccessTokenRepository;
@@ -44,12 +44,12 @@ public class JsonWebTokenAuthorizationFilter extends OncePerRequestFilter {
 
         String accessToken = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if (StringUtils.isBlank(accessToken) || !accessToken.startsWith(headerPrefix)) {
+        if (StringUtils.isBlank(accessToken) || !accessToken.startsWith(authorizationHeaderPrefix)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        accessToken = accessToken.substring(headerPrefix.length());
+        accessToken = accessToken.substring(authorizationHeaderPrefix.length());
 
         if (blacklistedAccessTokenRepository.existsByAccessToken(accessToken)) {
             throw new CzarBankSecurityException(ExceptionMessage.INVALID_ACCESS_TOKEN);

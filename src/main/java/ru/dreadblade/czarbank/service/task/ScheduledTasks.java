@@ -12,7 +12,7 @@ public class ScheduledTasks {
     private final FetchExchangeRatesFromCbrTask fetchExchangeRatesFromCbrTask;
     private final ReleaseBlacklistedAccessTokensTask releaseBlacklistedAccessTokensTask;
 
-    @Scheduled(fixedRateString = "${czar-bank.currency.exchange-rate.update-rate-in-millis:3600000}")
+    @Scheduled(fixedRateString = "#{${czar-bank.currency.exchange-rate.update-rate-in-millis:3600} * 1000}")
     public void fetchExchangeRatesFromCbr() {
         if (fetchExchangeRatesFromCbrTask.execute()) {
             log.info("Fetching currency exchange rates from the API of the Central Bank of Russia completed successfully");

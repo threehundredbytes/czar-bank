@@ -15,10 +15,10 @@ import java.util.function.Predicate;
 
 @Service
 public class RefreshTokenService {
-    @Value("${czar-bank.security.json-web-token.refresh-token.expiration-seconds}")
-    private Long expirationSeconds;
+    @Value("${czar-bank.security.refresh-token.expiration-seconds}")
+    private Long refreshTokenExpirationSeconds;
 
-    @Value("${czar-bank.security.json-web-token.refresh-token.limit-per-user}")
+    @Value("${czar-bank.security.refresh-token.limit-per-user}")
     private Long refreshTokensPerUser;
 
     private final AccessTokenService accessTokenService;
@@ -50,7 +50,7 @@ public class RefreshTokenService {
                 .filter(Predicate.not(RefreshTokenSession::getIsRevoked))
                 .orElseThrow(() -> new CzarBankSecurityException(ExceptionMessage.INVALID_REFRESH_TOKEN));
 
-        if (session.getCreatedAt().plusSeconds(expirationSeconds).isBefore(Instant.now())) {
+        if (session.getCreatedAt().plusSeconds(refreshTokenExpirationSeconds).isBefore(Instant.now())) {
             throw new CzarBankSecurityException(ExceptionMessage.REFRESH_TOKEN_EXPIRED);
         }
 
@@ -64,7 +64,7 @@ public class RefreshTokenService {
                 .filter(Predicate.not(RefreshTokenSession::getIsRevoked))
                 .orElseThrow(() -> new CzarBankSecurityException(ExceptionMessage.INVALID_REFRESH_TOKEN));
 
-        if (session.getCreatedAt().plusSeconds(expirationSeconds).isBefore(Instant.now())) {
+        if (session.getCreatedAt().plusSeconds(refreshTokenExpirationSeconds).isBefore(Instant.now())) {
             throw new CzarBankSecurityException(ExceptionMessage.REFRESH_TOKEN_EXPIRED);
         }
 

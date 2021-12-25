@@ -25,8 +25,8 @@ public class AuthenticationService {
     private final BlacklistedAccessTokenRepository blacklistedAccessTokenRepository;
     private final RefreshTokenSessionRepository refreshTokenSessionRepository;
 
-    @Value("${czar-bank.security.json-web-token.access-token.header.prefix}")
-    private String authenticationHeaderPrefix;
+    @Value("${czar-bank.security.access-token.header.prefix}")
+    private String authorizationHeaderPrefix;
 
     @Autowired
     public AuthenticationService(AuthenticationManager authenticationManager,
@@ -57,8 +57,8 @@ public class AuthenticationService {
     public void logout(String accessToken, String refreshToken) {
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        if (accessToken.startsWith(authenticationHeaderPrefix)) {
-            accessToken = accessToken.substring(authenticationHeaderPrefix.length());
+        if (accessToken.startsWith(authorizationHeaderPrefix)) {
+            accessToken = accessToken.substring(authorizationHeaderPrefix.length());
         }
 
         BlacklistedAccessToken blacklistedAccessToken = BlacklistedAccessToken.builder()

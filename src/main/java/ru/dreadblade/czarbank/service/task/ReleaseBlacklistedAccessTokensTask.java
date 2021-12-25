@@ -15,7 +15,7 @@ public class ReleaseBlacklistedAccessTokensTask implements Task {
 
     private final BlacklistedAccessTokenRepository blacklistedAccessTokenRepository;
 
-    @Value("${czar-bank.security.json-web-token.access-token.expiration-seconds}")
+    @Value("${czar-bank.security.access-token.expiration-seconds}")
     private int accessTokenExpirationSeconds;
 
     @Override
