@@ -44,4 +44,14 @@ public class CzarBankExceptionHandler {
                 .path(request.getRequestURI())
                 .build());
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<CzarBankErrorResponseDTO> handleNotImplementedException(Exception exception, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).body(CzarBankErrorResponseDTO.builder()
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
+                .message("An unknown error occurred. If the problem persists, please, contact support!")
+                .path(request.getRequestURI())
+                .build());
+    }
 }
