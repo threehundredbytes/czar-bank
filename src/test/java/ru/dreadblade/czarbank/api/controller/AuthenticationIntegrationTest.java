@@ -40,8 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
-        "czar-bank.security.json-web-token.access-token.expiration-seconds=5",
-        "czar-bank.security.json-web-token.refresh-token.expiration-seconds=5",
+        "czar-bank.security.access-token.expiration-seconds=5",
+        "czar-bank.security.refresh-token.expiration-seconds=5",
 })
 @DisplayName("Authentication Integration Tests")
 @Sql(value = "/user/users-insertion.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
@@ -55,10 +55,10 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
     private static final String ACCESS_TOKEN_IS_INVALID_MESSAGE = "Access token is invalid";
     private static final String ACCESS_TOKEN_EXPIRED_MESSAGE = "Access token expired";
 
-    @Value("${czar-bank.security.json-web-token.access-token.header.prefix}")
+    @Value("${czar-bank.security.access-token.header.prefix}")
     private String headerPrefix;
 
-    @Value("${czar-bank.security.json-web-token.refresh-token.expiration-seconds}")
+    @Value("${czar-bank.security.refresh-token.expiration-seconds}")
     private int refreshTokensPerUser;
 
     @Autowired
