@@ -5,12 +5,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import ru.dreadblade.czarbank.domain.security.EmailVerificationToken;
 import ru.dreadblade.czarbank.domain.security.Role;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
+import ru.dreadblade.czarbank.service.MailService;
 
 import java.util.Collections;
 import java.util.List;
@@ -21,16 +24,18 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
     private final UserRepository userRepository;
-    private final RoleService roleService;
     private final RoleRepository roleRepository;
+    private final EmailVerificationTokenService emailVerificationTokenService;
     private final PasswordEncoder passwordEncoder;
+    private final MailService mailService;
 
     @Autowired
-    public UserService(UserRepository userRepository, RoleService roleService, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, RoleRepository roleRepository, EmailVerificationTokenService emailVerificationTokenService, PasswordEncoder passwordEncoder, MailService mailService) {
         this.userRepository = userRepository;
-        this.roleService = roleService;
         this.roleRepository = roleRepository;
+        this.emailVerificationTokenService = emailVerificationTokenService;
         this.passwordEncoder = passwordEncoder;
+        this.mailService = mailService;
     }
 
     public List<User> findAll() {
@@ -69,7 +74,27 @@ public class UserService {
 
         userToCreate.setPassword(encodedPassword);
 
-        return userRepository.save(userToCreate);
+        User user = userRepository.save(userToCreate);
+
+        EmailVerificationToken emailVerificationToken = emailVerificationTokenService.generateVerificationToken(user);
+
+        String emailVerificationUrl = ServletUriComponentsBuilder
+                .fromCurrentRequestUri()
+                .replacePath("/api/account-management/verify-email/")
+                .toUriString() + emailVerificationToken.getEmailVerificationToken();
+
+        String messageContent = new StringBuilder()
+                .append("Hello, ")
+                .append(user.getUsername())
+                .append("!\nTo verify your account, please, follow the link below:\n")
+                .append(emailVerificationUrl)
+                .append("\nIf you have any questions, please, let us know\nContact us: support@czarbank.org")
+                .toString();
+
+
+        mailService.sendMail(user.getEmail(), "New account", messageContent);
+
+        return user;
     }
 
     public User update(Long userId, User updatedUser, User currentUser) {

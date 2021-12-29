@@ -38,6 +38,9 @@ public class User implements UserDetails {
     private Set<Role> roles;
 
     @Builder.Default
+    private boolean isEmailVerified = false;
+
+    @Builder.Default
     private boolean isAccountExpired = false;
 
     @Builder.Default

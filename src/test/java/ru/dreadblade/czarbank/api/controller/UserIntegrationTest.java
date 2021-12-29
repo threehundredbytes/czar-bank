@@ -4,9 +4,13 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.mail.MailSender;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
@@ -47,6 +51,9 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     RoleMapper roleMapper;
+
+    @MockBean
+    MailSender mailSender;
 
     private static final String USERS_API_URL = "/api/users";
 
@@ -171,6 +178,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isCreated());
 
+            Mockito.verify(mailSender, Mockito.times(1)).send(Mockito.any(SimpleMailMessage.class));
+
             User createdUser = userRepository.findByUsername(requestDTO.getUsername()).orElseThrow();
 
             Assertions.assertThat(createdUser.getEmail()).isEqualTo(createdUser.getEmail());
@@ -192,6 +201,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isCreated());
+
+            Mockito.verify(mailSender, Mockito.times(1)).send(Mockito.any(SimpleMailMessage.class));
 
             User createdUser = userRepository.findByUsername(requestDTO.getUsername()).orElseThrow();
 
