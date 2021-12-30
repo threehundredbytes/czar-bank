@@ -44,13 +44,7 @@ public class AuthenticationService {
 
         Authentication authentication = authenticationManager.authenticate(token);
 
-        Object principal = authentication.getPrincipal();
-
-        if (!(principal instanceof User)) {
-            throw new IllegalStateException();
-        }
-
-        User user = (User) principal;
+        User user = (User) authentication.getPrincipal();
 
         if (!user.isEmailVerified()) {
             throw new CzarBankSecurityException(ExceptionMessage.EMAIL_VERIFICATION_REQUIRED);
