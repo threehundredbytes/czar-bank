@@ -35,3 +35,5 @@ czar-bank:
     refresh-token:
       expiration-seconds: 604800
       limit-per-user: 5
+    email-verification-token:
+      expiration-seconds: 86400

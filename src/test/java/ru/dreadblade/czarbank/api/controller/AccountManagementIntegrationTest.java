@@ -21,13 +21,14 @@ import ru.dreadblade.czarbank.repository.security.EmailVerificationTokenReposito
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 import ru.dreadblade.czarbank.service.security.EmailVerificationTokenService;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(properties = {
-        "czar-bank.security.access-token.expiration-seconds=5",
-        "czar-bank.security.refresh-token.expiration-seconds=5",
+        "czar-bank.security.email-verification-token.expiration-seconds=5",
 })
 @DisplayName("Account Management Integration Tests")
 @Sql(value = "/user/users-insertion.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
@@ -73,10 +74,55 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
             User createdUser = userRepository.findByUsername(requestDTO.getUsername()).orElseThrow();
             Assertions.assertThat(createdUser.isEmailVerified()).isFalse();
 
-            var emailVerificationsTokenForUser = emailVerificationTokenRepository.findAllByUser(createdUser);
-            Assertions.assertThat(emailVerificationsTokenForUser).hasSize(1);
+            var emailVerificationTokensForUser = emailVerificationTokenRepository.findAllByUser(createdUser);
+            Assertions.assertThat(emailVerificationTokensForUser).hasSize(1);
 
-            EmailVerificationToken emailVerificationToken = emailVerificationsTokenForUser.get(0);
+            EmailVerificationToken emailVerificationToken = emailVerificationTokensForUser.get(0);
+
+            mockMvc.perform(get(VERIFY_EMAIL_API_URL + "/" + emailVerificationToken.getEmailVerificationToken()))
+                    .andExpect(status().isOk());
+
+            Assertions.assertThat(createdUser.isEmailVerified()).isTrue();
+        }
+
+        @Test
+        @Transactional
+        void verifyEmail_emailVerificationTokenExpired_resendEmailVerificationToken_isSuccessful() throws Exception {
+            UserRequestDTO requestDTO = UserRequestDTO.builder()
+                    .username("boyarin")
+                    .email("boyarin@czarbank.org")
+                    .password("password")
+                    .build();
+
+            mockMvc.perform(post(USERS_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(requestDTO)))
+                    .andExpect(status().isCreated());
+
+            Mockito.verify(mailSender, Mockito.times(1)).send(Mockito.any(SimpleMailMessage.class));
+
+            User createdUser = userRepository.findByUsername(requestDTO.getUsername()).orElseThrow();
+            Assertions.assertThat(createdUser.isEmailVerified()).isFalse();
+
+            TimeUnit.SECONDS.sleep(6);
+
+            var emailVerificationTokensForUser = emailVerificationTokenRepository.findAllByUser(createdUser);
+            Assertions.assertThat(emailVerificationTokensForUser).hasSize(1);
+
+            EmailVerificationToken expiredEmailVerificationToken = emailVerificationTokensForUser.get(0);
+
+            mockMvc.perform(get(VERIFY_EMAIL_API_URL + "/" + expiredEmailVerificationToken.getEmailVerificationToken()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value(ExceptionMessage.EMAIL_VERIFICATION_TOKEN_EXPIRED.getMessage()));
+
+            Assertions.assertThat(createdUser.isEmailVerified()).isFalse();
+
+            Mockito.verify(mailSender, Mockito.times(2)).send(Mockito.any(SimpleMailMessage.class));
+
+            emailVerificationTokensForUser = emailVerificationTokenRepository.findAllByUser(createdUser);
+            Assertions.assertThat(emailVerificationTokensForUser).hasSize(2);
+
+            EmailVerificationToken emailVerificationToken = emailVerificationTokensForUser.get(1);
 
             mockMvc.perform(get(VERIFY_EMAIL_API_URL + "/" + emailVerificationToken.getEmailVerificationToken()))
                     .andExpect(status().isOk());
@@ -103,8 +149,8 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
             User createdUser = userRepository.findByUsername(requestDTO.getUsername()).orElseThrow();
             Assertions.assertThat(createdUser.isEmailVerified()).isFalse();
 
-            var emailVerificationsTokenForUser = emailVerificationTokenRepository.findAllByUser(createdUser);
-            Assertions.assertThat(emailVerificationsTokenForUser).hasSize(1);
+            var emailVerificationTokensForUser = emailVerificationTokenRepository.findAllByUser(createdUser);
+            Assertions.assertThat(emailVerificationTokensForUser).hasSize(1);
 
             String emailVerificationToken = "aRandomStaffThatCantBeValid";
 
@@ -138,10 +184,10 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
 
             Assertions.assertThat(createdUser.isEmailVerified()).isTrue();
 
-            var emailVerificationsTokenForUser = emailVerificationTokenRepository.findAllByUser(createdUser);
-            Assertions.assertThat(emailVerificationsTokenForUser).hasSize(1);
+            var emailVerificationTokensForUser = emailVerificationTokenRepository.findAllByUser(createdUser);
+            Assertions.assertThat(emailVerificationTokensForUser).hasSize(1);
 
-            EmailVerificationToken emailVerificationToken = emailVerificationsTokenForUser.get(0);
+            EmailVerificationToken emailVerificationToken = emailVerificationTokensForUser.get(0);
 
             mockMvc.perform(get(VERIFY_EMAIL_API_URL + "/" + emailVerificationToken.getEmailVerificationToken()))
                     .andExpect(status().isBadRequest())

@@ -27,6 +27,8 @@ public enum ExceptionMessage {
     NOT_ENOUGH_BALANCE("Not enough balance", HttpStatus.BAD_REQUEST),
     UNSUPPORTED_CURRENCY("Currency is not supported", HttpStatus.BAD_REQUEST),
     EMAIL_ADDRESS_ALREADY_VERIFIED("Email address already verified", HttpStatus.BAD_REQUEST),
+    EMAIL_VERIFICATION_TOKEN_EXPIRED("We have sent a new email with a link to verify your account to " +
+            "the email address you provided when you created your account", HttpStatus.BAD_REQUEST),
 
     REFRESH_TOKEN_EXPIRED("Refresh token expired", HttpStatus.BAD_REQUEST),
     INVALID_REFRESH_TOKEN("Invalid refresh token", HttpStatus.BAD_REQUEST),

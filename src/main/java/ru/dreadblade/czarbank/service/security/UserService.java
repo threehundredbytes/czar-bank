@@ -78,21 +78,17 @@ public class UserService {
 
         EmailVerificationToken emailVerificationToken = emailVerificationTokenService.generateVerificationToken(user);
 
+        String emailSubject = "Email verification";
         String emailVerificationUrl = ServletUriComponentsBuilder
                 .fromCurrentRequestUri()
                 .replacePath("/api/account-management/verify-email/")
                 .toUriString() + emailVerificationToken.getEmailVerificationToken();
 
-        String messageContent = new StringBuilder()
-                .append("Hello, ")
-                .append(user.getUsername())
-                .append("!\nTo verify your account, please, follow the link below:\n")
-                .append(emailVerificationUrl)
-                .append("\nIf you have any questions, please, let us know\nContact us: support@czarbank.org")
-                .toString();
+        String emailMessageContent = "Hello, " + user.getUsername() +
+                "!\nTo verify your account, please, follow the link below:\n" + emailVerificationUrl +
+                "\nIf you have any questions, please, let us know\nContact us: support@czarbank.org";
 
-
-        mailService.sendMail(user.getEmail(), "New account", messageContent);
+        mailService.sendMail(user.getEmail(), emailSubject, emailMessageContent);
 
         return user;
     }
