@@ -8,14 +8,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.api.model.request.security.AuthenticationRequestDTO;
-import ru.dreadblade.czarbank.domain.security.RefreshTokenSession;
 import ru.dreadblade.czarbank.domain.security.BlacklistedAccessToken;
+import ru.dreadblade.czarbank.domain.security.RefreshTokenSession;
 import ru.dreadblade.czarbank.domain.security.User;
-import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.CzarBankSecurityException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
-import ru.dreadblade.czarbank.repository.security.RefreshTokenSessionRepository;
 import ru.dreadblade.czarbank.repository.security.BlacklistedAccessTokenRepository;
+import ru.dreadblade.czarbank.repository.security.RefreshTokenSessionRepository;
 
 import java.util.function.Predicate;
 
@@ -45,13 +44,13 @@ public class AuthenticationService {
 
         Authentication authentication = authenticationManager.authenticate(token);
 
-        Object principal = authentication.getPrincipal();
+        User user = (User) authentication.getPrincipal();
 
-        if (principal instanceof User) {
-            return (User) principal;
+        if (!user.isEmailVerified()) {
+            throw new CzarBankSecurityException(ExceptionMessage.EMAIL_VERIFICATION_REQUIRED);
         }
 
-        throw new CzarBankException(ExceptionMessage.USER_NOT_FOUND);
+        return user;
     }
 
     public void logout(String accessToken, String refreshToken) {

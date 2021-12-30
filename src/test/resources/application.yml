@@ -4,6 +4,18 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+  mail:
+    host: 'smtp.gmail.com'
+    username: 'email@gmail.com'
+    password: 'password'
+    port: 465
+    protocol: 'smtps'
+    properties:
+      smtps:
+        auth: 'true'
+        starttls:
+          enable: 'true'
+        timeout: 5000
 
 czar-bank:
   currency:
@@ -20,3 +32,5 @@ czar-bank:
     refresh-token:
       expiration-seconds: 604800
       limit-per-user: 5
+    email-verification-token:
+      expiration-seconds: 86400

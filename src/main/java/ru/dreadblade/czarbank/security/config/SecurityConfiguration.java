@@ -36,7 +36,9 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .httpBasic().disable()
-                .formLogin().disable();
+                .formLogin().disable()
+                .rememberMe().disable()
+                .logout().disable();
     }
 
     @Bean

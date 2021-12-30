@@ -57,6 +57,10 @@ public class JsonWebTokenAuthorizationFilter extends OncePerRequestFilter {
 
         User user = accessTokenService.getUserFromToken(accessToken);
 
+        if (!user.isEmailVerified()) {
+            throw new CzarBankSecurityException(ExceptionMessage.EMAIL_VERIFICATION_REQUIRED);
+        }
+
         if (user.isAccountLocked()) {
             throw new LockedException("User's account is locked");
         }

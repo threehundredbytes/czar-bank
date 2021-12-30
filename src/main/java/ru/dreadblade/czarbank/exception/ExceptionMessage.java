@@ -26,10 +26,15 @@ public enum ExceptionMessage {
     BANK_ACCOUNT_TYPE_IN_USE("Bank account type in use", HttpStatus.BAD_REQUEST),
     NOT_ENOUGH_BALANCE("Not enough balance", HttpStatus.BAD_REQUEST),
     UNSUPPORTED_CURRENCY("Currency is not supported", HttpStatus.BAD_REQUEST),
+    EMAIL_ADDRESS_ALREADY_VERIFIED("Email address already verified", HttpStatus.BAD_REQUEST),
+    EMAIL_VERIFICATION_TOKEN_EXPIRED("We have sent a new email with a link to verify your account to " +
+            "the email address you provided when you created your account", HttpStatus.BAD_REQUEST),
+    EMAIL_VERIFICATION_REQUIRED("Please check your email and follow the link to verify your email address", HttpStatus.UNAUTHORIZED),
 
     REFRESH_TOKEN_EXPIRED("Refresh token expired", HttpStatus.BAD_REQUEST),
     INVALID_REFRESH_TOKEN("Invalid refresh token", HttpStatus.BAD_REQUEST),
-    INVALID_ACCESS_TOKEN("Invalid access token", HttpStatus.BAD_REQUEST);
+    INVALID_ACCESS_TOKEN("Invalid access token", HttpStatus.BAD_REQUEST),
+    INVALID_EMAIL_VERIFICATION_TOKEN("Invalid email verification token", HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatus status;
