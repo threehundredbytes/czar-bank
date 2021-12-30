@@ -23,8 +23,8 @@ import ru.dreadblade.czarbank.api.model.response.security.AuthenticationResponse
 import ru.dreadblade.czarbank.domain.security.RefreshTokenSession;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
-import ru.dreadblade.czarbank.repository.security.RefreshTokenSessionRepository;
 import ru.dreadblade.czarbank.repository.security.BlacklistedAccessTokenRepository;
+import ru.dreadblade.czarbank.repository.security.RefreshTokenSessionRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 import ru.dreadblade.czarbank.security.service.AccessTokenService;
 import ru.dreadblade.czarbank.security.service.RefreshTokenService;
@@ -122,6 +122,28 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestContent))
                     .andExpect(status().isUnauthorized());
+        }
+
+        @ParameterizedTest(name = "#{index} with [{arguments}]")
+        @MethodSource("ru.dreadblade.czarbank.api.controller.AuthenticationIntegrationTest#getStreamAllUsers")
+        @Transactional
+        void login_emailVerificationRequired_isFailed(String username, String password) throws Exception {
+            User currentUser = userRepository.findByUsername(username).orElseThrow();
+
+            currentUser.setEmailVerified(false);
+
+            AuthenticationRequestDTO authenticationRequestDTO = AuthenticationRequestDTO.builder()
+                    .username(username)
+                    .password(password)
+                    .build();
+
+            String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
+
+            mockMvc.perform(post(LOGIN_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message").value(ExceptionMessage.EMAIL_VERIFICATION_REQUIRED.getMessage()));
         }
     }
 
@@ -272,6 +294,27 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     .header(HttpHeaders.AUTHORIZATION, accessToken))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message").value("User's credentials are expired"));
+        }
+
+        @Test
+        @Transactional
+        void accessToken_thenUndoEmailVerification_authIsFailed() throws Exception {
+            long testUserId = BASE_USER_ID + 1L;
+
+            User user = userRepository.findById(testUserId).orElseThrow();
+
+            Assertions.assertThat(user.isEmailVerified()).isTrue();
+
+            String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
+
+            user.setEmailVerified(false);
+
+            Assertions.assertThat(user.isEmailVerified()).isFalse();
+
+            mockMvc.perform(get(USERS_API_URL)
+                            .header(HttpHeaders.AUTHORIZATION, accessToken))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message").value(ExceptionMessage.EMAIL_VERIFICATION_REQUIRED.getMessage()));
         }
     }
 

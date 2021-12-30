@@ -29,6 +29,7 @@ public enum ExceptionMessage {
     EMAIL_ADDRESS_ALREADY_VERIFIED("Email address already verified", HttpStatus.BAD_REQUEST),
     EMAIL_VERIFICATION_TOKEN_EXPIRED("We have sent a new email with a link to verify your account to " +
             "the email address you provided when you created your account", HttpStatus.BAD_REQUEST),
+    EMAIL_VERIFICATION_REQUIRED("Please check your email and follow the link to verify your email address", HttpStatus.UNAUTHORIZED),
 
     REFRESH_TOKEN_EXPIRED("Refresh token expired", HttpStatus.BAD_REQUEST),
     INVALID_REFRESH_TOKEN("Invalid refresh token", HttpStatus.BAD_REQUEST),
