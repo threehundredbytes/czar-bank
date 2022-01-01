@@ -5,6 +5,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.model.request.security.AuthenticationRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.LogoutRequestDTO;
@@ -16,7 +17,9 @@ import ru.dreadblade.czarbank.security.service.AuthenticationService;
 import ru.dreadblade.czarbank.security.service.RefreshTokenService;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
+@Validated
 @RequestMapping("/api/auth")
 @RestController
 public class AuthenticationController {
@@ -32,7 +35,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthenticationResponseDTO> login(@RequestBody AuthenticationRequestDTO authenticationRequestDTO) {
+    public ResponseEntity<AuthenticationResponseDTO> login(@Valid @RequestBody AuthenticationRequestDTO authenticationRequestDTO) {
         User authenticatedUser = authenticationService.authenticateUser(authenticationRequestDTO);
 
         String accessToken = accessTokenService.generateAccessToken(authenticatedUser);
@@ -45,7 +48,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/refresh-tokens")
-    public ResponseEntity<AuthenticationResponseDTO> refreshTokens(@RequestBody RefreshTokensRequestDTO refreshTokensRequestDTO) {
+    public ResponseEntity<AuthenticationResponseDTO> refreshTokens(@Valid @RequestBody RefreshTokensRequestDTO refreshTokensRequestDTO) {
         String refreshToken = refreshTokensRequestDTO.getRefreshToken();
 
         return ResponseEntity.ok(AuthenticationResponseDTO.builder()
@@ -57,7 +60,7 @@ public class AuthenticationController {
     @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/logout")
-    public void logout(@RequestBody LogoutRequestDTO logoutRequestDTO,
+    public void logout(@Valid @RequestBody LogoutRequestDTO logoutRequestDTO,
                        HttpServletRequest request) {
         String accessToken = request.getHeader(HttpHeaders.AUTHORIZATION);
         String refreshToken = logoutRequestDTO.getRefreshToken();

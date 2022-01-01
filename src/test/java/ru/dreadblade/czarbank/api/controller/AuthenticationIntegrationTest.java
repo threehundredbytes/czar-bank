@@ -2,6 +2,7 @@ package ru.dreadblade.czarbank.api.controller;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
@@ -33,6 +35,8 @@ import ru.dreadblade.czarbank.service.task.ReleaseBlacklistedAccessTokensTask;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -144,6 +148,29 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                             .content(requestContent))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message").value(ExceptionMessage.EMAIL_VERIFICATION_REQUIRED.getMessage()));
+        }
+
+        @Test
+        void login_withEmptyRequestFields_validationIsFailed_responseIsCorrect() throws Exception {
+            AuthenticationRequestDTO authenticationRequestDTO = AuthenticationRequestDTO.builder()
+                    .username("")
+                    .password("")
+                    .build();
+
+            String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
+
+            mockMvc.perform(post(LOGIN_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                    .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                    .andExpect(jsonPath("$.error").value("Validation error"))
+                    .andExpect(jsonPath("$.errors", hasSize(2)))
+                    .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("username", "password")))
+                    .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Username must be not empty", "Password must be not empty")))
+                    .andExpect(jsonPath("$.message").value("Invalid request"))
+                    .andExpect(jsonPath("$.path").value(LOGIN_API_URL));
         }
     }
 
@@ -464,6 +491,26 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.REFRESH_TOKEN_EXPIRED.getMessage()));
         }
+
+        @Test
+        void refreshTokens_withEmptyRequestFields_validationIsFailed_responseIsCorrect() throws Exception {
+            RefreshTokensRequestDTO requestDTO = new RefreshTokensRequestDTO("");
+
+            String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+            mockMvc.perform(post(REFRESH_TOKENS_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                    .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                    .andExpect(jsonPath("$.error").value("Validation error"))
+                    .andExpect(jsonPath("$.errors", hasSize(1)))
+                    .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("refreshToken")))
+                    .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Refresh token must be not empty")))
+                    .andExpect(jsonPath("$.message").value("Invalid request"))
+                    .andExpect(jsonPath("$.path").value(REFRESH_TOKENS_API_URL));
+        }
     }
 
 
@@ -570,6 +617,26 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                             .content(requestContent))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value(ExceptionMessage.INVALID_REFRESH_TOKEN.getMessage()));
+        }
+
+        @Test
+        void logout_withEmptyRequestFields_validationIsFailed_responseIsCorrect() throws Exception {
+            LogoutRequestDTO requestDTO = new LogoutRequestDTO("");
+
+            String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+            mockMvc.perform(post(LOGOUT_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                    .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                    .andExpect(jsonPath("$.error").value("Validation error"))
+                    .andExpect(jsonPath("$.errors", hasSize(1)))
+                    .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("refreshToken")))
+                    .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Refresh token must be not empty")))
+                    .andExpect(jsonPath("$.message").value("Invalid request"))
+                    .andExpect(jsonPath("$.path").value(LOGOUT_API_URL));
         }
     }
 }
