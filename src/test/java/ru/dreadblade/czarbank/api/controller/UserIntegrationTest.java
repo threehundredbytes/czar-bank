@@ -1,6 +1,7 @@
 package ru.dreadblade.czarbank.api.controller;
 
 import org.assertj.core.api.Assertions;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -459,6 +461,27 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
             mockMvc.perform(delete(USERS_API_URL + "/" + userDeletionId))
                     .andExpect(status().isNotFound());
+        }
+    }
+
+    @DisplayName("Request validation tests")
+    @Nested
+    class RequestValidationTests {
+        @Test
+        @WithUserDetails("admin")
+        void findUserById_withAuth_withPermission_invalidUserId_isFailed_responseIsValid() throws Exception {
+            String expectedUserId = "userIdMustBeLong!";
+
+            String requestUrl = USERS_API_URL + "/" + expectedUserId;
+
+            mockMvc.perform(get(requestUrl))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                    .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                    .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                    .andExpect(jsonPath("$.message").value("The parameter «userId» with value of «"
+                            + expectedUserId + "» cannot be converted to «Long»"))
+                    .andExpect(jsonPath("$.path").value(requestUrl));
         }
     }
 }

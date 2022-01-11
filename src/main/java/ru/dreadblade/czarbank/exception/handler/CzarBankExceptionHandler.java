@@ -1,12 +1,16 @@
 package ru.dreadblade.czarbank.exception.handler;
 
-import org.apache.commons.lang3.NotImplementedException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import ru.dreadblade.czarbank.api.model.response.CzarBankErrorResponseDTO;
 import ru.dreadblade.czarbank.api.model.response.validation.ValidationError;
 import ru.dreadblade.czarbank.exception.CzarBankException;
@@ -65,12 +69,55 @@ public class CzarBankExceptionHandler {
                 .build());
     }
 
-    @ExceptionHandler(NotImplementedException.class)
-    public ResponseEntity<CzarBankErrorResponseDTO> handleNotImplementedException(NotImplementedException exception, HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).body(CzarBankErrorResponseDTO.builder()
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
-                .message(exception.getMessage())
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<CzarBankErrorResponseDTO> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException exception, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST.value()).body(CzarBankErrorResponseDTO.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message("The parameter «" + exception.getName() + "» with value of «" + exception.getValue() + "» cannot be converted to «" + exception.getRequiredType().getSimpleName() + "»")
+                .path(request.getRequestURI())
+                .build());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<CzarBankErrorResponseDTO> handleHttpMessageNotReadableException(HttpMessageNotReadableException exception, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST.value()).body(CzarBankErrorResponseDTO.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message("Invalid request body syntax")
+                .path(request.getRequestURI())
+                .build());
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<CzarBankErrorResponseDTO> handleHttpMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException exception, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()).body(CzarBankErrorResponseDTO.builder()
+                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value())
+                .error(HttpStatus.UNSUPPORTED_MEDIA_TYPE.getReasonPhrase())
+                .message("Content type «" + request.getHeader(HttpHeaders.CONTENT_TYPE) + "» not supported!")
+                .path(request.getRequestURI())
+                .build());
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<CzarBankErrorResponseDTO> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException exception, HttpServletRequest request) {
+        StringBuilder messageBuilder = new StringBuilder()
+                .append("Request method «")
+                .append(exception.getMethod())
+                .append("» not supported! Supported methods are: ");
+
+        exception.getSupportedHttpMethods().forEach(m -> {
+            messageBuilder.append("«");
+            messageBuilder.append(m);
+            messageBuilder.append("» ");
+        });
+
+        String message = messageBuilder.toString().trim();
+
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED.value()).body(CzarBankErrorResponseDTO.builder()
+                .status(HttpStatus.METHOD_NOT_ALLOWED.value())
+                .error(HttpStatus.METHOD_NOT_ALLOWED.getReasonPhrase())
+                .message(message)
                 .path(request.getRequestURI())
                 .build());
     }

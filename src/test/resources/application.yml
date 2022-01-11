@@ -16,8 +16,6 @@ spring:
         starttls:
           enable: 'true'
         timeout: 5000
-  jackson:
-    default-property-inclusion: non_null
 
 czar-bank:
   currency:

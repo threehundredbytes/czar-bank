@@ -18,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestMethod;
 import ru.dreadblade.czarbank.api.model.request.security.AuthenticationRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.LogoutRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.RefreshTokensRequestDTO;
@@ -38,8 +39,7 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -493,7 +493,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void refreshTokens_withEmptyRequestFields_validationIsFailed_responseIsCorrect() throws Exception {
+        void refreshTokens_withEmptyRequestFields_validationIsFailed_responseIsValid() throws Exception {
             RefreshTokensRequestDTO requestDTO = new RefreshTokensRequestDTO("");
 
             String requestContent = objectMapper.writeValueAsString(requestDTO);
@@ -620,7 +620,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void logout_withEmptyRequestFields_validationIsFailed_responseIsCorrect() throws Exception {
+        void logout_withEmptyRequestFields_validationIsFailed_responseIsValid() throws Exception {
             LogoutRequestDTO requestDTO = new LogoutRequestDTO("");
 
             String requestContent = objectMapper.writeValueAsString(requestDTO);
@@ -637,6 +637,65 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Refresh token must be not empty")))
                     .andExpect(jsonPath("$.message").value("Invalid request"))
                     .andExpect(jsonPath("$.path").value(LOGOUT_API_URL));
+        }
+    }
+
+    @DisplayName("Request validation tests")
+    @Nested
+    class RequestValidationTests {
+        @Test
+        void login_withInvalidJsonInRequestBody_isFailed_responseIsValid() throws Exception {
+            String requestContent = "{\"username\":\"someUsername\"\"password\":\"somePassword\"}"; // without comma
+
+            mockMvc.perform(post(LOGIN_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                    .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                    .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                    .andExpect(jsonPath("$.message").value("Invalid request body syntax"))
+                    .andExpect(jsonPath("$.path").value(LOGIN_API_URL));
+        }
+
+        @Test
+        void login_withUnsupportedHttpMediaType_responseIsValid() throws Exception {
+            AuthenticationRequestDTO authenticationRequestDTO = AuthenticationRequestDTO.builder()
+                    .username("someUsername")
+                    .password("somePassword")
+                    .build();
+
+            String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
+
+            mockMvc.perform(post(LOGIN_API_URL)
+                            .contentType(MediaType.TEXT_PLAIN)
+                            .content(requestContent))
+                    .andExpect(status().isUnsupportedMediaType())
+                    .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                    .andExpect(jsonPath("$.status").value(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()))
+                    .andExpect(jsonPath("$.error").value(HttpStatus.UNSUPPORTED_MEDIA_TYPE.getReasonPhrase()))
+                    .andExpect(jsonPath("$.message").value("Content type «" + MediaType.TEXT_PLAIN_VALUE + "» not supported!"))
+                    .andExpect(jsonPath("$.path").value(LOGIN_API_URL));
+        }
+
+        @Test
+        void login_withUnsupportedHttpRequestMethod_responseIsValid() throws Exception {
+            AuthenticationRequestDTO authenticationRequestDTO = AuthenticationRequestDTO.builder()
+                    .username("someUsername")
+                    .password("somePassword")
+                    .build();
+
+            String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
+
+            mockMvc.perform(patch(LOGIN_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isMethodNotAllowed())
+                    .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                    .andExpect(jsonPath("$.status").value(HttpStatus.METHOD_NOT_ALLOWED.value()))
+                    .andExpect(jsonPath("$.error").value(HttpStatus.METHOD_NOT_ALLOWED.getReasonPhrase()))
+                    .andExpect(jsonPath("$.message").value("Request method «" + RequestMethod.PATCH + "» not supported! Supported methods are: «" + RequestMethod.POST + "»"))
+                    .andExpect(jsonPath("$.path").value(LOGIN_API_URL));
         }
     }
 }
