@@ -4,9 +4,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.mapper.security.RoleMapper;
 import ru.dreadblade.czarbank.api.model.request.security.RoleRequestDTO;
+import ru.dreadblade.czarbank.api.model.request.validation.CreateRequest;
+import ru.dreadblade.czarbank.api.model.request.validation.UpdateRequest;
 import ru.dreadblade.czarbank.api.model.response.security.RoleResponseDTO;
 import ru.dreadblade.czarbank.domain.security.Role;
 import ru.dreadblade.czarbank.service.security.RoleService;
@@ -46,7 +49,7 @@ public class RoleController {
 
     @PreAuthorize("hasAuthority('ROLE_CREATE')")
     @PostMapping
-    public ResponseEntity<RoleResponseDTO> createRole(@RequestBody RoleRequestDTO requestDTO,
+    public ResponseEntity<RoleResponseDTO> createRole(@Validated(CreateRequest.class) @RequestBody RoleRequestDTO requestDTO,
                                                       HttpServletRequest request) {
         Role createdRole = roleService.createRole(roleMapper.roleRequestToRole(requestDTO));
 
@@ -57,7 +60,7 @@ public class RoleController {
     @PreAuthorize("hasAuthority('ROLE_UPDATE')")
     @PutMapping("/{roleId}")
     public ResponseEntity<RoleResponseDTO> updateRoleById(@PathVariable Long roleId,
-                                                          @RequestBody RoleRequestDTO requestDTO) {
+                                                          @Validated(UpdateRequest.class) @RequestBody RoleRequestDTO requestDTO) {
         Role updatedRole = roleService.updateRoleById(roleId, roleMapper.roleRequestToRole(requestDTO));
 
         return ResponseEntity.ok(roleMapper.roleTeRoleResponse(updatedRole));

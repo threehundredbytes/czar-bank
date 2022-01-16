@@ -1,8 +1,12 @@
 package ru.dreadblade.czarbank.api.model.request.security;
 
 import lombok.*;
+import ru.dreadblade.czarbank.api.model.request.validation.CreateRequest;
 
-import java.util.Set;
+import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+import java.util.List;
 
 @Getter
 @Setter
@@ -10,6 +14,10 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RoleRequestDTO {
+    @NotBlank(message = "Role name must be not empty", groups = CreateRequest.class)
     private String name;
-    private Set<PermissionRequestDTO> permissions;
+
+    @NotEmpty(message = "Role must have at least one permission", groups = CreateRequest.class)
+    @Valid
+    private List<PermissionRequestDTO> permissions;
 }

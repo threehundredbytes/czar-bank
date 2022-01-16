@@ -5,7 +5,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.model.request.security.AuthenticationRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.LogoutRequestDTO;
@@ -19,7 +18,6 @@ import ru.dreadblade.czarbank.security.service.RefreshTokenService;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
-@Validated
 @RequestMapping("/api/auth")
 @RestController
 public class AuthenticationController {
