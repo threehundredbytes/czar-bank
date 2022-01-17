@@ -8,5 +8,5 @@ import ru.dreadblade.czarbank.domain.ExchangeRate;
 @Mapper
 public interface ExchangeRateMapper {
     @Mapping(target = "currencyId", source = "currency.id")
-    ExchangeRateResponseDTO entityToResponseDTO(ExchangeRate exchangeRate);
+    ExchangeRateResponseDTO entityToResponseDto(ExchangeRate exchangeRate);
 }

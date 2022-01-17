@@ -34,7 +34,7 @@ public class BankAccountController {
     @GetMapping
     public ResponseEntity<List<BankAccountResponseDTO>> findAllForUser(@AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(bankAccountService.findAllForUser(currentUser).stream()
-                .map(bankAccountMapper::bankAccountToBankAccountResponse)
+                .map(bankAccountMapper::entityToResponseDto)
                 .collect(Collectors.toList()));
     }
 
@@ -43,7 +43,7 @@ public class BankAccountController {
     public ResponseEntity<BankAccountResponseDTO> findById(@PathVariable Long accountId) {
         BankAccount bankAccount = bankAccountService.findById(accountId);
 
-        BankAccountResponseDTO responseDTO = bankAccountMapper.bankAccountToBankAccountResponse(bankAccount);
+        BankAccountResponseDTO responseDTO = bankAccountMapper.entityToResponseDto(bankAccount);
         return ResponseEntity.ok(responseDTO);
     }
 
@@ -57,7 +57,7 @@ public class BankAccountController {
         Long usedCurrencyId = requestDTO.getUsedCurrencyId();
 
         BankAccount createdAccount = bankAccountService.create(ownerId, bankAccountTypeId, usedCurrencyId);
-        BankAccountResponseDTO responseDTO = bankAccountMapper.bankAccountToBankAccountResponse(createdAccount);
+        BankAccountResponseDTO responseDTO = bankAccountMapper.entityToResponseDto(createdAccount);
 
         return ResponseEntity.created(URI.create(request.getRequestURI() + "/" + createdAccount.getId()))
                 .body(responseDTO);

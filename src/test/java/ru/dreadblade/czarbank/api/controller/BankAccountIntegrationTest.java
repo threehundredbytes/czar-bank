@@ -57,7 +57,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         void findAll_withAuth_withPermission_isSuccessful() throws Exception {
             Set<BankAccountResponseDTO> expectedBankAccounts = bankAccountRepository.findAll().stream()
-                    .map(bankAccountMapper::bankAccountToBankAccountResponse)
+                    .map(bankAccountMapper::entityToResponseDto)
                     .collect(Collectors.toSet());
 
             long expectedSize = bankAccountRepository.count();
@@ -77,7 +77,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
             Long ownerId = BASE_USER_ID + 3L;
 
             Set<BankAccountResponseDTO> expectedBankAccounts = bankAccountRepository.findAll().stream()
-                    .map(bankAccountMapper::bankAccountToBankAccountResponse)
+                    .map(bankAccountMapper::entityToResponseDto)
                     .filter(bankAccount -> ownerId.equals(bankAccount.getOwnerId()))
                     .collect(Collectors.toSet());
 
@@ -123,7 +123,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         void findById_withAuth_withPermission_isSuccessful() throws Exception {
             BankAccount expectedBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 4L).orElseThrow();
 
-            BankAccountResponseDTO expectedResponseDTO = bankAccountMapper.bankAccountToBankAccountResponse(expectedBankAccount);
+            BankAccountResponseDTO expectedResponseDTO = bankAccountMapper.entityToResponseDto(expectedBankAccount);
 
             String expectedResponse = objectMapper.writeValueAsString(expectedResponseDTO);
 
@@ -138,7 +138,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         void findById_withAuth_asOwnerOfBankAccount_isSuccessful() throws Exception {
             BankAccount expectedBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow();
 
-            BankAccountResponseDTO expectedResponseDTO = bankAccountMapper.bankAccountToBankAccountResponse(expectedBankAccount);
+            BankAccountResponseDTO expectedResponseDTO = bankAccountMapper.entityToResponseDto(expectedBankAccount);
 
             String expectedResponse = objectMapper.writeValueAsString(expectedResponseDTO);
 

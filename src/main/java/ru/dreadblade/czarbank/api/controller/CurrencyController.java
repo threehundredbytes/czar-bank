@@ -30,7 +30,7 @@ public class CurrencyController {
     @GetMapping
     public ResponseEntity<List<CurrencyResponseDTO>> findAll() {
         return ResponseEntity.ok(currencyService.findAll().stream()
-                .map(currencyMapper::entityToResponseDTO)
+                .map(currencyMapper::entityToResponseDto)
                 .collect(Collectors.toList()));
     }
 
@@ -43,6 +43,6 @@ public class CurrencyController {
         Currency createdCurrency = currencyService.createCurrency(currencyCode, currencySymbol);
 
         return ResponseEntity.created(URI.create(request.getRequestURI() + "/" + createdCurrency.getId()))
-                .body(currencyMapper.entityToResponseDTO(createdCurrency));
+                .body(currencyMapper.entityToResponseDto(createdCurrency));
     }
 }

@@ -45,7 +45,7 @@ public class PermissionIntegrationTest extends BaseIntegrationTest  {
         @WithUserDetails("admin")
         void findAll_withAuth_withPermission_isSuccessful() throws Exception {
             List<PermissionResponseDTO> expectedPermissions = permissionRepository.findAll().stream()
-                    .map(permissionMapper::permissionToPermissionResponse)
+                    .map(permissionMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             long expectedSize = permissionRepository.count();

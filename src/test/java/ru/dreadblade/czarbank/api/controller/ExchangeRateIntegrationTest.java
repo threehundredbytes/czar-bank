@@ -54,7 +54,7 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
         @Test
         void findAllLatest_isSuccessful() throws Exception {
             List<ExchangeRateResponseDTO> expectedResponseDTOs = exchangeRateRepository.findAllLatest().stream()
-                    .map(exchangeRateMapper::entityToResponseDTO)
+                    .map(exchangeRateMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             long expectedSize = currencyRepository.count() - 1L;
@@ -95,7 +95,7 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
             String dateStr = expectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
             List<ExchangeRateResponseDTO> expectedResponseDTOs = exchangeRateRepository.findAllByDate(expectedDate).stream()
-                    .map(exchangeRateMapper::entityToResponseDTO)
+                    .map(exchangeRateMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             long expectedSize = currencyRepository.count() - 1L;
@@ -140,7 +140,7 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
                     .toUriString();
 
             List<ExchangeRateResponseDTO> expectedResponseDTOs = exchangeRateRepository.findAllInTimeSeries(startDate, endDate).stream()
-                    .map(exchangeRateMapper::entityToResponseDTO)
+                    .map(exchangeRateMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             long expectedSize = (currencyRepository.count() - 1L) * (ChronoUnit.DAYS.between(startDate, endDate) + 1L);

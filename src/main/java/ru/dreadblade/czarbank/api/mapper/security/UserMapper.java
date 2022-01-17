@@ -7,6 +7,6 @@ import ru.dreadblade.czarbank.domain.security.User;
 
 @Mapper(uses = { RoleMapper.class })
 public interface UserMapper {
-    User userRequestToUser(UserRequestDTO userRequestDTO);
-    UserResponseDTO userToUserResponseDTO(User user);
+    User requestDtoToEntity(UserRequestDTO userRequestDTO);
+    UserResponseDTO entityToResponseDto(User user);
 }

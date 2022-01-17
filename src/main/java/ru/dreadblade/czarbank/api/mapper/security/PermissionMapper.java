@@ -7,6 +7,6 @@ import ru.dreadblade.czarbank.domain.security.Permission;
 
 @Mapper
 public interface PermissionMapper {
-    Permission permissionRequestToPermission(PermissionRequestDTO permissionRequestDTO);
-    PermissionResponseDTO permissionToPermissionResponse(Permission permission);
+    Permission requestDtoToEntity(PermissionRequestDTO permissionRequestDTO);
+    PermissionResponseDTO entityToResponseDto(Permission permission);
 }

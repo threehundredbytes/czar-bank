@@ -31,7 +31,7 @@ public class BankAccountTypeController {
     @GetMapping
     public ResponseEntity<List<BankAccountTypeResponseDTO>> findAll() {
         return ResponseEntity.ok(bankAccountTypeService.findAll().stream()
-                .map(bankAccountTypeMapper::bankAccountTypeToBankAccountTypeResponse)
+                .map(bankAccountTypeMapper::entityToResponseDto)
                 .collect(Collectors.toList()));
     }
 
@@ -42,7 +42,7 @@ public class BankAccountTypeController {
             HttpServletRequest request
     ) {
         BankAccountType createdType = bankAccountTypeService.create(requestDTO);
-        BankAccountTypeResponseDTO responseDTO = bankAccountTypeMapper.bankAccountTypeToBankAccountTypeResponse(createdType);
+        BankAccountTypeResponseDTO responseDTO = bankAccountTypeMapper.entityToResponseDto(createdType);
 
         return ResponseEntity.created(URI.create(request.getRequestURI() + "/" + createdType.getId()))
                 .body(responseDTO);
@@ -57,7 +57,7 @@ public class BankAccountTypeController {
         BankAccountType updatedType = bankAccountTypeService.updateById(bankAccountTypeId, requestDTO);
 
         return ResponseEntity.ok(bankAccountTypeMapper
-                .bankAccountTypeToBankAccountTypeResponse(updatedType));
+                .entityToResponseDto(updatedType));
     }
 
     @PreAuthorize("hasAuthority('BANK_ACCOUNT_TYPE_DELETE')")

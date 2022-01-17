@@ -68,7 +68,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         void findAll_withAuth_withPermission_isSuccessful() throws Exception {
             List<TransactionResponseDTO> expectedTransactions = transactionRepository.findAll().stream()
-                    .map(transactionMapper::transactionToTransactionResponse)
+                    .map(transactionMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             long expectedSize = transactionRepository.count();
@@ -129,7 +129,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             List<TransactionResponseDTO> expectedTransactions = transactionRepository
                     .findAllByBankAccountId(bankAccountForTest.getId())
                     .stream()
-                    .map(transactionMapper::transactionToTransactionResponse)
+                    .map(transactionMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             int expectedSize = expectedTransactions.size();
@@ -151,7 +151,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             List<TransactionResponseDTO> expectedTransactions = transactionRepository
                     .findAllByBankAccountId(bankAccountForTest.getId())
                     .stream()
-                    .map(transactionMapper::transactionToTransactionResponse)
+                    .map(transactionMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             int expectedSize = expectedTransactions.size();

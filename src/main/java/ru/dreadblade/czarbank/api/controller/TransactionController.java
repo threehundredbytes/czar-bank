@@ -31,7 +31,7 @@ public class TransactionController {
     @GetMapping("/transactions")
     public ResponseEntity<List<TransactionResponseDTO>> findAllTransactions() {
         return ResponseEntity.ok(transactionService.findAll().stream()
-                .map(transactionMapper::transactionToTransactionResponse)
+                .map(transactionMapper::entityToResponseDto)
                 .collect(Collectors.toList()));
     }
 
@@ -39,7 +39,7 @@ public class TransactionController {
     @GetMapping("/bank-accounts/{bankAccountId}/transactions")
     public ResponseEntity<List<TransactionResponseDTO>> findAllByBankAccountId(@PathVariable Long bankAccountId) {
         return ResponseEntity.ok(transactionService.findAllByBankAccountId(bankAccountId).stream()
-                .map(transactionMapper::transactionToTransactionResponse)
+                .map(transactionMapper::entityToResponseDto)
                 .collect(Collectors.toList()));
     }
 
@@ -50,6 +50,6 @@ public class TransactionController {
         Transaction createdTransaction = transactionService.createTransaction(transactionRequest);
 
         return ResponseEntity.created(URI.create(request.getRequestURI() + "/" + createdTransaction.getId()))
-                .body(transactionMapper.transactionToTransactionResponse(createdTransaction));
+                .body(transactionMapper.entityToResponseDto(createdTransaction));
     }
 }

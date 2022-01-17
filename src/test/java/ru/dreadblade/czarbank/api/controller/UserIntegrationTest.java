@@ -66,7 +66,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         void findAll_withAuth_withPermission_isSuccessful() throws Exception {
             List<UserResponseDTO> expectedResponseDTOs = userRepository.findAll().stream()
-                    .map(userMapper::userToUserResponseDTO)
+                    .map(userMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             String expectedResponse = objectMapper.writeValueAsString(expectedResponseDTOs);
@@ -113,7 +113,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         void findUserById_withAuth_withPermission_isSuccessful() throws Exception {
             User expectedUser = userRepository.findById(BASE_USER_ID + 2L).orElseThrow();
 
-            String expectedResponse = objectMapper.writeValueAsString(userMapper.userToUserResponseDTO(expectedUser));
+            String expectedResponse = objectMapper.writeValueAsString(userMapper.entityToResponseDto(expectedUser));
 
             mockMvc.perform(get(USERS_API_URL + "/" + expectedUser.getId()))
                     .andExpect(status().isOk())
@@ -125,7 +125,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         void findUserById_withAuth_asSelf_isSuccessful() throws Exception {
             User expectedUser = userRepository.findById(BASE_USER_ID + 3L).orElseThrow();
 
-            String expectedResponse = objectMapper.writeValueAsString(userMapper.userToUserResponseDTO(expectedUser));
+            String expectedResponse = objectMapper.writeValueAsString(userMapper.entityToResponseDto(expectedUser));
 
             mockMvc.perform(get(USERS_API_URL + "/" + expectedUser.getId()))
                     .andExpect(status().isOk())
@@ -269,12 +269,12 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                             .build()))
                     .build();
 
-            UserResponseDTO responseAfterUpdate = userMapper.userToUserResponseDTO(userToBeUpdated);
+            UserResponseDTO responseAfterUpdate = userMapper.entityToResponseDto(userToBeUpdated);
             responseAfterUpdate.setUsername(requestDTO.getUsername());
             responseAfterUpdate.setEmail(requestDTO.getEmail());
             responseAfterUpdate.setRoles(requestDTO.getRoles().stream()
                     .map(r -> roleRepository.findByName(r.getName()).orElseThrow())
-                    .map(roleMapper::roleTeRoleResponse)
+                    .map(roleMapper::entityToResponseDto)
                     .collect(Collectors.toSet()));
 
             String expectedResponse = objectMapper.writeValueAsString(responseAfterUpdate);
@@ -306,11 +306,11 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                             .build()))
                     .build();
 
-            UserResponseDTO responseAfterUpdate = userMapper.userToUserResponseDTO(userToBeUpdated);
+            UserResponseDTO responseAfterUpdate = userMapper.entityToResponseDto(userToBeUpdated);
             responseAfterUpdate.setUsername(requestDTO.getUsername());
             responseAfterUpdate.setEmail(requestDTO.getEmail());
             responseAfterUpdate.setRoles(userToBeUpdated.getRoles().stream()
-                    .map(roleMapper::roleTeRoleResponse)
+                    .map(roleMapper::entityToResponseDto)
                     .collect(Collectors.toSet()));
 
             String expectedResponse = objectMapper.writeValueAsString(responseAfterUpdate);

@@ -29,7 +29,7 @@ public class PermissionController {
     @GetMapping
     public ResponseEntity<List<PermissionResponseDTO>> findAll() {
         return ResponseEntity.ok(permissionService.findAll().stream()
-                .map(permissionMapper::permissionToPermissionResponse)
+                .map(permissionMapper::entityToResponseDto)
                 .collect(Collectors.toList()));
     }
 }

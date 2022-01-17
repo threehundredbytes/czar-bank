@@ -26,14 +26,14 @@ public class ExchangeRateController {
     @GetMapping("/latest")
     public List<ExchangeRateResponseDTO> findAllLatest() {
         return exchangeRateService.findAllLatest().stream()
-                .map(exchangeRateMapper::entityToResponseDTO)
+                .map(exchangeRateMapper::entityToResponseDto)
                 .collect(Collectors.toList());
     }
 
     @GetMapping("/historical/{date}")
     public List<ExchangeRateResponseDTO> findAllByDate(@PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
         return exchangeRateService.findAllByDate(date).stream()
-                .map(exchangeRateMapper::entityToResponseDTO)
+                .map(exchangeRateMapper::entityToResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -43,7 +43,7 @@ public class ExchangeRateController {
             @RequestParam("end-date") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate
     ) {
         return exchangeRateService.findAllInTimeSeries(startDate, endDate).stream()
-                .map(exchangeRateMapper::entityToResponseDTO)
+                .map(exchangeRateMapper::entityToResponseDto)
                 .collect(Collectors.toList());
     }
 }

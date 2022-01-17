@@ -74,7 +74,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
             long expectedSize = currencyRepository.count();
 
             List<CurrencyResponseDTO> expectedDTOs = currencyRepository.findAll().stream()
-                    .map(currencyMapper::entityToResponseDTO)
+                    .map(currencyMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             String expectedResponse = objectMapper.writeValueAsString(expectedDTOs);

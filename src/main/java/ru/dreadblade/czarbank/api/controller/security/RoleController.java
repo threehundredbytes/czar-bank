@@ -35,7 +35,7 @@ public class RoleController {
     @GetMapping
     public ResponseEntity<List<RoleResponseDTO>> findAll() {
         return ResponseEntity.ok(roleService.findAll().stream()
-                .map(roleMapper::roleTeRoleResponse)
+                .map(roleMapper::entityToResponseDto)
                 .collect(Collectors.toList()));
     }
 
@@ -44,26 +44,26 @@ public class RoleController {
     public ResponseEntity<RoleResponseDTO> findRoleById(@PathVariable Long roleId) {
         Role role = roleService.findRoleById(roleId);
 
-        return ResponseEntity.ok(roleMapper.roleTeRoleResponse(role));
+        return ResponseEntity.ok(roleMapper.entityToResponseDto(role));
     }
 
     @PreAuthorize("hasAuthority('ROLE_CREATE')")
     @PostMapping
     public ResponseEntity<RoleResponseDTO> createRole(@Validated(CreateRequest.class) @RequestBody RoleRequestDTO requestDTO,
                                                       HttpServletRequest request) {
-        Role createdRole = roleService.createRole(roleMapper.roleRequestToRole(requestDTO));
+        Role createdRole = roleService.createRole(roleMapper.requestDtoToEntity(requestDTO));
 
         return ResponseEntity.created(URI.create(request.getRequestURI() + "/" + createdRole.getId()))
-                .body(roleMapper.roleTeRoleResponse(createdRole));
+                .body(roleMapper.entityToResponseDto(createdRole));
     }
 
     @PreAuthorize("hasAuthority('ROLE_UPDATE')")
     @PutMapping("/{roleId}")
     public ResponseEntity<RoleResponseDTO> updateRoleById(@PathVariable Long roleId,
                                                           @Validated(UpdateRequest.class) @RequestBody RoleRequestDTO requestDTO) {
-        Role updatedRole = roleService.updateRoleById(roleId, roleMapper.roleRequestToRole(requestDTO));
+        Role updatedRole = roleService.updateRoleById(roleId, roleMapper.requestDtoToEntity(requestDTO));
 
-        return ResponseEntity.ok(roleMapper.roleTeRoleResponse(updatedRole));
+        return ResponseEntity.ok(roleMapper.entityToResponseDto(updatedRole));
     }
 
     @PreAuthorize("hasAuthority('ROLE_DELETE')")

@@ -50,7 +50,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         @Test
         void findAll_withoutAuth_isSuccessful() throws Exception {
             List<BankAccountTypeResponseDTO> expectedTypes = bankAccountTypeRepository.findAll().stream()
-                    .map(bankAccountTypeMapper::bankAccountTypeToBankAccountTypeResponse)
+                    .map(bankAccountTypeMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             long expectedSize = bankAccountTypeRepository.count();

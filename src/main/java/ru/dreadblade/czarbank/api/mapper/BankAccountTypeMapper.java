@@ -7,6 +7,6 @@ import ru.dreadblade.czarbank.domain.BankAccountType;
 
 @Mapper
 public interface BankAccountTypeMapper {
-    BankAccountType bankAccountTypeRequestToBankAccountType(BankAccountTypeRequestDTO bankAccountTypeRequestDTO);
-    BankAccountTypeResponseDTO bankAccountTypeToBankAccountTypeResponse(BankAccountType bankAccountType);
+    BankAccountType requestDtoToEntity(BankAccountTypeRequestDTO bankAccountTypeRequestDTO);
+    BankAccountTypeResponseDTO entityToResponseDto(BankAccountType bankAccountType);
 }
