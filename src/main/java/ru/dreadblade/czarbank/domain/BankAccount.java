@@ -13,11 +13,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-public class BankAccount {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-
+public class BankAccount extends BaseEntity {
     private String number;
 
     @ManyToOne(fetch = FetchType.EAGER)

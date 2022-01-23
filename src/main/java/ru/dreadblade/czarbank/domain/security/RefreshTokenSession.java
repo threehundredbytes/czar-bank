@@ -2,6 +2,7 @@ package ru.dreadblade.czarbank.domain.security;
 
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import ru.dreadblade.czarbank.domain.BaseEntity;
 
 import javax.persistence.*;
 import java.time.Instant;
@@ -12,11 +13,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-public class RefreshTokenSession {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-
+public class RefreshTokenSession extends BaseEntity {
     @Column(updatable = false, unique = true)
     private String refreshToken;
 

@@ -13,11 +13,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-public class Transaction {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-
+public class Transaction extends BaseEntity {
     @CreationTimestamp
     @Column(updatable = false)
     private Instant datetime;

@@ -12,11 +12,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-public class ExchangeRate {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-
+public class ExchangeRate extends BaseEntity {
     @ManyToOne(fetch = FetchType.EAGER)
     private Currency currency;
 

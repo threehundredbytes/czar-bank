@@ -3,9 +3,6 @@ package ru.dreadblade.czarbank.domain;
 import lombok.*;
 
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 import java.math.BigDecimal;
 
 @Getter
@@ -14,11 +11,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-public class BankAccountType {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-
+public class BankAccountType extends BaseEntity {
     private String name;
 
     private BigDecimal transactionCommission;
