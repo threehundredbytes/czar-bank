@@ -1,15 +1,19 @@
 package ru.dreadblade.czarbank.domain;
 
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import ru.dreadblade.czarbank.domain.security.User;
 
-import javax.persistence.*;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import java.math.BigDecimal;
 import java.util.Set;
 
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity

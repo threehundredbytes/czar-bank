@@ -14,7 +14,6 @@ import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
-import ru.dreadblade.czarbank.api.model.request.security.PermissionRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.RoleRequestDTO;
 import ru.dreadblade.czarbank.domain.security.Permission;
 import ru.dreadblade.czarbank.domain.security.Role;
@@ -23,7 +22,10 @@ import ru.dreadblade.czarbank.repository.security.PermissionRepository;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.*;
@@ -153,11 +155,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         @Transactional
         void createRole_withAuth_withPermission_isSuccessful() throws Exception {
-            List<PermissionRequestDTO> permissions = new ArrayList<>();
-            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 2L).build());
-            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 6L).build());
-            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 7L).build());
-            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 10L).build());
+            List<Long> permissions = List.of(BASE_PERMISSION_ID + 2L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
 
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name("MANAGER")
@@ -165,8 +163,8 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .build();
 
             Set<Permission> expectedPermissions = permissions.stream()
-                    .filter(dto -> permissionRepository.existsById(dto.getId()))
-                    .map(dto -> permissionRepository.findById(dto.getId()).orElseThrow())
+                    .filter(id -> permissionRepository.existsById(id))
+                    .map(id -> permissionRepository.findById(id).orElseThrow())
                     .collect(Collectors.toSet());
 
             mockMvc.perform(post(ROLES_API_URL)
@@ -189,11 +187,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void createRole_withAuth_isFailed() throws Exception {
-            List<PermissionRequestDTO> permissions = new ArrayList<>();
-            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 2L).build());
-            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 6L).build());
-            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 7L).build());
-            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 10L).build());
+            List<Long> permissions = List.of(BASE_PERMISSION_ID + 2L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
 
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name("MANAGER")
@@ -211,11 +205,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void createRole_withoutAuth_isFailed() throws Exception {
-            List<PermissionRequestDTO> permissions = new ArrayList<>();
-            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 2L).build());
-            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 6L).build());
-            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 7L).build());
-            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 10L).build());
+            List<Long> permissions = List.of(BASE_PERMISSION_ID + 2L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
 
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name("MANAGER")
@@ -235,10 +225,11 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         void createRole_withAuth_withPermission_roleWithSameNameAlreadyExists() throws Exception {
             Role existingRole = roleRepository.findById(BASE_ROLE_ID + 1L).orElseThrow();
-            List<PermissionRequestDTO> permissions = new ArrayList<>();
-            permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 1L).build());
+            Assertions.assertThat(roleRepository.existsByName(existingRole.getName())).isTrue();
 
             long rolesCountBeforeCreating = roleRepository.count();
+
+            List<Long> permissions = List.of(BASE_PERMISSION_ID + 1L);
 
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name(existingRole.getName())
@@ -261,11 +252,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
             @Test
             @WithUserDetails("admin")
             void createRole_withAuth_withPermission_withoutName_validationIsFailed_responseIsValid() throws Exception {
-                List<PermissionRequestDTO> permissions = new ArrayList<>();
-                permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 2L).build());
-                permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 6L).build());
-                permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 7L).build());
-                permissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 10L).build());
+                List<Long> permissions = List.of(BASE_PERMISSION_ID + 2L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
 
                 RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                         .permissions(permissions)
@@ -347,6 +334,29 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                         .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
                         .andExpect(jsonPath("$.path").value(ROLES_API_URL));
             }
+
+            @Test
+            @WithUserDetails("admin")
+            void createRole_withAuth_withPermission_withNullNameAndPermissions_validationIsFailed_responseIsValid() throws Exception {
+                RoleRequestDTO requestDTO = RoleRequestDTO.builder()
+                        .name(null)
+                        .build();
+
+                requestDTO.setPermissions(null);
+
+                mockMvc.perform(post(ROLES_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(2)))
+                        .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("name", "permissions")))
+                        .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Role name must be not empty", "Role must have at least one permission")))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(ROLES_API_URL));
+            }
         }
     }
 
@@ -370,17 +380,11 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .permissions(permissions)
                     .build());
 
-            List<PermissionRequestDTO> updatedPermissions = new ArrayList<>();
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 4L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 5L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 6L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 7L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 8L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 10L).build());
+            List<Long> updatedPermissions = List.of(BASE_PERMISSION_ID + 3L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
 
             Set<Permission> expectedPermissions = updatedPermissions.stream()
-                    .filter(dto -> permissionRepository.existsById(dto.getId()))
-                    .map(dto -> permissionRepository.findById(dto.getId()).orElseThrow())
+                    .filter(id -> permissionRepository.existsById(id))
+                    .map(id -> permissionRepository.findById(id).orElseThrow())
                     .collect(Collectors.toSet());
 
             int expectedSize = updatedPermissions.size();
@@ -421,17 +425,11 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .permissions(permissions)
                     .build());
 
-            List<PermissionRequestDTO> updatedPermissions = new ArrayList<>();
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 4L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 5L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 6L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 7L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 8L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 10L).build());
+            List<Long> updatedPermissions = List.of(BASE_PERMISSION_ID + 3L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
 
             Set<Permission> expectedPermissions = updatedPermissions.stream()
-                    .filter(dto -> permissionRepository.existsById(dto.getId()))
-                    .map(dto -> permissionRepository.findById(dto.getId()).orElseThrow())
+                    .filter(id -> permissionRepository.existsById(id))
+                    .map(id -> permissionRepository.findById(id).orElseThrow())
                     .collect(Collectors.toSet());
 
             int expectedSize = updatedPermissions.size();
@@ -454,7 +452,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @WithUserDetails("admin")
-        @Transactional
+        @Rollback
         void updateRole_withAuth_withPermission_withoutPermissions_isSuccessful() throws Exception {
             Set<Permission> permissions = new HashSet<>();
             permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
@@ -475,11 +473,13 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
 
             int expectedSize = permissions.size();
 
+            String requestContent = objectMapper.writeValueAsString(requestDTO);
+
             mockMvc.perform(put(ROLES_API_URL + "/" + roleToUpdate.getId())
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(requestDTO)))
+                            .content(requestContent))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").isNumber())
+                    .andExpect(jsonPath("$.id").value(roleToUpdate.getId()))
                     .andExpect(jsonPath("$.name").value(requestDTO.getName()))
                     .andExpect(jsonPath("$.permissions", hasSize(expectedSize)));
 
@@ -503,13 +503,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .permissions(permissions)
                     .build());
 
-            List<PermissionRequestDTO> updatedPermissions = new ArrayList<>();
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 4L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 5L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 6L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 7L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 8L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 10L).build());
+            List<Long> updatedPermissions = List.of(BASE_PERMISSION_ID + 3L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
 
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name("upd" + roleToUpdate.getName())
@@ -539,13 +533,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .permissions(permissions)
                     .build());
 
-            List<PermissionRequestDTO> updatedPermissions = new ArrayList<>();
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 4L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 5L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 6L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 7L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 8L).build());
-            updatedPermissions.add(PermissionRequestDTO.builder().id(BASE_PERMISSION_ID + 10L).build());
+            List<Long> updatedPermissions = List.of(BASE_PERMISSION_ID + 3L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
 
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name("upd" + roleToUpdate.getName())
@@ -596,6 +584,45 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS.getMessage()));
+        }
+
+        @DisplayName("Validation Tests")
+        @Nested
+        class ValidationTests {
+            @Test
+            @WithUserDetails("admin")
+            @Transactional
+            void updateRole_withAuth_withoutName_withNullPermission_validationFailed_responseIsValid() throws Exception {
+                Set<Permission> permissions = new HashSet<>();
+                permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
+                permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 6L).orElseThrow());
+                permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 7L).orElseThrow());
+                permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 10L).orElseThrow());
+
+                String roleName = "MANAGER";
+
+                Role roleToUpdate = roleRepository.save(Role.builder()
+                        .name(roleName)
+                        .permissions(permissions)
+                        .build());
+
+                RoleRequestDTO requestDTO = new RoleRequestDTO(null, null);
+
+                String requestUrl = ROLES_API_URL + "/" + roleToUpdate.getId();
+
+                mockMvc.perform(put(requestUrl)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("permissions"))
+                        .andExpect(jsonPath("$.errors[0].message").value("Permissions cannot be null"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
         }
     }
 

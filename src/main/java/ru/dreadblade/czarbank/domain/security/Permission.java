@@ -1,13 +1,17 @@
 package ru.dreadblade.czarbank.domain.security;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 import ru.dreadblade.czarbank.domain.BaseEntity;
 
 import javax.persistence.Entity;
 
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity

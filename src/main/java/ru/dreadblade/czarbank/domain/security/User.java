@@ -1,6 +1,7 @@
 package ru.dreadblade.czarbank.domain.security;
 
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
 
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -28,7 +29,7 @@ public class User extends BaseEntity implements UserDetails {
 
     private String email;
 
-    @Singular
+    @Singular(value = "addRole")
     @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.MERGE })
     @JoinTable(name = "user_role",
             joinColumns = { @JoinColumn(name = "USER_ID", referencedColumnName = "ID") },
