@@ -61,8 +61,8 @@ public class UserService {
 
         if (currentUser != null && currentUser.hasAuthority("USER_CREATE") && roles != null && !roles.isEmpty()) {
             roles = roles.stream()
-                    .filter(r -> roleRepository.existsByName(r.getName()))
-                    .map(r -> roleRepository.findByName(r.getName()).orElseThrow())
+                    .filter(r -> roleRepository.existsById(r.getId()))
+                    .map(r -> roleRepository.findById(r.getId()).orElseThrow())
                     .collect(Collectors.toSet());
 
             userToCreate.setRoles(roles);
@@ -120,12 +120,14 @@ public class UserService {
             }
         }
 
-        Set<Role> roles = updatedUser.getRoles().stream()
-                .filter(r -> roleRepository.existsByName(r.getName()))
-                .map(r -> roleRepository.findByName(r.getName()).orElseThrow())
-                .collect(Collectors.toSet());
+        Set<Role> roles = updatedUser.getRoles();
 
-        if (roles.size() > 0 && currentUser.hasAuthority("USER_UPDATE")) {
+        if (currentUser.hasAuthority("USER_UPDATE") && roles != null && !roles.isEmpty()) {
+            roles = roles.stream()
+                    .filter(r -> roleRepository.existsById(r.getId()))
+                    .map(r -> roleRepository.findById(r.getId()).orElseThrow())
+                    .collect(Collectors.toSet());
+
             userToUpdate.setRoles(roles);
         }
 

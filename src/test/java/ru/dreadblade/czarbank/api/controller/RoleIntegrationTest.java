@@ -592,7 +592,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
             @Test
             @WithUserDetails("admin")
             @Transactional
-            void updateRole_withAuth_withoutName_withNullPermission_validationFailed_responseIsValid() throws Exception {
+            void updateRole_withAuth_withoutName_withNullPermission_validationIsFailed_responseIsValid() throws Exception {
                 Set<Permission> permissions = new HashSet<>();
                 permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
                 permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 6L).orElseThrow());

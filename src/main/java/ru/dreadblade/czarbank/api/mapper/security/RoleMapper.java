@@ -15,12 +15,11 @@ public interface RoleMapper {
     Role requestDtoToEntity(RoleRequestDTO roleRequestDTO);
     RoleResponseDTO entityToResponseDto(Role role);
 
-    default Set<Permission> map(List<Long> rolesIdList) {
-        return rolesIdList.stream()
+    default Set<Permission> map(List<Long> permissionsIdList) {
+        return permissionsIdList.stream()
                 .map(id -> Permission.builder()
                         .id(id)
                         .build())
                 .collect(Collectors.toSet());
-
     }
 }

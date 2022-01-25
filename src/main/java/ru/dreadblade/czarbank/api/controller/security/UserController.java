@@ -5,9 +5,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.mapper.security.UserMapper;
 import ru.dreadblade.czarbank.api.model.request.security.UserRequestDTO;
+import ru.dreadblade.czarbank.api.model.request.validation.CreateRequest;
+import ru.dreadblade.czarbank.api.model.request.validation.UpdateRequest;
 import ru.dreadblade.czarbank.api.model.response.security.UserResponseDTO;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.service.security.UserService;
@@ -47,7 +50,7 @@ public class UserController {
 
     @PreAuthorize("hasAuthority('USER_CREATE') or !isAuthenticated()")
     @PostMapping
-    public ResponseEntity<UserResponseDTO> createUser(@RequestBody UserRequestDTO requestDTO,
+    public ResponseEntity<UserResponseDTO> createUser(@Validated(CreateRequest.class) @RequestBody UserRequestDTO requestDTO,
                                                       HttpServletRequest request,
                                                       @AuthenticationPrincipal User currentUser) {
         User createdUser = userService.createUser(userMapper.requestDtoToEntity(requestDTO), currentUser);
@@ -59,7 +62,7 @@ public class UserController {
     @PreAuthorize("hasAuthority('USER_UPDATE') or (isAuthenticated() and #userId == principal.id)")
     @PutMapping("/{userId}")
     public ResponseEntity<UserResponseDTO> update(@PathVariable Long userId,
-                                                  @RequestBody UserRequestDTO requestDTO,
+                                                  @Validated(UpdateRequest.class) @RequestBody UserRequestDTO requestDTO,
                                                   @AuthenticationPrincipal User currentUser) {
         User updatedUser = userService.update(userId, userMapper.requestDtoToEntity(requestDTO), currentUser);
 
