@@ -5,9 +5,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.mapper.BankAccountMapper;
 import ru.dreadblade.czarbank.api.model.request.BankAccountRequestDTO;
+import ru.dreadblade.czarbank.api.model.request.validation.CreateRequest;
 import ru.dreadblade.czarbank.api.model.response.BankAccountResponseDTO;
 import ru.dreadblade.czarbank.domain.BankAccount;
 import ru.dreadblade.czarbank.domain.security.User;
@@ -50,7 +52,7 @@ public class BankAccountController {
     @PreAuthorize("hasAuthority('BANK_ACCOUNT_CREATE') or (isAuthenticated() and #currentUser.id == #requestDTO.ownerId)")
     @PostMapping
     public ResponseEntity<BankAccountResponseDTO> createAccount(@AuthenticationPrincipal User currentUser,
-                                                                @RequestBody BankAccountRequestDTO requestDTO,
+                                                                @Validated(CreateRequest.class) @RequestBody BankAccountRequestDTO requestDTO,
                                                                 HttpServletRequest request) {
         Long ownerId = requestDTO.getOwnerId();
         Long bankAccountTypeId = requestDTO.getBankAccountTypeId();
