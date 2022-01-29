@@ -60,8 +60,8 @@ public class CzarBankExceptionHandler {
             }
         }).collect(Collectors.toList());
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST.value()).body(CzarBankErrorResponseDTO.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY.value()).body(CzarBankErrorResponseDTO.builder()
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
                 .message("Invalid request")
                 .error("Validation error")
                 .errors(errors)

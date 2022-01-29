@@ -97,8 +97,8 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
 
             String responseContent = mockMvc.perform(post(LOGIN_API_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestContent))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.accessToken").isString())
                     .andReturn()
@@ -123,8 +123,8 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
 
             mockMvc.perform(post(LOGIN_API_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestContent))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
                     .andExpect(status().isUnauthorized());
         }
 
@@ -150,27 +150,31 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.message").value(ExceptionMessage.EMAIL_VERIFICATION_REQUIRED.getMessage()));
         }
 
-        @Test
-        void login_withEmptyRequestFields_validationIsFailed_responseIsCorrect() throws Exception {
-            AuthenticationRequestDTO authenticationRequestDTO = AuthenticationRequestDTO.builder()
-                    .username("")
-                    .password("")
-                    .build();
+        @DisplayName("Validation Tests")
+        @Nested
+        class ValidationTests {
+            @Test
+            void login_withEmptyRequestFields_validationIsFailed_responseIsCorrect() throws Exception {
+                AuthenticationRequestDTO authenticationRequestDTO = AuthenticationRequestDTO.builder()
+                        .username("")
+                        .password("")
+                        .build();
 
-            String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
+                String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
 
-            mockMvc.perform(post(LOGIN_API_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(requestContent))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
-                    .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
-                    .andExpect(jsonPath("$.error").value("Validation error"))
-                    .andExpect(jsonPath("$.errors", hasSize(2)))
-                    .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("username", "password")))
-                    .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Username must be not empty", "Password must be not empty")))
-                    .andExpect(jsonPath("$.message").value("Invalid request"))
-                    .andExpect(jsonPath("$.path").value(LOGIN_API_URL));
+                mockMvc.perform(post(LOGIN_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestContent))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value("Validation error"))
+                        .andExpect(jsonPath("$.errors", hasSize(2)))
+                        .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("username", "password")))
+                        .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Username must be not empty", "Password must be not empty")))
+                        .andExpect(jsonPath("$.message").value("Invalid request"))
+                        .andExpect(jsonPath("$.path").value(LOGIN_API_URL));
+            }
         }
     }
 
@@ -190,7 +194,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
 
             mockMvc.perform(get(USERS_API_URL)
-                    .header(HttpHeaders.AUTHORIZATION, accessToken))
+                            .header(HttpHeaders.AUTHORIZATION, accessToken))
                     .andExpect(authenticated());
         }
 
@@ -202,7 +206,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             String accessToken = headerPrefix + accessTokenService.generateAccessToken(user) + "someCorruption...";
 
             mockMvc.perform(get(USERS_API_URL)
-                    .header(HttpHeaders.AUTHORIZATION, accessToken))
+                            .header(HttpHeaders.AUTHORIZATION, accessToken))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message").value(ACCESS_TOKEN_IS_INVALID_MESSAGE));
         }
@@ -220,7 +224,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     accessTokenBeforeCorruption.substring(cut);
 
             mockMvc.perform(get(USERS_API_URL)
-                    .header(HttpHeaders.AUTHORIZATION, accessToken))
+                            .header(HttpHeaders.AUTHORIZATION, accessToken))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message").value(ACCESS_TOKEN_IS_INVALID_MESSAGE));
         }
@@ -234,7 +238,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             TimeUnit.SECONDS.sleep(6);
 
             mockMvc.perform(get(USERS_API_URL)
-                    .header(HttpHeaders.AUTHORIZATION, accessToken))
+                            .header(HttpHeaders.AUTHORIZATION, accessToken))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message").value(ACCESS_TOKEN_EXPIRED_MESSAGE));
         }
@@ -255,7 +259,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(user.isAccountLocked()).isTrue();
 
             mockMvc.perform(get(USERS_API_URL)
-                    .header(HttpHeaders.AUTHORIZATION, accessToken))
+                            .header(HttpHeaders.AUTHORIZATION, accessToken))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message").value("User's account is locked"));
         }
@@ -276,7 +280,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(user.isEnabled()).isFalse();
 
             mockMvc.perform(get(USERS_API_URL)
-                    .header(HttpHeaders.AUTHORIZATION, accessToken))
+                            .header(HttpHeaders.AUTHORIZATION, accessToken))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message").value("User's account is disabled"));
         }
@@ -297,7 +301,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(user.isAccountExpired()).isTrue();
 
             mockMvc.perform(get(USERS_API_URL)
-                    .header(HttpHeaders.AUTHORIZATION, accessToken))
+                            .header(HttpHeaders.AUTHORIZATION, accessToken))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message").value("User's account is expired"));
         }
@@ -318,7 +322,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(user.isCredentialsExpired()).isTrue();
 
             mockMvc.perform(get(USERS_API_URL)
-                    .header(HttpHeaders.AUTHORIZATION, accessToken))
+                            .header(HttpHeaders.AUTHORIZATION, accessToken))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message").value("User's credentials are expired"));
         }
@@ -361,8 +365,8 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             String requestContent = objectMapper.writeValueAsString(requestDTO);
 
             String responseContent = mockMvc.perform(post(REFRESH_TOKENS_API_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestContent))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.accessToken").isString())
                     .andExpect(jsonPath("$.refreshToken").isString())
@@ -435,8 +439,8 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             revokedSession.setIsRevoked(true);
 
             mockMvc.perform(post(REFRESH_TOKENS_API_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestContent))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.INVALID_REFRESH_TOKEN.getMessage()));
@@ -459,8 +463,8 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             String requestContent = objectMapper.writeValueAsString(requestDTO);
 
             mockMvc.perform(post(REFRESH_TOKENS_API_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestContent))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.INVALID_REFRESH_TOKEN.getMessage()));
@@ -485,31 +489,35 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(refreshTokenSession.getIsRevoked()).isFalse();
 
             mockMvc.perform(post(REFRESH_TOKENS_API_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestContent))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.REFRESH_TOKEN_EXPIRED.getMessage()));
         }
 
-        @Test
-        void refreshTokens_withEmptyRequestFields_validationIsFailed_responseIsValid() throws Exception {
-            RefreshTokensRequestDTO requestDTO = new RefreshTokensRequestDTO("");
+        @DisplayName("Validation Tests")
+        @Nested
+        class ValidationTests {
+            @Test
+            void refreshTokens_withEmptyRequestFields_validationIsFailed_responseIsValid() throws Exception {
+                RefreshTokensRequestDTO requestDTO = new RefreshTokensRequestDTO("");
 
-            String requestContent = objectMapper.writeValueAsString(requestDTO);
+                String requestContent = objectMapper.writeValueAsString(requestDTO);
 
-            mockMvc.perform(post(REFRESH_TOKENS_API_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(requestContent))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
-                    .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
-                    .andExpect(jsonPath("$.error").value("Validation error"))
-                    .andExpect(jsonPath("$.errors", hasSize(1)))
-                    .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("refreshToken")))
-                    .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Refresh token must be not empty")))
-                    .andExpect(jsonPath("$.message").value("Invalid request"))
-                    .andExpect(jsonPath("$.path").value(REFRESH_TOKENS_API_URL));
+                mockMvc.perform(post(REFRESH_TOKENS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestContent))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value("Validation error"))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("refreshToken")))
+                        .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Refresh token must be not empty")))
+                        .andExpect(jsonPath("$.message").value("Invalid request"))
+                        .andExpect(jsonPath("$.path").value(REFRESH_TOKENS_API_URL));
+            }
         }
     }
 
@@ -619,24 +627,28 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.message").value(ExceptionMessage.INVALID_REFRESH_TOKEN.getMessage()));
         }
 
-        @Test
-        void logout_withEmptyRequestFields_validationIsFailed_responseIsValid() throws Exception {
-            LogoutRequestDTO requestDTO = new LogoutRequestDTO("");
+        @DisplayName("Validation Tests")
+        @Nested
+        class ValidationTests {
+            @Test
+            void logout_withEmptyRequestFields_validationIsFailed_responseIsValid() throws Exception {
+                LogoutRequestDTO requestDTO = new LogoutRequestDTO("");
 
-            String requestContent = objectMapper.writeValueAsString(requestDTO);
+                String requestContent = objectMapper.writeValueAsString(requestDTO);
 
-            mockMvc.perform(post(LOGOUT_API_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(requestContent))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
-                    .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
-                    .andExpect(jsonPath("$.error").value("Validation error"))
-                    .andExpect(jsonPath("$.errors", hasSize(1)))
-                    .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("refreshToken")))
-                    .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Refresh token must be not empty")))
-                    .andExpect(jsonPath("$.message").value("Invalid request"))
-                    .andExpect(jsonPath("$.path").value(LOGOUT_API_URL));
+                mockMvc.perform(post(LOGOUT_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestContent))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value("Validation error"))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("refreshToken")))
+                        .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Refresh token must be not empty")))
+                        .andExpect(jsonPath("$.message").value("Invalid request"))
+                        .andExpect(jsonPath("$.path").value(LOGOUT_API_URL));
+            }
         }
     }
 
