@@ -47,9 +47,6 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
     private static final String BANK_ACCOUNT_TYPES_API_URL = "/api/bank-account-types";
 
-    private static final String VALIDATION_ERROR = "Validation error";
-    private static final String INVALID_REQUEST = "Invalid request";
-
     @Nested
     @DisplayName("findAll() Tests")
     class FindAllTests {
@@ -169,8 +166,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                             .value(ExceptionMessage.BANK_ACCOUNT_TYPE_NAME_ALREADY_EXISTS.getMessage()));
         }
 
-        @DisplayName("Validation Tests")
         @Nested
+        @DisplayName("Validation Tests")
         class ValidationTests {
             @Test
             @WithUserDetails("admin")
@@ -389,9 +386,9 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.message").value("Bank account type doesn't exist"));
         }
 
-        @DisplayName("Validation Test")
         @Nested
-        class ValidationTest {
+        @DisplayName("Validation Test")
+        class ValidationTests {
             @Test
             @WithUserDetails("admin")
             @Rollback

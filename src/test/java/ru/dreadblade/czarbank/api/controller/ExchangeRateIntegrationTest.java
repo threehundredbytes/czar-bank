@@ -36,8 +36,8 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
     private static final String LATEST = "/latest";
     private static final String HISTORICAL = "/historical/";
     private static final String TIME_SERIES = "/time-series/";
-    private static final String START_DATE_PARAM = "start-date";
-    private static final String END_DATE_PARAM = "end-date";
+    private static final String START_DATE_PARAMETER = "start-date";
+    private static final String END_DATE_PARAMETER = "end-date";
 
     @Autowired
     CurrencyRepository currencyRepository;
@@ -50,7 +50,7 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("findAllLatest() Tests")
-    class findAllLatestTests {
+    class FindAllLatestTests {
         @Test
         void findAllLatest_isSuccessful() throws Exception {
             List<ExchangeRateResponseDTO> expectedResponseDTOs = exchangeRateRepository.findAllLatest().stream()
@@ -78,7 +78,7 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(exchangeRateRepository.count()).isEqualTo(expectedSize);
 
             mockMvc.perform(get(EXCHANGE_RATES_API_URL + LATEST)
-                    .accept(MediaType.APPLICATION_JSON))
+                            .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isInternalServerError())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.LATEST_EXCHANGE_RATES_NOT_FOUND.getMessage()));
@@ -87,7 +87,7 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("findAllByDate() Tests")
-    class findAllByDateTests {
+    class FindAllByDateTests {
         @Test
         void findAllByDate_isSuccessful() throws Exception {
             LocalDate expectedDate = exchangeRateRepository.findById(BASE_EXCHANGE_RATE_ID + 5L).orElseThrow().getDate();
@@ -102,7 +102,8 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
 
             String expectedResponse = objectMapper.writeValueAsString(expectedResponseDTOs);
 
-            mockMvc.perform(get(EXCHANGE_RATES_API_URL + HISTORICAL + dateStr))
+            mockMvc.perform(get(EXCHANGE_RATES_API_URL + HISTORICAL + dateStr)
+                            .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(Math.toIntExact(expectedSize))))
                     .andExpect(content().json(expectedResponse));
@@ -114,7 +115,8 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
 
             String dateStr = expectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
-            mockMvc.perform(get(EXCHANGE_RATES_API_URL + HISTORICAL + dateStr))
+            mockMvc.perform(get(EXCHANGE_RATES_API_URL + HISTORICAL + dateStr)
+                            .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.EXCHANGE_RATES_AT_DATE_NOT_FOUND.getMessage()));
@@ -123,7 +125,7 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("findAllInTimeSeries() Tests")
-    class findAllInTimeSeriesTests {
+    class FindAllInTimeSeriesTests {
         @Test
         void findAllInTimeSeries_isSuccessful() throws Exception {
             LocalDate startDate = exchangeRateRepository.findById(BASE_EXCHANGE_RATE_ID + 1L).orElseThrow().getDate();
@@ -133,8 +135,8 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
             String endDateStr = endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
             String URL = UriComponentsBuilder.fromUriString(EXCHANGE_RATES_API_URL + TIME_SERIES)
-                    .queryParam(START_DATE_PARAM, startDateStr)
-                    .queryParam(END_DATE_PARAM, endDateStr)
+                    .queryParam(START_DATE_PARAMETER, startDateStr)
+                    .queryParam(END_DATE_PARAMETER, endDateStr)
                     .encode()
                     .build()
                     .toUriString();
@@ -147,8 +149,7 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
 
             String expectedResponse = objectMapper.writeValueAsString(expectedResponseDTOs);
 
-            mockMvc.perform(get(URL)
-                    .accept(MediaType.APPLICATION_JSON))
+            mockMvc.perform(get(URL).accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(Math.toIntExact(expectedSize))))
                     .andExpect(content().json(expectedResponse));
@@ -163,14 +164,13 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
             String endDateStr = endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
             String URL = UriComponentsBuilder.fromUriString(EXCHANGE_RATES_API_URL + TIME_SERIES)
-                    .queryParam(START_DATE_PARAM, startDateStr)
-                    .queryParam(END_DATE_PARAM, endDateStr)
+                    .queryParam(START_DATE_PARAMETER, startDateStr)
+                    .queryParam(END_DATE_PARAMETER, endDateStr)
                     .encode()
                     .build()
                     .toUriString();
 
-            mockMvc.perform(get(URL)
-                    .accept(MediaType.APPLICATION_JSON))
+            mockMvc.perform(get(URL).accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.EXCHANGE_RATES_AT_DATE_NOT_FOUND.getMessage()));
@@ -185,14 +185,13 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
             String endDateStr = endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
             String URL = UriComponentsBuilder.fromUriString(EXCHANGE_RATES_API_URL + TIME_SERIES)
-                    .queryParam(START_DATE_PARAM, startDateStr)
-                    .queryParam(END_DATE_PARAM, endDateStr)
+                    .queryParam(START_DATE_PARAMETER, startDateStr)
+                    .queryParam(END_DATE_PARAMETER, endDateStr)
                     .encode()
                     .build()
                     .toUriString();
 
-            mockMvc.perform(get(URL)
-                    .accept(MediaType.APPLICATION_JSON))
+            mockMvc.perform(get(URL).accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.EXCHANGE_RATES_AT_DATE_NOT_FOUND.getMessage()));

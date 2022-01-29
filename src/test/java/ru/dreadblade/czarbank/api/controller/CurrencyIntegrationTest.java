@@ -69,12 +69,9 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
     @Autowired
     UserRepository userRepository;
 
-    private static final String VALIDATION_ERROR = "Validation error";
-    private static final String INVALID_REQUEST = "Invalid request";
-
     @Nested
     @DisplayName("findAll() Tests")
-    class findAllTests {
+    class FindAllTests {
         @Test
         void findAll_withoutAuth_isSuccessful() throws Exception {
             long expectedSize = currencyRepository.count();
@@ -110,7 +107,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("createCurrency() Tests")
-    class createCurrencyTests {
+    class CreateCurrencyTests {
         @Test
         @WithUserDetails("admin")
         @Rollback
@@ -237,20 +234,16 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                             .value(ExceptionMessage.UNSUPPORTED_CURRENCY.getMessage()));
         }
 
-        @DisplayName("Validation Tests")
         @Nested
+        @DisplayName("Validation Tests")
         class ValidationTests {
             @Test
             @WithUserDetails("admin")
-            @Rollback
-            void createCurrency_withAuth_withPermission_withBlankCodeAndSymbol_validationIsFailed_responseIsCorrect() throws Exception {
+            void createCurrency_withAuth_withPermission_withNullCodeAndSymbol_validationIsFailed_responseIsCorrect() throws Exception {
                 CurrencyRequestDTO requestDTO = CurrencyRequestDTO.builder()
                         .code(null)
                         .symbol(null)
                         .build();
-
-                Assertions.assertThat(currencyRepository.existsByCode(requestDTO.getCode())).isFalse();
-                Assertions.assertThat(currencyRepository.existsBySymbol(requestDTO.getSymbol())).isFalse();
 
                 String requestContent = objectMapper.writeValueAsString(requestDTO);
 
@@ -273,15 +266,11 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
 
             @Test
             @WithUserDetails("admin")
-            @Rollback
             void createCurrency_withAuth_withPermission_withInvalidCodeAndSymbol_isSuccessful() throws Exception {
                 CurrencyRequestDTO requestDTO = CurrencyRequestDTO.builder()
                         .code(RandomStringUtils.randomAlphabetic(5))
                         .symbol(RandomStringUtils.randomAlphabetic(5))
                         .build();
-
-                Assertions.assertThat(currencyRepository.existsByCode(requestDTO.getCode())).isFalse();
-                Assertions.assertThat(currencyRepository.existsBySymbol(requestDTO.getSymbol())).isFalse();
 
                 String requestContent = objectMapper.writeValueAsString(requestDTO);
 
@@ -306,7 +295,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("exchangeCurrency() Tests")
-    class exchangeCurrencyTests {
+    class ExchangeCurrencyTests {
         @Test
         void exchangeCurrency_fromRubToUsd_isSuccessful() {
             Currency sourceCurrency = currencyRepository.findByCode("RUB").orElseThrow();
@@ -320,7 +309,6 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .getExchangeRate();
 
             BigDecimal amountInRub = new BigDecimal(10000L);
-
             BigDecimal amountInUsd = currencyService.exchangeCurrency(sourceCurrency, amountInRub, targetCurrency);
 
             Assertions.assertThat(amountInUsd).isEqualByComparingTo(amountInRub.divide(exchangeRate, RoundingMode.HALF_EVEN));
@@ -339,7 +327,6 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .getExchangeRate();
 
             BigDecimal amountInUsd = new BigDecimal(100L);
-
             BigDecimal amountInRub = currencyService.exchangeCurrency(sourceCurrency, amountInUsd, targetCurrency);
 
             Assertions.assertThat(amountInRub).isEqualByComparingTo(amountInUsd.multiply(exchangeRate));
@@ -376,7 +363,6 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .getExchangeRate();
 
             BigDecimal amountInJpy = new BigDecimal(10000L);
-
             BigDecimal amountInRub = currencyService.exchangeCurrency(sourceCurrency, amountInJpy, targetCurrency);
 
             Assertions.assertThat(amountInRub).isEqualByComparingTo(amountInJpy.multiply(exchangeRate));
@@ -390,7 +376,6 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(sourceCurrency.getCode()).isEqualTo(targetCurrency.getCode());
 
             BigDecimal amountInRub = new BigDecimal(10000L);
-
             BigDecimal exchangedAmountInRub = currencyService.exchangeCurrency(sourceCurrency, amountInRub, targetCurrency);
 
             Assertions.assertThat(amountInRub).isEqualByComparingTo(exchangedAmountInRub);
@@ -404,7 +389,6 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(sourceCurrency.getCode()).isEqualTo(targetCurrency.getCode());
 
             BigDecimal amountInUsd = new BigDecimal(10000L);
-
             BigDecimal exchangedAmountInUsd = currencyService.exchangeCurrency(sourceCurrency, amountInUsd, targetCurrency);
 
             Assertions.assertThat(amountInUsd).isEqualByComparingTo(exchangedAmountInUsd);
@@ -428,9 +412,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .getExchangeRate();
 
             BigDecimal amountInEur = new BigDecimal(10000L);
-
             BigDecimal amountInUsd = currencyService.exchangeCurrency(sourceCurrency, amountInEur, targetCurrency);
-
             BigDecimal expected = amountInEur.multiply(exchangeRateToRub).divide(exchangeRateFromRub, RoundingMode.HALF_EVEN);
 
             Assertions.assertThat(amountInUsd).isEqualByComparingTo(expected);
@@ -454,9 +436,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .getExchangeRate();
 
             BigDecimal amountInJpy = new BigDecimal(10000L);
-
             BigDecimal amountInUsd = currencyService.exchangeCurrency(sourceCurrency, amountInJpy, targetCurrency);
-
             BigDecimal expected = amountInJpy.multiply(exchangeRateToRub).divide(exchangeRateFromRub, RoundingMode.HALF_EVEN);
 
             Assertions.assertThat(amountInUsd).isEqualByComparingTo(expected);
@@ -480,9 +460,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .getExchangeRate();
 
             BigDecimal amountInUsd = new BigDecimal(10000L);
-
             BigDecimal amountInJpy = currencyService.exchangeCurrency(sourceCurrency, amountInUsd, targetCurrency);
-
             BigDecimal expected = amountInUsd.multiply(exchangeRateToRub).divide(exchangeRateFromRub, RoundingMode.HALF_EVEN);
 
             Assertions.assertThat(amountInJpy).isEqualByComparingTo(expected);

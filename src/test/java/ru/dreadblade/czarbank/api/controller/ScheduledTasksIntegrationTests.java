@@ -32,7 +32,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
 @SpringBootTest(properties = { "czar-bank.currency.exchange-rate.update-rate-in-millis=5000" })
-@DisplayName("ExchangeRate Integration Tests")
+@DisplayName("ScheduledTasks Integration Tests")
 @Sql(value = { "/user/users-insertion.sql", "/bank-account/bank-accounts-insertion.sql" }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(value = { "/bank-account/bank-accounts-deletion.sql", "/user/users-deletion.sql" }, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class ScheduledTasksIntegrationTests extends BaseIntegrationTest {
@@ -52,7 +52,7 @@ public class ScheduledTasksIntegrationTests extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("Fetch exchange rates from the Central Bank Of Russia Tests")
-    class fetchExchangeRatesFromCentralBankOfRussia {
+    class FetchExchangeRatesFromCentralBankOfRussiaTests {
         @Test
         @Rollback
         void fetchExchangeRatesFromCentralBankOfRussia_isSuccessful() {

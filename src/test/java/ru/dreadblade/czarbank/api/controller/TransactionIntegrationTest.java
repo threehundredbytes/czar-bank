@@ -64,13 +64,9 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
     private static final String BANK_ACCOUNTS_API_URL = "/api/bank-accounts";
     private static final String TRANSACTIONS = "transactions";
 
-    private static final String VALIDATION_ERROR = "Validation error";
-    private static final String INVALID_REQUEST = "Invalid request";
-
     @Nested
     @DisplayName("findAll() Tests")
     class FindAllTests {
-
         @Test
         @WithUserDetails("admin")
         void findAll_withAuth_withPermission_isSuccessful() throws Exception {
@@ -127,7 +123,6 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
     @Nested
     @DisplayName("findAllByBankAccountId() Tests")
     class FindAllByBankAccountIdTests {
-
         @Test
         @WithUserDetails("admin")
         void findAllByBankAccountId_withAuth_withPermission_isSuccessful() throws Exception {
@@ -140,7 +135,6 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .collect(Collectors.toList());
 
             int expectedSize = expectedTransactions.size();
-
             String expectedResponse = objectMapper.writeValueAsString(expectedTransactions);
 
             mockMvc.perform(get(BANK_ACCOUNTS_API_URL + "/" + bankAccountForTest.getId() + "/" + TRANSACTIONS)
@@ -162,7 +156,6 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .collect(Collectors.toList());
 
             int expectedSize = expectedTransactions.size();
-
             String expectedResponse = objectMapper.writeValueAsString(expectedTransactions);
 
             mockMvc.perform(get(BANK_ACCOUNTS_API_URL + "/" + bankAccountForTest.getId() + "/" + TRANSACTIONS)
@@ -250,7 +243,6 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             BigDecimal destinationBankAccountBalanceBeforeTransaction = destinationBankAccount.getBalance();
 
             BigDecimal transactionAmount = transactionRequest.getAmount();
-
             BigDecimal transactionAmountWithCommission = transactionAmount.add(transactionAmount
                     .multiply(sourceBankAccount.getBankAccountType().getTransactionCommission()));
 
@@ -619,8 +611,8 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.message").value(ExceptionMessage.NOT_ENOUGH_BALANCE.getMessage()));
         }
 
-        @DisplayName("Validation Tests")
         @Nested
+        @DisplayName("Validation Tests")
         class ValidationTests {
             @Test
             @WithUserDetails("admin")

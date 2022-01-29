@@ -59,9 +59,6 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
     private static final String USERS_API_URL = "/api/users";
 
-    private static final String VALIDATION_ERROR = "Validation error";
-    private static final String INVALID_REQUEST = "Invalid request";
-
     @Nested
     @DisplayName("findAll() Tests")
     class FindAllTests {
@@ -162,6 +159,27 @@ public class UserIntegrationTest extends BaseIntegrationTest {
             mockMvc.perform(get(USERS_API_URL + "/" + expectedUserId))
                     .andExpect(status().isNotFound());
         }
+
+        @Nested
+        @DisplayName("Request validation tests")
+        class RequestValidationTests {
+            @Test
+            @WithUserDetails("admin")
+            void findUserById_withAuth_withPermission_invalidUserId_isFailed_responseIsValid() throws Exception {
+                String expectedUserId = "userIdMustBeLong!";
+
+                String requestUrl = USERS_API_URL + "/" + expectedUserId;
+
+                mockMvc.perform(get(requestUrl))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                        .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                        .andExpect(jsonPath("$.message").value("The parameter «userId» with value of «"
+                                + expectedUserId + "» cannot be converted to «Long»"))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
+        }
     }
 
     @Nested
@@ -252,12 +270,11 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                             .value(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS.getMessage()));
         }
 
-        @DisplayName("Validation Tests")
         @Nested
+        @DisplayName("Validation Tests")
         class ValidationTests {
             @Test
             @WithUserDetails("admin")
-            @Transactional
             void createUser_withAuth_withPermission_withoutUsername_validationIsFailed_responseIsCorrect() throws Exception {
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
                         .email("boyarin@czarbank.org")
@@ -281,7 +298,6 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
             @Test
             @WithUserDetails("admin")
-            @Transactional
             void createUser_withAuth_withPermission_withoutEmail_validationIsFailed_responseIsCorrect() throws Exception {
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
                         .username("boyarin")
@@ -305,7 +321,6 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
             @Test
             @WithUserDetails("admin")
-            @Transactional
             void createUser_withAuth_withPermission_withoutPassword_validationIsFailed_responseIsCorrect() throws Exception {
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
                         .username("boyarin")
@@ -329,7 +344,6 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
             @Test
             @WithUserDetails("admin")
-            @Transactional
             void createUser_withAuth_withPermission_withoutUsername_withoutEmail_withoutPassword_validationIsFailed_responseIsCorrect() throws Exception {
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
                         .addRole(BASE_ROLE_ID + 2L)
@@ -499,11 +513,10 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                             .value(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS.getMessage()));
         }
 
-        @DisplayName("Validation Tests")
         @Nested
+        @DisplayName("Validation Tests")
         class ValidationTests {
             @Test
-            @Transactional
             @WithUserDetails("admin")
             void updateUserById_withAuth_withPermission_withoutName_withoutEmail_withNullRoles_validationIsFailed_responseIsCorrect() throws Exception {
                 User userToBeUpdated = userRepository.findById(BASE_USER_ID + 4L).orElseThrow();
@@ -591,27 +604,6 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
             mockMvc.perform(delete(USERS_API_URL + "/" + userDeletionId))
                     .andExpect(status().isNotFound());
-        }
-    }
-
-    @DisplayName("Request validation tests")
-    @Nested
-    class RequestValidationTests {
-        @Test
-        @WithUserDetails("admin")
-        void findUserById_withAuth_withPermission_invalidUserId_isFailed_responseIsValid() throws Exception {
-            String expectedUserId = "userIdMustBeLong!";
-
-            String requestUrl = USERS_API_URL + "/" + expectedUserId;
-
-            mockMvc.perform(get(requestUrl))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
-                    .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
-                    .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                    .andExpect(jsonPath("$.message").value("The parameter «userId» with value of «"
-                            + expectedUserId + "» cannot be converted to «Long»"))
-                    .andExpect(jsonPath("$.path").value(requestUrl));
         }
     }
 }

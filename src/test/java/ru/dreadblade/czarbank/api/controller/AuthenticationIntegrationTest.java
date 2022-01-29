@@ -168,11 +168,11 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                         .andExpect(status().isUnprocessableEntity())
                         .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
                         .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
-                        .andExpect(jsonPath("$.error").value("Validation error"))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
                         .andExpect(jsonPath("$.errors", hasSize(2)))
                         .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("username", "password")))
                         .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Username must be not empty", "Password must be not empty")))
-                        .andExpect(jsonPath("$.message").value("Invalid request"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
                         .andExpect(jsonPath("$.path").value(LOGIN_API_URL));
             }
         }
@@ -496,8 +496,8 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                             .value(ExceptionMessage.REFRESH_TOKEN_EXPIRED.getMessage()));
         }
 
-        @DisplayName("Validation Tests")
         @Nested
+        @DisplayName("Validation Tests")
         class ValidationTests {
             @Test
             void refreshTokens_withEmptyRequestFields_validationIsFailed_responseIsValid() throws Exception {
@@ -511,11 +511,11 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                         .andExpect(status().isUnprocessableEntity())
                         .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
                         .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
-                        .andExpect(jsonPath("$.error").value("Validation error"))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
                         .andExpect(jsonPath("$.errors", hasSize(1)))
                         .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("refreshToken")))
                         .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Refresh token must be not empty")))
-                        .andExpect(jsonPath("$.message").value("Invalid request"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
                         .andExpect(jsonPath("$.path").value(REFRESH_TOKENS_API_URL));
             }
         }
@@ -627,8 +627,8 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.message").value(ExceptionMessage.INVALID_REFRESH_TOKEN.getMessage()));
         }
 
-        @DisplayName("Validation Tests")
         @Nested
+        @DisplayName("Validation Tests")
         class ValidationTests {
             @Test
             void logout_withEmptyRequestFields_validationIsFailed_responseIsValid() throws Exception {
@@ -642,18 +642,18 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                         .andExpect(status().isUnprocessableEntity())
                         .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
                         .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
-                        .andExpect(jsonPath("$.error").value("Validation error"))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
                         .andExpect(jsonPath("$.errors", hasSize(1)))
                         .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("refreshToken")))
                         .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Refresh token must be not empty")))
-                        .andExpect(jsonPath("$.message").value("Invalid request"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
                         .andExpect(jsonPath("$.path").value(LOGOUT_API_URL));
             }
         }
     }
 
-    @DisplayName("Request validation tests")
     @Nested
+    @DisplayName("Request validation tests")
     class RequestValidationTests {
         @Test
         void login_withInvalidJsonInRequestBody_isFailed_responseIsValid() throws Exception {
@@ -679,6 +679,8 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
             String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
 
+            String message = "Content type «" + MediaType.TEXT_PLAIN_VALUE + "» not supported!";
+
             mockMvc.perform(post(LOGIN_API_URL)
                             .contentType(MediaType.TEXT_PLAIN)
                             .content(requestContent))
@@ -686,7 +688,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
                     .andExpect(jsonPath("$.status").value(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()))
                     .andExpect(jsonPath("$.error").value(HttpStatus.UNSUPPORTED_MEDIA_TYPE.getReasonPhrase()))
-                    .andExpect(jsonPath("$.message").value("Content type «" + MediaType.TEXT_PLAIN_VALUE + "» not supported!"))
+                    .andExpect(jsonPath("$.message").value(message))
                     .andExpect(jsonPath("$.path").value(LOGIN_API_URL));
         }
 
@@ -699,6 +701,9 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
             String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
 
+            String message = "Request method «" + RequestMethod.PATCH + "» not supported! Supported methods are: «" +
+                    RequestMethod.POST + "»";
+
             mockMvc.perform(patch(LOGIN_API_URL)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestContent))
@@ -706,7 +711,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
                     .andExpect(jsonPath("$.status").value(HttpStatus.METHOD_NOT_ALLOWED.value()))
                     .andExpect(jsonPath("$.error").value(HttpStatus.METHOD_NOT_ALLOWED.getReasonPhrase()))
-                    .andExpect(jsonPath("$.message").value("Request method «" + RequestMethod.PATCH + "» not supported! Supported methods are: «" + RequestMethod.POST + "»"))
+                    .andExpect(jsonPath("$.message").value(message))
                     .andExpect(jsonPath("$.path").value(LOGIN_API_URL));
         }
     }

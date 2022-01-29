@@ -48,11 +48,8 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
 
     private static final String ROLES_API_URL = "/api/roles";
 
-    private static final String VALIDATION_ERROR = "Validation error";
-    private static final String INVALID_REQUEST = "Invalid request";
-
-    @DisplayName("findAll() Tests")
     @Nested
+    @DisplayName("findAll() Tests")
     class FindAllTests {
         @Test
         @WithUserDetails("admin")
@@ -101,8 +98,8 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         }
     }
 
-    @DisplayName("findRoleById() Tests")
     @Nested
+    @DisplayName("findRoleById() Tests")
     class FindRoleByIdTests {
         @Test
         @WithUserDetails("admin")
@@ -148,8 +145,8 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         }
     }
 
-    @DisplayName("createRole() Tests")
     @Nested
+    @DisplayName("createRole() Tests")
     class CreateRoleTests {
         @Test
         @WithUserDetails("admin")
@@ -246,8 +243,8 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(rolesCountBeforeCreating).isEqualTo(roleRepository.count());
         }
 
-        @DisplayName("Validation Tests")
         @Nested
+        @DisplayName("Validation Tests")
         class ValidationTests {
             @Test
             @WithUserDetails("admin")
@@ -360,8 +357,8 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         }
     }
 
-    @DisplayName("updateRole() Tests")
     @Nested
+    @DisplayName("updateRole() Tests")
     class UpdateRoleByIdTests {
         @Test
         @WithUserDetails("admin")
@@ -586,8 +583,8 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                             .value(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS.getMessage()));
         }
 
-        @DisplayName("Validation Tests")
         @Nested
+        @DisplayName("Validation Tests")
         class ValidationTests {
             @Test
             @WithUserDetails("admin")
@@ -626,8 +623,8 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         }
     }
 
-    @DisplayName("deleteRoleById() Tests")
     @Nested
+    @DisplayName("deleteRoleById() Tests")
     class DeleteRoleTests {
         @Test
         @WithUserDetails("admin")

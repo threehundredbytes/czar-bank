@@ -52,9 +52,6 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
 
     private static final String BANK_ACCOUNTS_API_URL = "/api/bank-accounts";
 
-    private static final String VALIDATION_ERROR = "Validation error";
-    private static final String INVALID_REQUEST = "Invalid request";
-
     @Nested
     @DisplayName("findAll() Tests")
     class FindAllTests {
@@ -333,8 +330,8 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.message").value("Access is denied"));
         }
 
-        @DisplayName("Validation Tests")
         @Nested
+        @DisplayName("Validation Tests")
         class ValidationTests {
             @Test
             @WithUserDetails("admin")
