@@ -4,9 +4,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.mapper.BankAccountTypeMapper;
 import ru.dreadblade.czarbank.api.model.request.BankAccountTypeRequestDTO;
+import ru.dreadblade.czarbank.api.model.request.validation.CreateRequest;
+import ru.dreadblade.czarbank.api.model.request.validation.UpdateRequest;
 import ru.dreadblade.czarbank.api.model.response.BankAccountTypeResponseDTO;
 import ru.dreadblade.czarbank.domain.BankAccountType;
 import ru.dreadblade.czarbank.service.BankAccountTypeService;
@@ -38,7 +41,7 @@ public class BankAccountTypeController {
     @PreAuthorize("hasAuthority('BANK_ACCOUNT_TYPE_CREATE')")
     @PostMapping
     public ResponseEntity<BankAccountTypeResponseDTO> createBankAccountType(
-            @RequestBody BankAccountTypeRequestDTO requestDTO,
+            @Validated(CreateRequest.class) @RequestBody BankAccountTypeRequestDTO requestDTO,
             HttpServletRequest request
     ) {
         BankAccountType createdType = bankAccountTypeService.create(requestDTO);
@@ -52,12 +55,11 @@ public class BankAccountTypeController {
     @PutMapping("/{bankAccountTypeId}")
     public ResponseEntity<BankAccountTypeResponseDTO> updateBankAccountTypeById(
             @PathVariable long bankAccountTypeId,
-            @RequestBody BankAccountTypeRequestDTO requestDTO
+            @Validated(UpdateRequest.class) @RequestBody BankAccountTypeRequestDTO requestDTO
     ) {
         BankAccountType updatedType = bankAccountTypeService.updateById(bankAccountTypeId, requestDTO);
 
-        return ResponseEntity.ok(bankAccountTypeMapper
-                .entityToResponseDto(updatedType));
+        return ResponseEntity.ok(bankAccountTypeMapper.entityToResponseDto(updatedType));
     }
 
     @PreAuthorize("hasAuthority('BANK_ACCOUNT_TYPE_DELETE')")

@@ -32,6 +32,7 @@ public class BankAccountTypeService {
         return bankAccountTypeRepository.save(BankAccountType.builder()
                 .name(requestDTO.getName())
                 .transactionCommission(requestDTO.getTransactionCommission())
+                .currencyExchangeCommission(requestDTO.getCurrencyExchangeCommission())
                 .build());
     }
 
@@ -53,6 +54,12 @@ public class BankAccountTypeService {
 
         if (transactionCommission != null) {
             bankAccountTypeToUpdate.setTransactionCommission(transactionCommission);
+        }
+
+        BigDecimal currencyExchangeCommission = requestDTO.getCurrencyExchangeCommission();
+
+        if (currencyExchangeCommission != null) {
+            bankAccountTypeToUpdate.setCurrencyExchangeCommission(currencyExchangeCommission);
         }
 
         return bankAccountTypeRepository.save(bankAccountTypeToUpdate);
