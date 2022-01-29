@@ -1,27 +1,26 @@
 package ru.dreadblade.czarbank.domain.security;
 
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import ru.dreadblade.czarbank.domain.BaseEntity;
 
 import javax.persistence.*;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "users")
-public class User implements UserDetails {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-
+public class User extends BaseEntity implements UserDetails {
     private String userId;
 
     private String username;
@@ -30,12 +29,12 @@ public class User implements UserDetails {
 
     private String email;
 
-    @Singular
+    @Singular(value = "addRole")
     @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.MERGE })
     @JoinTable(name = "user_role",
             joinColumns = { @JoinColumn(name = "USER_ID", referencedColumnName = "ID") },
             inverseJoinColumns = { @JoinColumn(name = "ROLE_ID", referencedColumnName = "ID" ) })
-    private Set<Role> roles;
+    private Set<Role> roles = Collections.emptySet();
 
     @Builder.Default
     private boolean isEmailVerified = false;

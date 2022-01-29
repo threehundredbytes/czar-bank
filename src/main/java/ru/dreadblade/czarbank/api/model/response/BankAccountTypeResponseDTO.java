@@ -13,4 +13,5 @@ public class BankAccountTypeResponseDTO {
     private Long id;
     private String name;
     private BigDecimal transactionCommission;
+    private BigDecimal currencyExchangeCommission;
 }

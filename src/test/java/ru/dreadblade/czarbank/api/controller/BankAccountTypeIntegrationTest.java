@@ -1,16 +1,18 @@
 package ru.dreadblade.czarbank.api.controller;
 
 import org.assertj.core.api.Assertions;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
-import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 import ru.dreadblade.czarbank.api.mapper.BankAccountTypeMapper;
 import ru.dreadblade.czarbank.api.model.request.BankAccountTypeRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.BankAccountTypeResponseDTO;
@@ -23,6 +25,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -50,7 +53,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         @Test
         void findAll_withoutAuth_isSuccessful() throws Exception {
             List<BankAccountTypeResponseDTO> expectedTypes = bankAccountTypeRepository.findAll().stream()
-                    .map(bankAccountTypeMapper::bankAccountTypeToBankAccountTypeResponse)
+                    .map(bankAccountTypeMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             long expectedSize = bankAccountTypeRepository.count();
@@ -86,7 +89,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         void createBankAccountType_withAuth_withPermission_isSuccessful() throws Exception {
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name("New BankAccountType")
-                    .transactionCommission(new BigDecimal("0.07"))
+                    .transactionCommission(new BigDecimal("0.001"))
+                    .currencyExchangeCommission(new BigDecimal("0.001"))
                     .build();
 
             String expectedResponse = objectMapper.writeValueAsString(bankAccountTypeRequest);
@@ -95,15 +99,16 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
                     .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.id").isNumber())
                     .andExpect(content().json(expectedResponse));
 
             BankAccountType createdType = bankAccountTypeRepository.findByName(bankAccountTypeRequest.getName())
                     .orElseThrow();
 
-            Assertions.assertThat(createdType.getName()).isEqualTo(bankAccountTypeRequest.getName());
-
             Assertions.assertThat(createdType.getTransactionCommission())
-                    .isEqualTo(bankAccountTypeRequest.getTransactionCommission());
+                    .isEqualByComparingTo(bankAccountTypeRequest.getTransactionCommission());
+            Assertions.assertThat(createdType.getCurrencyExchangeCommission())
+                    .isEqualByComparingTo(bankAccountTypeRequest.getCurrencyExchangeCommission());
         }
 
         @Test
@@ -111,7 +116,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         void createBankAccountType_withAuth_isFailed() throws Exception {
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name("New BankAccountType")
-                    .transactionCommission(new BigDecimal("0.07"))
+                    .transactionCommission(new BigDecimal("0.001"))
+                    .currencyExchangeCommission(new BigDecimal("0.001"))
                     .build();
 
             mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
@@ -127,7 +133,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         void createBankAccountType_withoutAuth_isFailed() throws Exception {
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name("New BankAccountType")
-                    .transactionCommission(new BigDecimal("0.07"))
+                    .transactionCommission(new BigDecimal("0.001"))
+                    .currencyExchangeCommission(new BigDecimal("0.001"))
                     .build();
 
             mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
@@ -147,7 +154,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name(typeFromDb.getName())
-                    .transactionCommission(new BigDecimal("0.07"))
+                    .transactionCommission(new BigDecimal("0.001"))
+                    .currencyExchangeCommission(new BigDecimal("0.001"))
                     .build();
 
             mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
@@ -157,6 +165,108 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.BANK_ACCOUNT_TYPE_NAME_ALREADY_EXISTS.getMessage()));
         }
+
+        @Nested
+        @DisplayName("Validation Tests")
+        class ValidationTests {
+            @Test
+            @WithUserDetails("admin")
+            void createBankAccountType_withAuth_withPermission_withBlankName_validationIsFailed_responseIsCorrect() throws Exception {
+                BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
+                        .name(" ")
+                        .transactionCommission(new BigDecimal("0.001"))
+                        .currencyExchangeCommission(new BigDecimal("0.001"))
+                        .build();
+
+                mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("name"))
+                        .andExpect(jsonPath("$.errors[0].message").value("Bank account type name must be not empty"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(BANK_ACCOUNT_TYPES_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createBankAccountType_withAuth_withPermission_withLongName_validationIsFailed_responseIsCorrect() throws Exception {
+                BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
+                        .name(RandomStringUtils.randomAlphabetic(33))
+                        .transactionCommission(new BigDecimal("0.001"))
+                        .currencyExchangeCommission(new BigDecimal("0.001"))
+                        .build();
+
+                mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("name"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The maximum length of the bank account type name is 32 characters"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(BANK_ACCOUNT_TYPES_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createBankAccountType_withAuth_withPermission_withInvalidTransactionCommissionAndCurrencyExchangeCommission_validationIsFailed_responseIsCorrect() throws Exception {
+                BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
+                        .name("New bank account type")
+                        .transactionCommission(new BigDecimal("0.00000000001"))
+                        .currencyExchangeCommission(new BigDecimal("1"))
+                        .build();
+
+                mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(2)))
+                        .andExpect(jsonPath("$.errors[*].field")
+                                .value(containsInAnyOrder("transactionCommission", "currencyExchangeCommission")))
+                        .andExpect(jsonPath("$.errors[*].message")
+                                .value(containsInAnyOrder("Transaction commission must contain 0 integers and up to 10 fractional numbers (inclusive)",
+                                        "Currency exchange commission must contain 0 integers and up to 10 fractional numbers (inclusive)")))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(BANK_ACCOUNT_TYPES_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createBankAccountType_withAuth_withPermission_withNullName_withNullCommissions_validationIsFailed_responseIsCorrect() throws Exception {
+                BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
+                        .name(null)
+                        .transactionCommission(null)
+                        .currencyExchangeCommission(null)
+                        .build();
+
+                mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(3)))
+                        .andExpect(jsonPath("$.errors[*].field")
+                                .value(containsInAnyOrder("name", "transactionCommission", "currencyExchangeCommission")))
+                        .andExpect(jsonPath("$.errors[*].message")
+                                .value(containsInAnyOrder("Bank account type name must be not empty",
+                                        "Transaction commission must be not null", "Currency exchange commission must be not null")))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(BANK_ACCOUNT_TYPES_API_URL));
+            }
+        }
     }
 
     @Nested
@@ -164,14 +274,15 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
     class UpdateBankAccountTypeTests {
         @Test
         @WithUserDetails("admin")
-        @Transactional
+        @Rollback
         void updateBankAccountType_withAuth_withPermission_isSuccessful() throws Exception {
             BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
                     .orElseThrow();
 
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
-                    .name("New BankAccountType (old name is \"" + unusedBankAccountType.getName() + "\")")
+                    .name("Updated unused bank account")
                     .transactionCommission(new BigDecimal("0.07"))
+                    .currencyExchangeCommission(new BigDecimal("0.05"))
                     .build();
 
             String expectedResponse = objectMapper.writeValueAsString(bankAccountTypeRequest);
@@ -186,11 +297,13 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .orElseThrow();
 
             Assertions.assertThat(createdType.getId()).isEqualTo(unusedBankAccountType.getId());
-
             Assertions.assertThat(createdType.getName()).isEqualTo(bankAccountTypeRequest.getName());
 
             Assertions.assertThat(createdType.getTransactionCommission())
-                    .isEqualTo(bankAccountTypeRequest.getTransactionCommission());
+                    .isEqualByComparingTo(bankAccountTypeRequest.getTransactionCommission());
+
+            Assertions.assertThat(createdType.getCurrencyExchangeCommission())
+                    .isEqualByComparingTo(bankAccountTypeRequest.getCurrencyExchangeCommission());
         }
 
         @Test
@@ -200,8 +313,9 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .orElseThrow();
 
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
-                    .name("New BankAccountType (old name is \"" + unusedBankAccountType.getName() + "\")")
+                    .name("Updated unused bank account")
                     .transactionCommission(new BigDecimal("0.07"))
+                    .currencyExchangeCommission(new BigDecimal("0.07"))
                     .build();
 
             mockMvc.perform(put(BANK_ACCOUNT_TYPES_API_URL + "/" + unusedBankAccountType.getId())
@@ -220,8 +334,9 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .orElseThrow();
 
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
-                    .name("New BankAccountType (old name is \"" + unusedBankAccountType.getName() + "\")")
+                    .name("Updated unused bank account")
                     .transactionCommission(new BigDecimal("0.07"))
+                    .currencyExchangeCommission(new BigDecimal("0.07"))
                     .build();
 
             mockMvc.perform(put(BANK_ACCOUNT_TYPES_API_URL + "/" + unusedBankAccountType.getId())
@@ -269,6 +384,75 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Bank account type doesn't exist"));
+        }
+
+        @Nested
+        @DisplayName("Validation Test")
+        class ValidationTests {
+            @Test
+            @WithUserDetails("admin")
+            @Rollback
+            void updateBankAccountType_withAuth_withPermission_withLongName_validationIsFailed_responseIsCorrect() throws Exception {
+                BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
+                        .orElseThrow();
+
+                BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
+                        .name("New BankAccountType (old name is \"" + unusedBankAccountType.getName() + "\")")
+                        .transactionCommission(new BigDecimal("0.07"))
+                        .currencyExchangeCommission(new BigDecimal("0.05"))
+                        .build();
+
+                String requestContent = objectMapper.writeValueAsString(bankAccountTypeRequest);
+
+                String requestUrl = BANK_ACCOUNT_TYPES_API_URL + "/" + unusedBankAccountType.getId();
+
+                mockMvc.perform(put(requestUrl)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestContent))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("name"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The maximum length of the bank account type name is 32 characters"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            @Rollback
+            void updateBankAccountType_withAuth_withPermission_withInvalidTransactionCommissionAndCurrencyExchangeCommission_validationIsFailed_responseIsCorrect() throws Exception {
+                BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
+                        .orElseThrow();
+
+                BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
+                        .name("Updated unused bank account")
+                        .transactionCommission(new BigDecimal("1"))
+                        .currencyExchangeCommission(new BigDecimal("1"))
+                        .build();
+
+                String requestContent = objectMapper.writeValueAsString(bankAccountTypeRequest);
+
+                String requestUrl = BANK_ACCOUNT_TYPES_API_URL + "/" + unusedBankAccountType.getId();
+
+                mockMvc.perform(put(requestUrl)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestContent))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(2)))
+                        .andExpect(jsonPath("$.errors[*].field")
+                                .value(containsInAnyOrder("transactionCommission", "currencyExchangeCommission")))
+                        .andExpect(jsonPath("$.errors[*].message")
+                                .value(containsInAnyOrder("Transaction commission must contain 0 integers and up to 10 fractional numbers (inclusive)",
+                                        "Currency exchange commission must contain 0 integers and up to 10 fractional numbers (inclusive)")))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
         }
     }
 

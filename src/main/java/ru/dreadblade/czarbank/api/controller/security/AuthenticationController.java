@@ -16,6 +16,7 @@ import ru.dreadblade.czarbank.security.service.AuthenticationService;
 import ru.dreadblade.czarbank.security.service.RefreshTokenService;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
 @RequestMapping("/api/auth")
 @RestController
@@ -32,7 +33,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthenticationResponseDTO> login(@RequestBody AuthenticationRequestDTO authenticationRequestDTO) {
+    public ResponseEntity<AuthenticationResponseDTO> login(@Valid @RequestBody AuthenticationRequestDTO authenticationRequestDTO) {
         User authenticatedUser = authenticationService.authenticateUser(authenticationRequestDTO);
 
         String accessToken = accessTokenService.generateAccessToken(authenticatedUser);
@@ -45,7 +46,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/refresh-tokens")
-    public ResponseEntity<AuthenticationResponseDTO> refreshTokens(@RequestBody RefreshTokensRequestDTO refreshTokensRequestDTO) {
+    public ResponseEntity<AuthenticationResponseDTO> refreshTokens(@Valid @RequestBody RefreshTokensRequestDTO refreshTokensRequestDTO) {
         String refreshToken = refreshTokensRequestDTO.getRefreshToken();
 
         return ResponseEntity.ok(AuthenticationResponseDTO.builder()
@@ -57,7 +58,7 @@ public class AuthenticationController {
     @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/logout")
-    public void logout(@RequestBody LogoutRequestDTO logoutRequestDTO,
+    public void logout(@Valid @RequestBody LogoutRequestDTO logoutRequestDTO,
                        HttpServletRequest request) {
         String accessToken = request.getHeader(HttpHeaders.AUTHORIZATION);
         String refreshToken = logoutRequestDTO.getRefreshToken();

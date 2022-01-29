@@ -25,7 +25,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
         "czar-bank.security.email-verification-token.expiration-seconds=5",
@@ -54,7 +55,6 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
     @Nested
     @DisplayName("verifyEmail() Tests")
     class VerifyEmailTests {
-
         @Test
         @Transactional
         void verifyEmail_isSuccessful() throws Exception {

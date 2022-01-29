@@ -7,6 +7,6 @@ import ru.dreadblade.czarbank.domain.Transaction;
 
 @Mapper
 public interface TransactionMapper {
-    Transaction transactionRequestToTransaction(TransactionRequestDTO transactionRequestDTO);
-    TransactionResponseDTO transactionToTransactionResponse(Transaction transaction);
+    Transaction requestDtoToEntity(TransactionRequestDTO transactionRequestDTO);
+    TransactionResponseDTO entityToResponseDto(Transaction transaction);
 }

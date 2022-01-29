@@ -1,21 +1,20 @@
 package ru.dreadblade.czarbank.domain.security;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
+import ru.dreadblade.czarbank.domain.BaseEntity;
 
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
 
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-public class Permission {
-    @Id
-    @GeneratedValue
-    private Long id;
-
+public class Permission extends BaseEntity {
     private String name;
 }

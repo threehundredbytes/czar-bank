@@ -1,16 +1,19 @@
 package ru.dreadblade.czarbank.api.controller;
 
 import org.assertj.core.api.Assertions;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
+import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 import ru.dreadblade.czarbank.api.mapper.CurrencyMapper;
 import ru.dreadblade.czarbank.api.model.request.CurrencyRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.CurrencyResponseDTO;
@@ -29,8 +32,8 @@ import java.math.RoundingMode;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -68,13 +71,13 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("findAll() Tests")
-    class findAllTests {
+    class FindAllTests {
         @Test
         void findAll_withoutAuth_isSuccessful() throws Exception {
             long expectedSize = currencyRepository.count();
 
             List<CurrencyResponseDTO> expectedDTOs = currencyRepository.findAll().stream()
-                    .map(currencyMapper::entityToResponseDTO)
+                    .map(currencyMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             String expectedResponse = objectMapper.writeValueAsString(expectedDTOs);
@@ -104,7 +107,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("createCurrency() Tests")
-    class createCurrencyTests {
+    class CreateCurrencyTests {
         @Test
         @WithUserDetails("admin")
         @Rollback
@@ -193,7 +196,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         void createCurrency_withAuth_withPermission_currencySymbolAlreadyExists_isFailed() throws Exception {
             CurrencyRequestDTO requestDTO = CurrencyRequestDTO.builder()
-                    .code("newUSD")
+                    .code("NEW")
                     .symbol("$")
                     .build();
 
@@ -230,11 +233,69 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.UNSUPPORTED_CURRENCY.getMessage()));
         }
+
+        @Nested
+        @DisplayName("Validation Tests")
+        class ValidationTests {
+            @Test
+            @WithUserDetails("admin")
+            void createCurrency_withAuth_withPermission_withNullCodeAndSymbol_validationIsFailed_responseIsCorrect() throws Exception {
+                CurrencyRequestDTO requestDTO = CurrencyRequestDTO.builder()
+                        .code(null)
+                        .symbol(null)
+                        .build();
+
+                String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+                mockMvc.perform(post(CURRENCIES_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestContent))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(2)))
+                        .andExpect(jsonPath("$.errors[*].field")
+                                .value(containsInAnyOrder("code", "symbol")))
+                        .andExpect(jsonPath("$.errors[*].message")
+                                .value(containsInAnyOrder("Currency code must be not empty",
+                                        "Currency symbol must be not empty")))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(CURRENCIES_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createCurrency_withAuth_withPermission_withInvalidCodeAndSymbol_isSuccessful() throws Exception {
+                CurrencyRequestDTO requestDTO = CurrencyRequestDTO.builder()
+                        .code(RandomStringUtils.randomAlphabetic(5))
+                        .symbol(RandomStringUtils.randomAlphabetic(5))
+                        .build();
+
+                String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+                mockMvc.perform(post(CURRENCIES_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestContent))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(2)))
+                        .andExpect(jsonPath("$.errors[*].field")
+                                .value(containsInAnyOrder("code", "symbol")))
+                        .andExpect(jsonPath("$.errors[*].message")
+                                .value(containsInAnyOrder("The length of the currency code must be 3 characters",
+                                        "The length of the currency symbol must be between 1 and 4 characters")))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(CURRENCIES_API_URL));
+            }
+        }
     }
 
     @Nested
     @DisplayName("exchangeCurrency() Tests")
-    class exchangeCurrencyTests {
+    class ExchangeCurrencyTests {
         @Test
         void exchangeCurrency_fromRubToUsd_isSuccessful() {
             Currency sourceCurrency = currencyRepository.findByCode("RUB").orElseThrow();
@@ -248,7 +309,6 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .getExchangeRate();
 
             BigDecimal amountInRub = new BigDecimal(10000L);
-
             BigDecimal amountInUsd = currencyService.exchangeCurrency(sourceCurrency, amountInRub, targetCurrency);
 
             Assertions.assertThat(amountInUsd).isEqualByComparingTo(amountInRub.divide(exchangeRate, RoundingMode.HALF_EVEN));
@@ -267,7 +327,6 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .getExchangeRate();
 
             BigDecimal amountInUsd = new BigDecimal(100L);
-
             BigDecimal amountInRub = currencyService.exchangeCurrency(sourceCurrency, amountInUsd, targetCurrency);
 
             Assertions.assertThat(amountInRub).isEqualByComparingTo(amountInUsd.multiply(exchangeRate));
@@ -304,7 +363,6 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .getExchangeRate();
 
             BigDecimal amountInJpy = new BigDecimal(10000L);
-
             BigDecimal amountInRub = currencyService.exchangeCurrency(sourceCurrency, amountInJpy, targetCurrency);
 
             Assertions.assertThat(amountInRub).isEqualByComparingTo(amountInJpy.multiply(exchangeRate));
@@ -318,7 +376,6 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(sourceCurrency.getCode()).isEqualTo(targetCurrency.getCode());
 
             BigDecimal amountInRub = new BigDecimal(10000L);
-
             BigDecimal exchangedAmountInRub = currencyService.exchangeCurrency(sourceCurrency, amountInRub, targetCurrency);
 
             Assertions.assertThat(amountInRub).isEqualByComparingTo(exchangedAmountInRub);
@@ -332,7 +389,6 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(sourceCurrency.getCode()).isEqualTo(targetCurrency.getCode());
 
             BigDecimal amountInUsd = new BigDecimal(10000L);
-
             BigDecimal exchangedAmountInUsd = currencyService.exchangeCurrency(sourceCurrency, amountInUsd, targetCurrency);
 
             Assertions.assertThat(amountInUsd).isEqualByComparingTo(exchangedAmountInUsd);
@@ -356,9 +412,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .getExchangeRate();
 
             BigDecimal amountInEur = new BigDecimal(10000L);
-
             BigDecimal amountInUsd = currencyService.exchangeCurrency(sourceCurrency, amountInEur, targetCurrency);
-
             BigDecimal expected = amountInEur.multiply(exchangeRateToRub).divide(exchangeRateFromRub, RoundingMode.HALF_EVEN);
 
             Assertions.assertThat(amountInUsd).isEqualByComparingTo(expected);
@@ -382,9 +436,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .getExchangeRate();
 
             BigDecimal amountInJpy = new BigDecimal(10000L);
-
             BigDecimal amountInUsd = currencyService.exchangeCurrency(sourceCurrency, amountInJpy, targetCurrency);
-
             BigDecimal expected = amountInJpy.multiply(exchangeRateToRub).divide(exchangeRateFromRub, RoundingMode.HALF_EVEN);
 
             Assertions.assertThat(amountInUsd).isEqualByComparingTo(expected);
@@ -408,9 +460,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .getExchangeRate();
 
             BigDecimal amountInUsd = new BigDecimal(10000L);
-
             BigDecimal amountInJpy = currencyService.exchangeCurrency(sourceCurrency, amountInUsd, targetCurrency);
-
             BigDecimal expected = amountInUsd.multiply(exchangeRateToRub).divide(exchangeRateFromRub, RoundingMode.HALF_EVEN);
 
             Assertions.assertThat(amountInJpy).isEqualByComparingTo(expected);

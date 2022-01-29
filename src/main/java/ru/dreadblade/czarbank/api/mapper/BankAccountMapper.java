@@ -13,5 +13,5 @@ public interface BankAccountMapper {
             @Mapping(target = "usedCurrencyId", source = "usedCurrency.id"),
             @Mapping(target = "bankAccountTypeId", source = "bankAccountType.id")
     })
-    BankAccountResponseDTO bankAccountToBankAccountResponse(BankAccount bankAccount);
+    BankAccountResponseDTO entityToResponseDto(BankAccount bankAccount);
 }

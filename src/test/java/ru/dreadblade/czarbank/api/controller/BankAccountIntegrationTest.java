@@ -1,12 +1,14 @@
 package ru.dreadblade.czarbank.api.controller;
 
 import org.assertj.core.api.Assertions;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.test.context.support.WithUserDetails;
@@ -57,7 +59,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         void findAll_withAuth_withPermission_isSuccessful() throws Exception {
             Set<BankAccountResponseDTO> expectedBankAccounts = bankAccountRepository.findAll().stream()
-                    .map(bankAccountMapper::bankAccountToBankAccountResponse)
+                    .map(bankAccountMapper::entityToResponseDto)
                     .collect(Collectors.toSet());
 
             long expectedSize = bankAccountRepository.count();
@@ -77,7 +79,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
             Long ownerId = BASE_USER_ID + 3L;
 
             Set<BankAccountResponseDTO> expectedBankAccounts = bankAccountRepository.findAll().stream()
-                    .map(bankAccountMapper::bankAccountToBankAccountResponse)
+                    .map(bankAccountMapper::entityToResponseDto)
                     .filter(bankAccount -> ownerId.equals(bankAccount.getOwnerId()))
                     .collect(Collectors.toSet());
 
@@ -123,7 +125,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         void findById_withAuth_withPermission_isSuccessful() throws Exception {
             BankAccount expectedBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 4L).orElseThrow();
 
-            BankAccountResponseDTO expectedResponseDTO = bankAccountMapper.bankAccountToBankAccountResponse(expectedBankAccount);
+            BankAccountResponseDTO expectedResponseDTO = bankAccountMapper.entityToResponseDto(expectedBankAccount);
 
             String expectedResponse = objectMapper.writeValueAsString(expectedResponseDTO);
 
@@ -138,7 +140,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         void findById_withAuth_asOwnerOfBankAccount_isSuccessful() throws Exception {
             BankAccount expectedBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow();
 
-            BankAccountResponseDTO expectedResponseDTO = bankAccountMapper.bankAccountToBankAccountResponse(expectedBankAccount);
+            BankAccountResponseDTO expectedResponseDTO = bankAccountMapper.entityToResponseDto(expectedBankAccount);
 
             String expectedResponse = objectMapper.writeValueAsString(expectedResponseDTO);
 
@@ -308,11 +310,14 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void createAccount_withoutAuth_isFailed() throws Exception {
-            Long expectedBankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
+            Long ownerId = BASE_USER_ID + 1L;
+            Long bankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
+            Long currencyId = BASE_CURRENCY_ID + 1L;
 
             BankAccountRequestDTO requestDTO = BankAccountRequestDTO.builder()
-                    .bankAccountTypeId(expectedBankAccountTypeId)
-                    .usedCurrencyId(BASE_CURRENCY_ID + 1L)
+                    .ownerId(ownerId)
+                    .bankAccountTypeId(bankAccountTypeId)
+                    .usedCurrencyId(currencyId)
                     .build();
 
             String requestContent = objectMapper.writeValueAsString(requestDTO);
@@ -323,6 +328,154 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isForbidden())
                     .andExpect(header().doesNotExist(HttpHeaders.LOCATION))
                     .andExpect(jsonPath("$.message").value("Access is denied"));
+        }
+
+        @Nested
+        @DisplayName("Validation Tests")
+        class ValidationTests {
+            @Test
+            @WithUserDetails("admin")
+            void createAccount_withAuth_withPermission_withNullOwnerId_validationIsFailed_responseIsCorrect() throws Exception {
+                Long ownerId = null;
+                Long bankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
+                Long currencyId = BASE_CURRENCY_ID + 1L;
+
+                User userForTest = userRepository.findByUsername("admin").orElseThrow();
+
+                Assertions.assertThat(userForTest.getAuthorities().stream()
+                                .map(GrantedAuthority::getAuthority)
+                                .collect(Collectors.toSet()))
+                        .contains("BANK_ACCOUNT_CREATE");
+
+                BankAccountRequestDTO requestDTO = BankAccountRequestDTO.builder()
+                        .ownerId(ownerId)
+                        .bankAccountTypeId(bankAccountTypeId)
+                        .usedCurrencyId(currencyId)
+                        .build();
+
+                String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+                mockMvc.perform(post(BANK_ACCOUNTS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestContent))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("ownerId"))
+                        .andExpect(jsonPath("$.errors[0].message").value("Owner id must be not null"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(BANK_ACCOUNTS_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createAccount_withAuth_withPermission_withNullBankAccountTypeId_validationIsFailed_responseIsCorrect() throws Exception {
+                User userForTest = userRepository.findByUsername("admin").orElseThrow();
+
+                Long ownerId = userForTest.getId();
+                Long bankAccountTypeId = null;
+                Long currencyId = BASE_CURRENCY_ID + 1L;
+
+                Assertions.assertThat(userForTest.getAuthorities().stream()
+                                .map(GrantedAuthority::getAuthority)
+                                .collect(Collectors.toSet()))
+                        .contains("BANK_ACCOUNT_CREATE");
+
+                BankAccountRequestDTO requestDTO = BankAccountRequestDTO.builder()
+                        .ownerId(ownerId)
+                        .bankAccountTypeId(bankAccountTypeId)
+                        .usedCurrencyId(currencyId)
+                        .build();
+
+                String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+                mockMvc.perform(post(BANK_ACCOUNTS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestContent))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("bankAccountTypeId"))
+                        .andExpect(jsonPath("$.errors[0].message").value("Bank account type id must be not null"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(BANK_ACCOUNTS_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createAccount_withAuth_withPermission_withNullCurrencyId_validationIsFailed_responseIsCorrect() throws Exception {
+                User userForTest = userRepository.findByUsername("admin").orElseThrow();
+
+                Long ownerId = userForTest.getId();
+                Long bankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
+                Long currencyId = null;
+
+                Assertions.assertThat(userForTest.getAuthorities().stream()
+                                .map(GrantedAuthority::getAuthority)
+                                .collect(Collectors.toSet()))
+                        .contains("BANK_ACCOUNT_CREATE");
+
+                BankAccountRequestDTO requestDTO = BankAccountRequestDTO.builder()
+                        .ownerId(ownerId)
+                        .bankAccountTypeId(bankAccountTypeId)
+                        .usedCurrencyId(currencyId)
+                        .build();
+
+                String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+                mockMvc.perform(post(BANK_ACCOUNTS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestContent))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("usedCurrencyId"))
+                        .andExpect(jsonPath("$.errors[0].message").value("Used currency id must be not null"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(BANK_ACCOUNTS_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createAccount_withAuth_withPermission_withNullOwnerId_withNullBankAccountTypeId_withNullCurrencyId_validationIsFailed_responseIsCorrect() throws Exception {
+                User userForTest = userRepository.findByUsername("admin").orElseThrow();
+
+                Long ownerId = null;
+                Long bankAccountTypeId = null;
+                Long currencyId = null;
+
+                Assertions.assertThat(userForTest.getAuthorities().stream()
+                                .map(GrantedAuthority::getAuthority)
+                                .collect(Collectors.toSet()))
+                        .contains("BANK_ACCOUNT_CREATE");
+
+                BankAccountRequestDTO requestDTO = BankAccountRequestDTO.builder()
+                        .ownerId(ownerId)
+                        .bankAccountTypeId(bankAccountTypeId)
+                        .usedCurrencyId(currencyId)
+                        .build();
+
+                String requestContent = objectMapper.writeValueAsString(requestDTO);
+
+                mockMvc.perform(post(BANK_ACCOUNTS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestContent))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(3)))
+                        .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("ownerId", "bankAccountTypeId", "usedCurrencyId")))
+                        .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Owner id must be not null", "Bank account type id must be not null", "Used currency id must be not null")))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(BANK_ACCOUNTS_API_URL));
+            }
         }
     }
 

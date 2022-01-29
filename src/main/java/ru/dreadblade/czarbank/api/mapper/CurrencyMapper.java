@@ -6,5 +6,5 @@ import ru.dreadblade.czarbank.domain.Currency;
 
 @Mapper
 public interface CurrencyMapper {
-    CurrencyResponseDTO entityToResponseDTO(Currency currency);
+    CurrencyResponseDTO entityToResponseDto(Currency currency);
 }

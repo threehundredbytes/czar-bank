@@ -53,15 +53,22 @@ public class RoleService {
         Role roleToUpdate = roleRepository.findById(roleId)
                 .orElseThrow(() -> new CzarBankException(ExceptionMessage.ROLE_NOT_FOUND));
 
-        if (roleRepository.existsByName(role.getName())) {
-            throw new CzarBankException(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS);
+        String roleName = role.getName();
+        Set<Permission> permissions = role.getPermissions();
+
+        if (roleName != null && !roleName.isBlank()) {
+            if (roleRepository.existsByName(roleName)) {
+                throw new CzarBankException(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS);
+            }
+
+            roleToUpdate.setName(roleName);
         }
 
-        roleToUpdate.setName(role.getName());
+        if (permissions != null && !permissions.isEmpty()) {
+            Set<Permission> existingPermissions = filterAndFindPermissionsFromDb(permissions);
 
-        Set<Permission> existingPermissions = filterAndFindPermissionsFromDb(role.getPermissions());
-
-        roleToUpdate.setPermissions(existingPermissions);
+            roleToUpdate.setPermissions(existingPermissions);
+        }
 
         return roleRepository.save(roleToUpdate);
     }

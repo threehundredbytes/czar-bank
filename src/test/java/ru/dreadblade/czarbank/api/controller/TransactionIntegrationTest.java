@@ -1,11 +1,14 @@
 package ru.dreadblade.czarbank.api.controller;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
@@ -27,6 +30,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -63,12 +67,11 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
     @Nested
     @DisplayName("findAll() Tests")
     class FindAllTests {
-
         @Test
         @WithUserDetails("admin")
         void findAll_withAuth_withPermission_isSuccessful() throws Exception {
             List<TransactionResponseDTO> expectedTransactions = transactionRepository.findAll().stream()
-                    .map(transactionMapper::transactionToTransactionResponse)
+                    .map(transactionMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             long expectedSize = transactionRepository.count();
@@ -120,7 +123,6 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
     @Nested
     @DisplayName("findAllByBankAccountId() Tests")
     class FindAllByBankAccountIdTests {
-
         @Test
         @WithUserDetails("admin")
         void findAllByBankAccountId_withAuth_withPermission_isSuccessful() throws Exception {
@@ -129,11 +131,10 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             List<TransactionResponseDTO> expectedTransactions = transactionRepository
                     .findAllByBankAccountId(bankAccountForTest.getId())
                     .stream()
-                    .map(transactionMapper::transactionToTransactionResponse)
+                    .map(transactionMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             int expectedSize = expectedTransactions.size();
-
             String expectedResponse = objectMapper.writeValueAsString(expectedTransactions);
 
             mockMvc.perform(get(BANK_ACCOUNTS_API_URL + "/" + bankAccountForTest.getId() + "/" + TRANSACTIONS)
@@ -151,11 +152,10 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             List<TransactionResponseDTO> expectedTransactions = transactionRepository
                     .findAllByBankAccountId(bankAccountForTest.getId())
                     .stream()
-                    .map(transactionMapper::transactionToTransactionResponse)
+                    .map(transactionMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             int expectedSize = expectedTransactions.size();
-
             String expectedResponse = objectMapper.writeValueAsString(expectedTransactions);
 
             mockMvc.perform(get(BANK_ACCOUNTS_API_URL + "/" + bankAccountForTest.getId() + "/" + TRANSACTIONS)
@@ -243,7 +243,6 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             BigDecimal destinationBankAccountBalanceBeforeTransaction = destinationBankAccount.getBalance();
 
             BigDecimal transactionAmount = transactionRequest.getAmount();
-
             BigDecimal transactionAmountWithCommission = transactionAmount.add(transactionAmount
                     .multiply(sourceBankAccount.getBankAccountType().getTransactionCommission()));
 
@@ -511,7 +510,6 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.SOURCE_BANK_ACCOUNT_DOESNT_EXIST.getMessage()));
-
         }
 
         @Test
@@ -529,7 +527,6 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.SOURCE_BANK_ACCOUNT_DOESNT_EXIST.getMessage()));
-
         }
 
         @Test
@@ -545,7 +542,6 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                             .content(objectMapper.writeValueAsString(transactionRequest)))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.message").value("Access is denied"));
-
         }
 
         @Test
@@ -554,7 +550,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(1L))
                     .sourceBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow().getNumber())
-                    .destinationBankAccountNumber("123")
+                    .destinationBankAccountNumber("01234567899876543210")
                     .build();
 
             mockMvc.perform(post(TRANSACTIONS_API_URL)
@@ -571,7 +567,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(1L))
                     .sourceBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow().getNumber())
-                    .destinationBankAccountNumber("123")
+                    .destinationBankAccountNumber("01234567899876543210")
                     .build();
 
             mockMvc.perform(post(TRANSACTIONS_API_URL)
@@ -588,7 +584,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(1L))
                     .sourceBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow().getNumber())
-                    .destinationBankAccountNumber("123")
+                    .destinationBankAccountNumber("01234567899876543210")
                     .build();
 
             mockMvc.perform(post(TRANSACTIONS_API_URL)
@@ -613,6 +609,63 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
                     .content(objectMapper.writeValueAsString(transactionRequest)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value(ExceptionMessage.NOT_ENOUGH_BALANCE.getMessage()));
+        }
+
+        @Nested
+        @DisplayName("Validation Tests")
+        class ValidationTests {
+            @Test
+            @WithUserDetails("admin")
+            void createTransaction_withAuth_withPermission_withNullAmount_withNullSourceAndDestinationBankAccountNumbers_validationIsFailed() throws Exception {
+                TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
+                        .amount(null)
+                        .sourceBankAccountNumber(null)
+                        .destinationBankAccountNumber(null)
+                        .build();
+
+                mockMvc.perform(post(TRANSACTIONS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(transactionRequest)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(3)))
+                        .andExpect(jsonPath("$.errors[*].field")
+                                .value(containsInAnyOrder("amount", "sourceBankAccountNumber", "destinationBankAccountNumber")))
+                        .andExpect(jsonPath("$.errors[*].message")
+                                .value(containsInAnyOrder("Transaction amount must be not null",
+                                        "Source bank account number must be not empty",
+                                        "Destination bank account number must be not empty")))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(TRANSACTIONS_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createTransaction_withAuth_withPermission_withInvalidSourceAndDestinationBankAccountNumbers_validationIsFailed() throws Exception {
+                TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
+                        .amount(BigDecimal.ZERO)
+                        .sourceBankAccountNumber(RandomStringUtils.randomNumeric(21))
+                        .destinationBankAccountNumber(RandomStringUtils.randomNumeric(19))
+                        .build();
+
+                mockMvc.perform(post(TRANSACTIONS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(transactionRequest)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(2)))
+                        .andExpect(jsonPath("$.errors[*].field")
+                                .value(containsInAnyOrder("sourceBankAccountNumber", "destinationBankAccountNumber")))
+                        .andExpect(jsonPath("$.errors[*].message")
+                                .value(containsInAnyOrder("The length of the source bank account number must be 20 characters",
+                                        "The length of the destination bank account number must be 20 characters")))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(TRANSACTIONS_API_URL));
+            }
         }
     }
 }

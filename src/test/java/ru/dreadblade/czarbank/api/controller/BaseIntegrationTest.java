@@ -44,6 +44,9 @@ public abstract class BaseIntegrationTest {
     protected final long BASE_BANK_ACCOUNT_ID = 53L;
     protected final long BASE_TRANSACTION_ID = 58L;
 
+    protected static final String VALIDATION_ERROR = "Validation error";
+    protected static final String INVALID_REQUEST = "Invalid request";
+
     @Autowired
     WebApplicationContext webApplicationContext;
 

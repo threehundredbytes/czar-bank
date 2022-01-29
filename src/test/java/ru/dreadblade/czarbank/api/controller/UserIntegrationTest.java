@@ -1,6 +1,7 @@
 package ru.dreadblade.czarbank.api.controller;
 
 import org.assertj.core.api.Assertions;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -17,7 +19,6 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.mapper.security.RoleMapper;
 import ru.dreadblade.czarbank.api.mapper.security.UserMapper;
-import ru.dreadblade.czarbank.api.model.request.security.RoleRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.UserRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.security.UserResponseDTO;
 import ru.dreadblade.czarbank.domain.security.Role;
@@ -26,13 +27,14 @@ import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -64,7 +66,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         void findAll_withAuth_withPermission_isSuccessful() throws Exception {
             List<UserResponseDTO> expectedResponseDTOs = userRepository.findAll().stream()
-                    .map(userMapper::userToUserResponseDTO)
+                    .map(userMapper::entityToResponseDto)
                     .collect(Collectors.toList());
 
             String expectedResponse = objectMapper.writeValueAsString(expectedResponseDTOs);
@@ -111,7 +113,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         void findUserById_withAuth_withPermission_isSuccessful() throws Exception {
             User expectedUser = userRepository.findById(BASE_USER_ID + 2L).orElseThrow();
 
-            String expectedResponse = objectMapper.writeValueAsString(userMapper.userToUserResponseDTO(expectedUser));
+            String expectedResponse = objectMapper.writeValueAsString(userMapper.entityToResponseDto(expectedUser));
 
             mockMvc.perform(get(USERS_API_URL + "/" + expectedUser.getId()))
                     .andExpect(status().isOk())
@@ -123,7 +125,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         void findUserById_withAuth_asSelf_isSuccessful() throws Exception {
             User expectedUser = userRepository.findById(BASE_USER_ID + 3L).orElseThrow();
 
-            String expectedResponse = objectMapper.writeValueAsString(userMapper.userToUserResponseDTO(expectedUser));
+            String expectedResponse = objectMapper.writeValueAsString(userMapper.entityToResponseDto(expectedUser));
 
             mockMvc.perform(get(USERS_API_URL + "/" + expectedUser.getId()))
                     .andExpect(status().isOk())
@@ -157,6 +159,27 @@ public class UserIntegrationTest extends BaseIntegrationTest {
             mockMvc.perform(get(USERS_API_URL + "/" + expectedUserId))
                     .andExpect(status().isNotFound());
         }
+
+        @Nested
+        @DisplayName("Request validation tests")
+        class RequestValidationTests {
+            @Test
+            @WithUserDetails("admin")
+            void findUserById_withAuth_withPermission_invalidUserId_isFailed_responseIsValid() throws Exception {
+                String expectedUserId = "userIdMustBeLong!";
+
+                String requestUrl = USERS_API_URL + "/" + expectedUserId;
+
+                mockMvc.perform(get(requestUrl))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                        .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                        .andExpect(jsonPath("$.message").value("The parameter «userId» with value of «"
+                                + expectedUserId + "» cannot be converted to «Long»"))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
+        }
     }
 
     @Nested
@@ -170,7 +193,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .username("boyarin")
                     .email("boyarin@czarbank.org")
                     .password("password")
-                    .roles(Set.of(RoleRequestDTO.builder().name("EMPLOYEE").build()))
+                    .addRole(BASE_ROLE_ID + 2L)
                     .build();
 
             mockMvc.perform(post(USERS_API_URL)
@@ -194,7 +217,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .username("boyarin")
                     .email("boyarin@czarbank.org")
                     .password("password")
-                    .roles(Set.of(RoleRequestDTO.builder().name("EMPLOYEE").build()))
+                    .addRole(BASE_ROLE_ID + 2L)
                     .build();
 
             mockMvc.perform(post(USERS_API_URL)
@@ -246,6 +269,107 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS.getMessage()));
         }
+
+        @Nested
+        @DisplayName("Validation Tests")
+        class ValidationTests {
+            @Test
+            @WithUserDetails("admin")
+            void createUser_withAuth_withPermission_withoutUsername_validationIsFailed_responseIsCorrect() throws Exception {
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .email("boyarin@czarbank.org")
+                        .password("password")
+                        .addRole(BASE_ROLE_ID + 2L)
+                        .build();
+
+                mockMvc.perform(post(USERS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("username"))
+                        .andExpect(jsonPath("$.errors[0].message").value("Username must be not empty"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(USERS_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createUser_withAuth_withPermission_withoutEmail_validationIsFailed_responseIsCorrect() throws Exception {
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .username("boyarin")
+                        .password("password")
+                        .addRole(BASE_ROLE_ID + 2L)
+                        .build();
+
+                mockMvc.perform(post(USERS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("email"))
+                        .andExpect(jsonPath("$.errors[0].message").value("Email must be not empty"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(USERS_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createUser_withAuth_withPermission_withoutPassword_validationIsFailed_responseIsCorrect() throws Exception {
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .username("boyarin")
+                        .email("boyarin@czarbank.org")
+                        .addRole(BASE_ROLE_ID + 2L)
+                        .build();
+
+                mockMvc.perform(post(USERS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("password"))
+                        .andExpect(jsonPath("$.errors[0].message").value("Password must be not empty"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(USERS_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createUser_withAuth_withPermission_withoutUsername_withoutEmail_withoutPassword_validationIsFailed_responseIsCorrect() throws Exception {
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .addRole(BASE_ROLE_ID + 2L)
+                        .build();
+
+                String[] validationFields = { "username", "email", "password" };
+                String[] validationMessages = { "Username must be not empty", "Email must be not empty",
+                        "Password must be not empty" };
+
+                mockMvc.perform(post(USERS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andDo(print())
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(3)))
+                        .andExpect(jsonPath("$.errors[*].field")
+                                .value(containsInAnyOrder(validationFields)))
+                        .andExpect(jsonPath("$.errors[*].message")
+                                .value(containsInAnyOrder(validationMessages)))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(USERS_API_URL));
+            }
+        }
     }
 
     @Nested
@@ -262,26 +386,21 @@ public class UserIntegrationTest extends BaseIntegrationTest {
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username("upd" + userToBeUpdated.getUsername())
                     .email("upd" + userToBeUpdated.getEmail())
-                    .roles(Collections.singleton(RoleRequestDTO.builder()
-                            .name(role.getName())
-                            .build()))
+                    .addRole(role.getId())
                     .build();
-
-            UserResponseDTO responseAfterUpdate = userMapper.userToUserResponseDTO(userToBeUpdated);
-            responseAfterUpdate.setUsername(requestDTO.getUsername());
-            responseAfterUpdate.setEmail(requestDTO.getEmail());
-            responseAfterUpdate.setRoles(requestDTO.getRoles().stream()
-                    .map(r -> roleRepository.findByName(r.getName()).orElseThrow())
-                    .map(roleMapper::roleTeRoleResponse)
-                    .collect(Collectors.toSet()));
-
-            String expectedResponse = objectMapper.writeValueAsString(responseAfterUpdate);
 
             mockMvc.perform(put(USERS_API_URL + "/" + userToBeUpdated.getId())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isOk())
-                    .andExpect(content().json(expectedResponse));
+                    .andExpect(jsonPath("$.id").value(userToBeUpdated.getId()))
+                    .andExpect(jsonPath("$.userId").value(userToBeUpdated.getUserId()))
+                    .andExpect(jsonPath("$.username").value(requestDTO.getUsername()))
+                    .andExpect(jsonPath("$.email").value(requestDTO.getEmail()))
+                    .andExpect(jsonPath("$.roles", hasSize(1)))
+                    .andExpect(jsonPath("$.roles[0].id").value(role.getId()))
+                    .andExpect(jsonPath("$.roles[0].name").value(role.getName()))
+                    .andExpect(jsonPath("$.roles[0].permissions", hasSize(role.getPermissions().size())));
 
             Assertions.assertThat(userToBeUpdated.getUsername()).isEqualTo(requestDTO.getUsername());
             Assertions.assertThat(userToBeUpdated.getEmail()).isEqualTo(requestDTO.getEmail());
@@ -299,16 +418,14 @@ public class UserIntegrationTest extends BaseIntegrationTest {
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username("upd" + userToBeUpdated.getUsername())
                     .email("upd" + userToBeUpdated.getEmail())
-                    .roles(Collections.singleton(RoleRequestDTO.builder()
-                            .name(role.getName())
-                            .build()))
+                    .addRole(role.getId())
                     .build();
 
-            UserResponseDTO responseAfterUpdate = userMapper.userToUserResponseDTO(userToBeUpdated);
+            UserResponseDTO responseAfterUpdate = userMapper.entityToResponseDto(userToBeUpdated);
             responseAfterUpdate.setUsername(requestDTO.getUsername());
             responseAfterUpdate.setEmail(requestDTO.getEmail());
             responseAfterUpdate.setRoles(userToBeUpdated.getRoles().stream()
-                    .map(roleMapper::roleTeRoleResponse)
+                    .map(roleMapper::entityToResponseDto)
                     .collect(Collectors.toSet()));
 
             String expectedResponse = objectMapper.writeValueAsString(responseAfterUpdate);
@@ -334,9 +451,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username("upd" + userToBeUpdated.getUsername())
                     .email("upd" + userToBeUpdated.getEmail())
-                    .roles(Collections.singleton(RoleRequestDTO.builder()
-                            .name(role.getName())
-                            .build()))
+                    .addRole(role.getId())
                     .build();
 
             mockMvc.perform(put(USERS_API_URL + "/" + userToBeUpdated.getId())
@@ -396,6 +511,36 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS.getMessage()));
+        }
+
+        @Nested
+        @DisplayName("Validation Tests")
+        class ValidationTests {
+            @Test
+            @WithUserDetails("admin")
+            void updateUserById_withAuth_withPermission_withoutName_withoutEmail_withNullRoles_validationIsFailed_responseIsCorrect() throws Exception {
+                User userToBeUpdated = userRepository.findById(BASE_USER_ID + 4L).orElseThrow();
+
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .build();
+
+                requestDTO.setRoles(null);
+
+                String requestUrl = USERS_API_URL + "/" + userToBeUpdated.getId();
+
+                mockMvc.perform(put(requestUrl)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("roles"))
+                        .andExpect(jsonPath("$.errors[0].message").value("User roles cannot be null"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
         }
     }
 

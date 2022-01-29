@@ -3,9 +3,11 @@ package ru.dreadblade.czarbank.api.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.mapper.TransactionMapper;
 import ru.dreadblade.czarbank.api.model.request.TransactionRequestDTO;
+import ru.dreadblade.czarbank.api.model.request.validation.CreateRequest;
 import ru.dreadblade.czarbank.api.model.response.TransactionResponseDTO;
 import ru.dreadblade.czarbank.domain.Transaction;
 import ru.dreadblade.czarbank.service.TransactionService;
@@ -31,7 +33,7 @@ public class TransactionController {
     @GetMapping("/transactions")
     public ResponseEntity<List<TransactionResponseDTO>> findAllTransactions() {
         return ResponseEntity.ok(transactionService.findAll().stream()
-                .map(transactionMapper::transactionToTransactionResponse)
+                .map(transactionMapper::entityToResponseDto)
                 .collect(Collectors.toList()));
     }
 
@@ -39,17 +41,17 @@ public class TransactionController {
     @GetMapping("/bank-accounts/{bankAccountId}/transactions")
     public ResponseEntity<List<TransactionResponseDTO>> findAllByBankAccountId(@PathVariable Long bankAccountId) {
         return ResponseEntity.ok(transactionService.findAllByBankAccountId(bankAccountId).stream()
-                .map(transactionMapper::transactionToTransactionResponse)
+                .map(transactionMapper::entityToResponseDto)
                 .collect(Collectors.toList()));
     }
 
     @PreAuthorize("hasAuthority('TRANSACTION_CREATE') or @transactionAuthorizationManager.isCurrentUserTheOwnerOfSourceBankAccount(#transactionRequest.sourceBankAccountNumber)")
     @PostMapping("/transactions")
-    public ResponseEntity<TransactionResponseDTO> createTransaction(@RequestBody TransactionRequestDTO transactionRequest,
+    public ResponseEntity<TransactionResponseDTO> createTransaction(@Validated(CreateRequest.class) @RequestBody TransactionRequestDTO transactionRequest,
                                                                     HttpServletRequest request) {
         Transaction createdTransaction = transactionService.createTransaction(transactionRequest);
 
         return ResponseEntity.created(URI.create(request.getRequestURI() + "/" + createdTransaction.getId()))
-                .body(transactionMapper.transactionToTransactionResponse(createdTransaction));
+                .body(transactionMapper.entityToResponseDto(createdTransaction));
     }
 }
