@@ -10,7 +10,12 @@ jobs:
     machine:
       image: ubuntu-2004:202107-02
     steps:
-      - run: sudo apt-get install openjdk-11-jdk
+      - run:
+          name: Install Java 17
+          command: |
+            sudo apt-add-repository "deb https://ppa.launchpadcontent.net/openjdk-r/ppa/ubuntu focal main"
+            sudo apt-get install openjdk-17-jdk
+            sudo update-alternatives --auto java
       - checkout
       - run:
           name: Build
