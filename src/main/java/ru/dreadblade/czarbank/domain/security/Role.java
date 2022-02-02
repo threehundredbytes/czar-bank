@@ -1,7 +1,6 @@
 package ru.dreadblade.czarbank.domain.security;
 
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 import ru.dreadblade.czarbank.domain.BaseEntity;
 
 import javax.persistence.*;
@@ -10,11 +9,15 @@ import java.util.Set;
 
 @Getter
 @Setter
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 public class Role extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "role_id_sequence")
+    private Long id;
+
     private String name;
 
     @Singular(value = "addPermission")

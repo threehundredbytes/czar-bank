@@ -33,35 +33,39 @@ insert into permission (id, name) values (20, 'USER_DELETE');
 
 insert into permission (id, name) values (21, 'CURRENCY_CREATE');
 
-insert into role (id, name) values (22, 'ADMIN');
-insert into role (id, name) values (23, 'EMPLOYEE');
-insert into role (id, name) values (24, 'CLIENT');
+alter sequence permission_id_sequence restart 22;
+
+insert into role (id, name) values (1, 'ADMIN');
+insert into role (id, name) values (2, 'EMPLOYEE');
+insert into role (id, name) values (3, 'CLIENT');
+
+alter sequence role_id_sequence restart 4;
 
 insert into role_permission (role_id, permission_id)
-values (22, 1), (22, 2), (22, 3), (22, 4),
-       (22, 5), (22, 6), (22, 7), (22, 8),
-       (22, 9), (22, 10), (22, 11), (22, 12),
-       (22, 13), (22, 14), (22, 15), (22, 16),
-       (22, 17), (22, 18), (22, 19), (22, 20),
-       (22, 21);
+values (1, 1), (1, 2), (1, 3), (1, 4),
+       (1, 5), (1, 6), (1, 7), (1, 8),
+       (1, 9), (1, 10), (1, 11), (1, 12),
+       (1, 13), (1, 14), (1, 15), (1, 16),
+       (1, 17), (1, 18), (1, 19), (1, 20),
+       (1, 21);
 
 insert into role_permission (role_id, permission_id)
-values (23, 5), (23, 6), (23, 7), (23, 8),
-       (23, 9), (23, 10), (23, 11), (23, 12),
-       (23, 19);
+values (2, 5), (2, 6), (2, 7), (2, 8),
+       (2, 9), (2, 10), (2, 11), (2, 12),
+       (2, 19);
 
 insert into users (id, user_id, username, email, password, is_email_verified, is_account_expired, is_account_locked, is_credentials_expired, is_enabled) values
-(25, '1234567890', 'admin', 'admin@czarbank.org', 'password', true, false, false, false, true),
-(26, '0192837465', 'employee', 'employee@czarbank.org', 'password', true, false, false, false, true),
-(27, '6574832910', 'client', 'client@czarbank.org', 'password', true, false, false, false, true),
-(28, '6574832910', 'alekseev', 'alekseev@czarbank.org', 'password', true, false, false, false, true),
-(29, '6574832910', 'markov', 'markov@czarbank.org', 'password', true, false, false, false, true);
+(1, '1234567890', 'admin', 'admin@czarbank.org', 'password', true, false, false, false, true),
+(2, '0192837465', 'employee', 'employee@czarbank.org', 'password', true, false, false, false, true),
+(3, '6574832910', 'client', 'client@czarbank.org', 'password', true, false, false, false, true),
+(4, '6574832910', 'alekseev', 'alekseev@czarbank.org', 'password', true, false, false, false, true),
+(5, '6574832910', 'markov', 'markov@czarbank.org', 'password', true, false, false, false, true);
+
+alter sequence user_id_sequence restart 6;
 
 insert into user_role (user_id, role_id)
-values (25, 22),
-       (26, 23),
-       (27, 24),
-       (28, 24),
-       (29, 24);
-
-alter sequence hibernate_sequence restart 30;
+values (1, 1),
+       (2, 2),
+       (3, 3),
+       (4, 3),
+       (5, 3);

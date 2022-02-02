@@ -231,7 +231,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void accessToken_isExpired_authIsFailed() throws Exception {
-            User user = userRepository.findById(BASE_USER_ID + 1L).orElseThrow();
+            User user = userRepository.findById(1L).orElseThrow();
 
             String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
 
@@ -246,7 +246,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void accessToken_thenLockingTheUser_authIsFailed() throws Exception {
-            long testUserId = BASE_USER_ID + 1L;
+            long testUserId = 1L;
 
             User user = userRepository.findById(testUserId).orElseThrow();
 
@@ -267,7 +267,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void accessToken_thenDisablingTheUser_authIsFailed() throws Exception {
-            long testUserId = BASE_USER_ID + 1L;
+            long testUserId = 1L;
 
             User user = userRepository.findById(testUserId).orElseThrow();
 
@@ -288,7 +288,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void accessToken_thenExpiringTheUsersAccount_authIsFailed() throws Exception {
-            long testUserId = BASE_USER_ID + 1L;
+            long testUserId = 1L;
 
             User user = userRepository.findById(testUserId).orElseThrow();
 
@@ -309,7 +309,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void accessToken_thenExpiringTheUsersCredentials_authIsFailed() throws Exception {
-            long testUserId = BASE_USER_ID + 1L;
+            long testUserId = 1L;
 
             User user = userRepository.findById(testUserId).orElseThrow();
 
@@ -330,7 +330,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void accessToken_thenUndoEmailVerification_authIsFailed() throws Exception {
-            long testUserId = BASE_USER_ID + 1L;
+            long testUserId = 1L;
 
             User user = userRepository.findById(testUserId).orElseThrow();
 
@@ -355,7 +355,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void refreshTokens_refreshTokenIsValid_isSuccessful() throws Exception {
-            long testUserId = BASE_USER_ID + 1L;
+            long testUserId = 1L;
             User user = userRepository.findById(testUserId).orElseThrow();
 
             String refreshToken = refreshTokenService.generateRefreshToken(user);
@@ -396,8 +396,8 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @Rollback
-        void refreshToken_refreshTokenLimit_isSuccessful() throws Exception {
-            long testUserId = BASE_USER_ID + 1L;
+        void refreshToken_refreshTokenLimit_isSuccessful() {
+            long testUserId = 1L;
             User user = userRepository.findById(testUserId).orElseThrow();
 
             int currentRepetition = 0;
@@ -422,7 +422,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void refreshToken_refreshTokenIsRevoked_isFailed() throws Exception {
-            long testUserId = BASE_USER_ID + 1L;
+            long testUserId = 1L;
             User user = userRepository.findById(testUserId).orElseThrow();
 
             String refreshToken = refreshTokenService.generateRefreshToken(user);
@@ -449,7 +449,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void refreshToken_refreshTokenIsModified_isFailed() throws Exception {
-            long testUserId = BASE_USER_ID + 1L;
+            long testUserId = 1L;
             User user = userRepository.findById(testUserId).orElseThrow();
 
             String refreshToken = refreshTokenService.generateRefreshToken(user);
@@ -472,7 +472,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void refreshToken_refreshTokenIsExpired_isFailed() throws Exception {
-            long testUserId = BASE_USER_ID + 1L;
+            long testUserId = 1L;
             User user = userRepository.findById(testUserId).orElseThrow();
 
             String refreshToken = refreshTokenService.generateRefreshToken(user);
@@ -528,7 +528,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         @Test
         @Rollback
         void logout_isSuccessful() throws Exception {
-            Long userId = BASE_USER_ID + 1L;
+            Long userId = 1L;
 
             User user = userRepository.findById(userId).orElseThrow();
 
@@ -573,7 +573,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         @Test
         @Rollback
         void logout_revokedRefreshToken_isFailed() throws Exception {
-            Long userId = BASE_USER_ID + 1L;
+            Long userId = 1L;
 
             User user = userRepository.findById(userId).orElseThrow();
 
@@ -604,7 +604,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void logout_invalidRefreshToken_isFailed() throws Exception {
-            Long userId = BASE_USER_ID + 1L;
+            Long userId = 1L;
 
             User user = userRepository.findById(userId).orElseThrow();
 

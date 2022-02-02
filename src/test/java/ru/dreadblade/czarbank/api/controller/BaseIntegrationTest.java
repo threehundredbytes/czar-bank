@@ -28,22 +28,6 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 @Testcontainers
 @SpringBootTest
 public abstract class BaseIntegrationTest {
-    /**
-     * <p>Base entity ID values according by .SQL scripts (from test resource package)</p>
-     * <p>Usage:</p>
-     * <p>To get N entity from the repository: <code>repository.findById(BASE_%ENTITY_NAME%_ID + N)</code></p>
-     * <p>Example:</p>
-     * <p>To get 2-nd transaction from repository: <code>transactionRepository(BASE_TRANSACTION_ID + 2L)</code></p>
-     */
-    protected final long BASE_PERMISSION_ID = 0L;
-    protected final long BASE_ROLE_ID = 21L;
-    protected final long BASE_USER_ID = 24L;
-    protected final long BASE_BANK_ACCOUNT_TYPE_ID = 29L;
-    protected final long BASE_CURRENCY_ID = 34L;
-    protected final long BASE_EXCHANGE_RATE_ID = 38L;
-    protected final long BASE_BANK_ACCOUNT_ID = 53L;
-    protected final long BASE_TRANSACTION_ID = 58L;
-
     protected static final String VALIDATION_ERROR = "Validation error";
     protected static final String INVALID_REQUEST = "Invalid request";
 

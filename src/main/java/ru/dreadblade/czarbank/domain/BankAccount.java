@@ -1,23 +1,23 @@
 package ru.dreadblade.czarbank.domain;
 
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 import ru.dreadblade.czarbank.domain.security.User;
 
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
+import javax.persistence.*;
 import java.math.BigDecimal;
 import java.util.Set;
 
 @Getter
 @Setter
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 public class BankAccount extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "bank_account_id_sequence")
+    private Long id;
+
     private String number;
 
     @ManyToOne(fetch = FetchType.EAGER)

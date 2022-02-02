@@ -1,23 +1,23 @@
 package ru.dreadblade.czarbank.domain.security;
 
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.CreationTimestamp;
 import ru.dreadblade.czarbank.domain.BaseEntity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.ManyToOne;
+import javax.persistence.*;
 import java.time.Instant;
 
 @Getter
 @Setter
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 public class RefreshTokenSession extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "refresh_token_session_sequence")
+    private Long id;
+
     @Column(updatable = false, unique = true)
     private String refreshToken;
 

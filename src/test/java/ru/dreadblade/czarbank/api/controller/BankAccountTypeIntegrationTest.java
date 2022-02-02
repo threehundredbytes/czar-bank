@@ -149,7 +149,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void createBankAccountType_withAuth_withPermission_bankAccountTypeWithThisNameAlreadyExists() throws Exception {
-            BankAccountType typeFromDb = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 3L)
+            BankAccountType typeFromDb = bankAccountTypeRepository.findById(3L)
                     .orElseThrow();
 
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
@@ -276,7 +276,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         @Rollback
         void updateBankAccountType_withAuth_withPermission_isSuccessful() throws Exception {
-            BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
+            BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(5L)
                     .orElseThrow();
 
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
@@ -309,7 +309,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void updateBankAccountType_withAuth_isFailed() throws Exception {
-            BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
+            BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(5L)
                     .orElseThrow();
 
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
@@ -330,7 +330,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void updateBankAccountType_withoutAuth_isFailed() throws Exception {
-            BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
+            BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(5L)
                     .orElseThrow();
 
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
@@ -352,10 +352,10 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void updateBankAccountType_withAuth_withPermission_bankAccountTypeWithThisNameAlreadyExists() throws Exception {
-            BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
+            BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(5L)
                     .orElseThrow();
 
-            BankAccountType junkerBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 3L)
+            BankAccountType junkerBankAccountType = bankAccountTypeRepository.findById(3L)
                     .orElseThrow();
 
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
@@ -379,7 +379,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                     .transactionCommission(new BigDecimal("0.07"))
                     .build();
 
-            mockMvc.perform(put(BANK_ACCOUNT_TYPES_API_URL + "/" + BASE_BANK_ACCOUNT_TYPE_ID + 123L)
+            mockMvc.perform(put(BANK_ACCOUNT_TYPES_API_URL + "/" + 123L)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(bankAccountTypeRequest)))
                     .andExpect(status().isNotFound())
@@ -393,7 +393,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
             @WithUserDetails("admin")
             @Rollback
             void updateBankAccountType_withAuth_withPermission_withLongName_validationIsFailed_responseIsCorrect() throws Exception {
-                BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
+                BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(5L)
                         .orElseThrow();
 
                 BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
@@ -424,7 +424,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
             @WithUserDetails("admin")
             @Rollback
             void updateBankAccountType_withAuth_withPermission_withInvalidTransactionCommissionAndCurrencyExchangeCommission_validationIsFailed_responseIsCorrect() throws Exception {
-                BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(BASE_BANK_ACCOUNT_TYPE_ID + 5L)
+                BankAccountType unusedBankAccountType = bankAccountTypeRepository.findById(5L)
                         .orElseThrow();
 
                 BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
@@ -463,7 +463,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         @Rollback
         void deleteBankAccountType_withAuth_withPermission_isSuccessful() throws Exception {
-            long bankAccountTypeDeletionId = BASE_BANK_ACCOUNT_TYPE_ID + 5L;
+            long bankAccountTypeDeletionId = 5L;
 
             mockMvc.perform(delete(BANK_ACCOUNT_TYPES_API_URL + "/" + bankAccountTypeDeletionId))
                     .andExpect(status().isNoContent());
@@ -475,7 +475,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("client")
         @Rollback
         void deleteBankAccountType_withAuth_isFailed() throws Exception {
-            long bankAccountTypeDeletionId = BASE_BANK_ACCOUNT_TYPE_ID + 5L;
+            long bankAccountTypeDeletionId = 5L;
 
             mockMvc.perform(delete(BANK_ACCOUNT_TYPES_API_URL + "/" + bankAccountTypeDeletionId))
                     .andExpect(status().isForbidden())
@@ -487,7 +487,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         @Test
         @Rollback
         void deleteBankAccountType_withoutAuth_isFailed() throws Exception {
-            long bankAccountTypeDeletionId = BASE_BANK_ACCOUNT_TYPE_ID + 5L;
+            long bankAccountTypeDeletionId = 5L;
 
             mockMvc.perform(delete(BANK_ACCOUNT_TYPES_API_URL + "/" + bankAccountTypeDeletionId))
                     .andExpect(status().isForbidden())
@@ -500,7 +500,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void deleteBankAccountType_withAuth_withPermission_isFailed_bankAccountTypeIsUsed() throws Exception {
-            long bankAccountTypeDeletionId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
+            long bankAccountTypeDeletionId = 1L;
 
             mockMvc.perform(delete(BANK_ACCOUNT_TYPES_API_URL + "/" + bankAccountTypeDeletionId))
                     .andExpect(status().isBadRequest())
@@ -513,7 +513,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void deleteBankAccountType_withAuth_withPermission_isNotFound() throws Exception {
-            long bankAccountTypeDeletionId = BASE_BANK_ACCOUNT_TYPE_ID + 123L;
+            long bankAccountTypeDeletionId = 123L;
 
             mockMvc.perform(delete(BANK_ACCOUNT_TYPES_API_URL + "/" + bankAccountTypeDeletionId))
                     .andExpect(status().isNotFound())

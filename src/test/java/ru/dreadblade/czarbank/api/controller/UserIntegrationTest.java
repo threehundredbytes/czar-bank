@@ -111,7 +111,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void findUserById_withAuth_withPermission_isSuccessful() throws Exception {
-            User expectedUser = userRepository.findById(BASE_USER_ID + 2L).orElseThrow();
+            User expectedUser = userRepository.findById(2L).orElseThrow();
 
             String expectedResponse = objectMapper.writeValueAsString(userMapper.entityToResponseDto(expectedUser));
 
@@ -123,7 +123,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void findUserById_withAuth_asSelf_isSuccessful() throws Exception {
-            User expectedUser = userRepository.findById(BASE_USER_ID + 3L).orElseThrow();
+            User expectedUser = userRepository.findById(3L).orElseThrow();
 
             String expectedResponse = objectMapper.writeValueAsString(userMapper.entityToResponseDto(expectedUser));
 
@@ -135,7 +135,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void findUserById_withAuth_isFailed() throws Exception {
-            User expectedUser = userRepository.findById(BASE_USER_ID + 1L).orElseThrow();
+            User expectedUser = userRepository.findById(1L).orElseThrow();
 
             mockMvc.perform(get(USERS_API_URL + "/" + expectedUser.getId()))
                     .andExpect(status().isForbidden())
@@ -144,7 +144,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void findUserById_withoutAuth_isFailed() throws Exception {
-            User expectedUser = userRepository.findById(BASE_USER_ID + 1L).orElseThrow();
+            User expectedUser = userRepository.findById(1L).orElseThrow();
 
             mockMvc.perform(get(USERS_API_URL + "/" + expectedUser.getId()))
                     .andExpect(status().isForbidden())
@@ -154,7 +154,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void findByUserId_withAuth_withPermission_isNotFound() throws Exception {
-            long expectedUserId = BASE_USER_ID + 123L;
+            long expectedUserId = 123L;
 
             mockMvc.perform(get(USERS_API_URL + "/" + expectedUserId))
                     .andExpect(status().isNotFound());
@@ -193,7 +193,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .username("boyarin")
                     .email("boyarin@czarbank.org")
                     .password("password")
-                    .addRole(BASE_ROLE_ID + 2L)
+                    .addRole(2L)
                     .build();
 
             mockMvc.perform(post(USERS_API_URL)
@@ -217,7 +217,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .username("boyarin")
                     .email("boyarin@czarbank.org")
                     .password("password")
-                    .addRole(BASE_ROLE_ID + 2L)
+                    .addRole(2L)
                     .build();
 
             mockMvc.perform(post(USERS_API_URL)
@@ -236,7 +236,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void createUser_withoutAuth_userWithSameUsernameAlreadyExists() throws Exception {
-            User existingUser = userRepository.findById(BASE_USER_ID + 2L).orElseThrow();
+            User existingUser = userRepository.findById(2L).orElseThrow();
 
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username(existingUser.getUsername())
@@ -254,7 +254,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void createUser_withoutAuth_userWithSameEmailAlreadyExists() throws Exception {
-            User existingUser = userRepository.findById(BASE_USER_ID + 2L).orElseThrow();
+            User existingUser = userRepository.findById(2L).orElseThrow();
 
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username("user")
@@ -279,7 +279,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
                         .email("boyarin@czarbank.org")
                         .password("password")
-                        .addRole(BASE_ROLE_ID + 2L)
+                        .addRole(2L)
                         .build();
 
                 mockMvc.perform(post(USERS_API_URL)
@@ -302,7 +302,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
                         .username("boyarin")
                         .password("password")
-                        .addRole(BASE_ROLE_ID + 2L)
+                        .addRole(2L)
                         .build();
 
                 mockMvc.perform(post(USERS_API_URL)
@@ -325,7 +325,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
                         .username("boyarin")
                         .email("boyarin@czarbank.org")
-                        .addRole(BASE_ROLE_ID + 2L)
+                        .addRole(2L)
                         .build();
 
                 mockMvc.perform(post(USERS_API_URL)
@@ -346,7 +346,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
             @WithUserDetails("admin")
             void createUser_withAuth_withPermission_withoutUsername_withoutEmail_withoutPassword_validationIsFailed_responseIsCorrect() throws Exception {
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
-                        .addRole(BASE_ROLE_ID + 2L)
+                        .addRole(2L)
                         .build();
 
                 String[] validationFields = { "username", "email", "password" };
@@ -379,7 +379,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Transactional
         @WithUserDetails("admin")
         void updateUserById_withAuth_withPermission_isSuccessful() throws Exception {
-            User userToBeUpdated = userRepository.findById(BASE_USER_ID + 4L).orElseThrow();
+            User userToBeUpdated = userRepository.findById(4L).orElseThrow();
 
             Role role = roleRepository.findByName("EMPLOYEE").orElseThrow();
 
@@ -411,7 +411,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Transactional
         @WithUserDetails("client")
         void updateUserById_withAuth_asSelf_isSuccessful() throws Exception {
-            User userToBeUpdated = userRepository.findById(BASE_USER_ID + 3L).orElseThrow();
+            User userToBeUpdated = userRepository.findById(3L).orElseThrow();
 
             Role role = roleRepository.findByName("EMPLOYEE").orElseThrow();
 
@@ -444,7 +444,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void updateUserById_withAuth_isFailed() throws Exception {
-            User userToBeUpdated = userRepository.findById(BASE_USER_ID + 4L).orElseThrow();
+            User userToBeUpdated = userRepository.findById(4L).orElseThrow();
 
             Role role = roleRepository.findByName("EMPLOYEE").orElseThrow();
 
@@ -469,7 +469,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .email("updated@email.upd")
                     .build();
 
-            mockMvc.perform(put(USERS_API_URL + "/" + BASE_USER_ID + 123L)
+            mockMvc.perform(put(USERS_API_URL + "/" + 123L)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isNotFound());
@@ -478,8 +478,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void updateUserById_withAuth_withPermission_userWithSameUsernameAlreadyExists() throws Exception {
-            User existingUser = userRepository.findById(BASE_USER_ID + 3L).orElseThrow();
-            User userToBeUpdated = userRepository.findById(BASE_USER_ID + 4L).orElseThrow();
+            User existingUser = userRepository.findById(3L).orElseThrow();
+            User userToBeUpdated = userRepository.findById(4L).orElseThrow();
 
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username(existingUser.getUsername())
@@ -497,8 +497,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void updateById_withAuth_withPermission_userWithSameEmailAlreadyExists() throws Exception {
-            User existingUser = userRepository.findById(BASE_USER_ID + 3L).orElseThrow();
-            User userToBeUpdated = userRepository.findById(BASE_USER_ID + 4L).orElseThrow();
+            User existingUser = userRepository.findById(3L).orElseThrow();
+            User userToBeUpdated = userRepository.findById(4L).orElseThrow();
 
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username("upd" + userToBeUpdated.getUsername())
@@ -519,7 +519,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
             @Test
             @WithUserDetails("admin")
             void updateUserById_withAuth_withPermission_withoutName_withoutEmail_withNullRoles_validationIsFailed_responseIsCorrect() throws Exception {
-                User userToBeUpdated = userRepository.findById(BASE_USER_ID + 4L).orElseThrow();
+                User userToBeUpdated = userRepository.findById(4L).orElseThrow();
 
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
                         .build();
@@ -551,7 +551,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Transactional
         @WithUserDetails("admin")
         void deleteUserById_withAuth_withPermission_isSuccessful() throws Exception {
-            long userDeletionId = BASE_USER_ID + 4L;
+            long userDeletionId = 4L;
 
             Assertions.assertThat(userRepository.existsById(userDeletionId)).isTrue();
 
@@ -568,7 +568,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Transactional
         @WithUserDetails("client")
         void deleteUserById_withAuth_asSelf_isSuccessful() throws Exception {
-            long userDeletionId = BASE_USER_ID + 3L;
+            long userDeletionId = 3L;
 
             Assertions.assertThat(userRepository.existsById(userDeletionId)).isTrue();
 
@@ -584,7 +584,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void deleteUserById_withAuth_isFailed() throws Exception {
-            long userDeletionId = BASE_USER_ID + 4L;
+            long userDeletionId = 4L;
 
             Assertions.assertThat(userRepository.existsById(userDeletionId)).isTrue();
 
@@ -598,7 +598,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void deleteUserById_withAuth_withPermission_isNotFound() throws Exception {
-            long userDeletionId = BASE_USER_ID + 123L;
+            long userDeletionId = 123L;
 
             Assertions.assertThat(userRepository.existsById(userDeletionId)).isFalse();
 

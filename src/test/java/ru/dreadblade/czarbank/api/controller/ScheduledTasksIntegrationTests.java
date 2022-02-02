@@ -66,12 +66,12 @@ public class ScheduledTasksIntegrationTests extends BaseIntegrationTest {
 
             List<CbrExchangeRatesResponseDTO.CbrExchangeRateResponseDTO> rates = List.of(
                     CbrExchangeRatesResponseDTO.CbrExchangeRateResponseDTO.builder()
-                            .currencyCode(currencyRepository.findById(BASE_CURRENCY_ID + 2L).orElseThrow().getCode())
+                            .currencyCode(currencyRepository.findById(2L).orElseThrow().getCode())
                             .nominal(1L)
                             .rate(new BigDecimal("12.34567"))
                             .build(),
                     CbrExchangeRatesResponseDTO.CbrExchangeRateResponseDTO.builder()
-                            .currencyCode(currencyRepository.findById(BASE_CURRENCY_ID + 3L).orElseThrow().getCode())
+                            .currencyCode(currencyRepository.findById(3L).orElseThrow().getCode())
                             .nominal(1L)
                             .rate(new BigDecimal("123.45678"))
                             .build()
@@ -116,12 +116,12 @@ public class ScheduledTasksIntegrationTests extends BaseIntegrationTest {
 
             List<CbrExchangeRatesResponseDTO.CbrExchangeRateResponseDTO> rates = List.of(
                     CbrExchangeRatesResponseDTO.CbrExchangeRateResponseDTO.builder()
-                            .currencyCode(currencyRepository.findById(BASE_CURRENCY_ID + 2L).orElseThrow().getCode())
+                            .currencyCode(currencyRepository.findById(2L).orElseThrow().getCode())
                             .nominal(1L)
                             .rate(new BigDecimal("1234.56789"))
                             .build(),
                     CbrExchangeRatesResponseDTO.CbrExchangeRateResponseDTO.builder()
-                            .currencyCode(currencyRepository.findById(BASE_CURRENCY_ID + 3L).orElseThrow().getCode())
+                            .currencyCode(currencyRepository.findById(3L).orElseThrow().getCode())
                             .nominal(1L)
                             .rate(new BigDecimal("1234.56789"))
                             .build()
