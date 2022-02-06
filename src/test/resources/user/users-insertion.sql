@@ -54,12 +54,12 @@ values (2, 5), (2, 6), (2, 7), (2, 8),
        (2, 9), (2, 10), (2, 11), (2, 12),
        (2, 19);
 
-insert into users (id, user_id, username, email, password, is_email_verified, is_account_expired, is_account_locked, is_credentials_expired, is_enabled) values
-(1, '1234567890', 'admin', 'admin@czarbank.org', 'password', true, false, false, false, true),
-(2, '0192837465', 'employee', 'employee@czarbank.org', 'password', true, false, false, false, true),
-(3, '6574832910', 'client', 'client@czarbank.org', 'password', true, false, false, false, true),
-(4, '6574832910', 'alekseev', 'alekseev@czarbank.org', 'password', true, false, false, false, true),
-(5, '6574832910', 'markov', 'markov@czarbank.org', 'password', true, false, false, false, true);
+insert into users (id, username, email, password, is_email_verified, is_account_expired, is_account_locked, is_credentials_expired, is_enabled) values
+(1, 'admin', 'admin@czarbank.org', 'password', true, false, false, false, true),
+(2, 'employee', 'employee@czarbank.org', 'password', true, false, false, false, true),
+(3, 'client', 'client@czarbank.org', 'password', true, false, false, false, true),
+(4, 'alekseev', 'alekseev@czarbank.org', 'password', true, false, false, false, true),
+(5, 'markov', 'markov@czarbank.org', 'password', true, false, false, false, true);
 
 alter sequence user_id_sequence restart 6;
 
@@ -69,3 +69,7 @@ values (1, 1),
        (3, 3),
        (4, 3),
        (5, 3);
+
+create extension if not exists pgcrypto;
+
+update users set password = crypt(password, gen_salt('bf', 8));
