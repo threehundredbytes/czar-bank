@@ -61,7 +61,7 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username("boyarin")
                     .email("boyarin@czarbank.org")
-                    .password("password")
+                    .password("c0mp1exP@ssw0rd")
                     .build();
 
             mockMvc.perform(post(USERS_API_URL)
@@ -91,7 +91,7 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username("boyarin")
                     .email("boyarin@czarbank.org")
-                    .password("password")
+                    .password("c0mp1exP@ssw0rd")
                     .build();
 
             mockMvc.perform(post(USERS_API_URL)
@@ -136,7 +136,7 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username("boyarin")
                     .email("boyarin@czarbank.org")
-                    .password("password")
+                    .password("c0mp1exP@ssw0rd")
                     .build();
 
             mockMvc.perform(post(USERS_API_URL)
@@ -167,7 +167,7 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username("boyarin")
                     .email("boyarin@czarbank.org")
-                    .password("password")
+                    .password("c0mp1exP@ssw0rd")
                     .build();
 
             mockMvc.perform(post(USERS_API_URL)

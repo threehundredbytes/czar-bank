@@ -1,6 +1,6 @@
 package ru.dreadblade.czarbank.api.validation.constraint;
 
-import ru.dreadblade.czarbank.api.validation.validator.EmailConstraintValidator;
+import ru.dreadblade.czarbank.api.validation.validator.NonExistentEmailValidator;
 
 import javax.validation.Constraint;
 import javax.validation.Payload;
@@ -12,11 +12,11 @@ import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @Documented
-@Constraint(validatedBy = EmailConstraintValidator.class)
+@Constraint(validatedBy = NonExistentEmailValidator.class)
 @Target({ TYPE, FIELD, ANNOTATION_TYPE })
 @Retention(RUNTIME)
-public @interface ValidEmail {
-    String message() default "Invalid email address";
+public @interface NonExistentEmail {
+    String message() default "User with the same email already exists";
 
     Class<?>[] groups() default {};
 

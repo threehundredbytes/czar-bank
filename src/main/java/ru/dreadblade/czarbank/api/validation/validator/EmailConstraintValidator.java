@@ -1,24 +1,23 @@
 package ru.dreadblade.czarbank.api.validation.validator;
 
-import org.apache.commons.lang3.StringUtils;
+import ru.dreadblade.czarbank.api.validation.constraint.ValidEmail;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
-import javax.validation.constraints.Email;
 
-public class EmailConstraintValidator implements ConstraintValidator<Email, String> {
+public class EmailConstraintValidator implements ConstraintValidator<ValidEmail, String> {
     @Override
-    public void initialize(Email constraintAnnotation) {
+    public void initialize(ValidEmail constraintAnnotation) {
         ConstraintValidator.super.initialize(constraintAnnotation);
     }
 
     @Override
     public boolean isValid(String email, ConstraintValidatorContext context) {
         if (email == null) {
-            return false;
+            return true;
         }
 
-        if (StringUtils.isBlank(email)) {
+        if (email.isBlank()) {
             return false;
         }
 

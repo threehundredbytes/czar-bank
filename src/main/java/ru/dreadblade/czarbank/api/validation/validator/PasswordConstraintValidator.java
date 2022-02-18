@@ -1,6 +1,5 @@
 package ru.dreadblade.czarbank.api.validation.validator;
 
-import org.apache.commons.lang3.StringUtils;
 import ru.dreadblade.czarbank.api.validation.constraint.ComplexPassword;
 
 import javax.validation.ConstraintValidator;
@@ -18,7 +17,7 @@ public class PasswordConstraintValidator implements ConstraintValidator<ComplexP
             return true;
         }
 
-        if (StringUtils.isBlank(password) || password.length() < 8) {
+        if (password.isBlank() || password.length() < 8) {
             return false;
         }
 

@@ -5,16 +5,16 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ru.dreadblade.czarbank.api.validation.validator.EmailConstraintValidator;
-import ru.dreadblade.czarbank.api.validation.validator.PasswordConstraintValidator;
+import ru.dreadblade.czarbank.api.validation.validator.*;
 
 @DisplayName("Custom ConstraintValidator Unit Tests")
 public class CustomConstraintValidatorUnitTest {
+
     @Nested
-    @DisplayName("Complex password constraint tests")
+    @DisplayName("ComplexPassword constraint tests")
     class ComplexPasswordConstraintTests {
         @Test
-        void validatePassword_nullPasswordConsideredValid_isFailed() {
+        void validatePassword_nullPasswordConsideredValid_isSuccessful() {
             PasswordConstraintValidator validator = new PasswordConstraintValidator();
 
             Assertions.assertThat(validator.isValid(null, null)).isTrue();
@@ -64,13 +64,20 @@ public class CustomConstraintValidatorUnitTest {
     }
 
     @Nested
-    @DisplayName("Valid Email constraint tests")
+    @DisplayName("ValidEmail constraint tests")
     class ValidEmailConstraintTests {
         @Test
-        void validateEmail_nullEmailConsideredValid_isFailed() {
+        void validateEmail_nullEmailConsideredValid_isSuccessful() {
             EmailConstraintValidator validator = new EmailConstraintValidator();
 
-            Assertions.assertThat(validator.isValid(null, null)).isFalse();
+            Assertions.assertThat(validator.isValid(null, null)).isTrue();
+        }
+
+        @Test
+        void validateEmail_blankEmail_isFailed() {
+            EmailConstraintValidator validator = new EmailConstraintValidator();
+
+            Assertions.assertThat(validator.isValid(" ", null)).isFalse();
         }
 
         @Test
@@ -107,6 +114,28 @@ public class CustomConstraintValidatorUnitTest {
 
             Assertions.assertThat(email).hasSizeLessThanOrEqualTo(maxEmailLength);
             Assertions.assertThat(validator.isValid(email, null)).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("NonExistentUser constraint tests")
+    class NonExistentUserConstraintTests {
+        @Test
+        void validateNonExistentUser_nullUserNameConsideredValid_isSuccessful() {
+            NonExistentUserValidator nonExistentUserValidator = new NonExistentUserValidator(null);
+
+            Assertions.assertThat(nonExistentUserValidator.isValid(null, null)).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("NonExistentEmail constraint tests")
+    class NonExistentEmailConstraintTests {
+        @Test
+        void validateNonExistentEmail_nullEmailNameConsideredValid_isSuccessful() {
+            NonExistentEmailValidator nonExistentEmailValidator = new NonExistentEmailValidator(null);
+
+            Assertions.assertThat(nonExistentEmailValidator.isValid(null, null)).isTrue();
         }
     }
 }
