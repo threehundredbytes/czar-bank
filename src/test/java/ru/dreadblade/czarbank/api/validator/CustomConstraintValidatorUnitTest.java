@@ -118,6 +118,17 @@ public class CustomConstraintValidatorUnitTest {
     }
 
     @Nested
+    @DisplayName("NonExistentRole constraint tests")
+    class NonExistentRoleConstraintTests {
+        @Test
+        void validateNonExistentRole_nullRoleNameConsideredValid_isSuccessful() {
+            NonExistentRoleValidator nonExistentRoleValidator = new NonExistentRoleValidator(null);
+
+            Assertions.assertThat(nonExistentRoleValidator.isValid(null, null)).isTrue();
+        }
+    }
+
+    @Nested
     @DisplayName("NonExistentUser constraint tests")
     class NonExistentUserConstraintTests {
         @Test

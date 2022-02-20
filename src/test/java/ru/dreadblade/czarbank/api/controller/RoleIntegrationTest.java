@@ -1,5 +1,6 @@
 package ru.dreadblade.czarbank.api.controller;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
@@ -218,34 +219,84 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(roleRepository.existsByName(requestDTO.getName())).isFalse();
         }
 
-        @Test
-        @WithUserDetails("admin")
-        void createRole_withAuth_withPermission_roleWithSameNameAlreadyExists() throws Exception {
-            Role existingRole = roleRepository.findById(1L).orElseThrow();
-            Assertions.assertThat(roleRepository.existsByName(existingRole.getName())).isTrue();
-
-            long rolesCountBeforeCreating = roleRepository.count();
-
-            List<Long> permissions = List.of(1L);
-
-            RoleRequestDTO requestDTO = RoleRequestDTO.builder()
-                    .name(existingRole.getName())
-                    .permissions(permissions)
-                    .build();
-
-            mockMvc.perform(post(ROLES_API_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(requestDTO)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message")
-                            .value(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS.getMessage()));
-
-            Assertions.assertThat(rolesCountBeforeCreating).isEqualTo(roleRepository.count());
-        }
-
         @Nested
         @DisplayName("Validation Tests")
         class ValidationTests {
+            @Test
+            @WithUserDetails("admin")
+            void createRole_withAuth_withPermission_roleWithSameNameAlreadyExists() throws Exception {
+                Role existingRole = roleRepository.findById(1L).orElseThrow();
+                Assertions.assertThat(roleRepository.existsByName(existingRole.getName())).isTrue();
+
+                List<Long> permissions = List.of(1L);
+
+                RoleRequestDTO requestDTO = RoleRequestDTO.builder()
+                        .name(existingRole.getName())
+                        .permissions(permissions)
+                        .build();
+
+                mockMvc.perform(post(ROLES_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("name"))
+                        .andExpect(jsonPath("$.errors[0].message").value("Role with the same name already exists"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(ROLES_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createRole_withAuth_withPermission_withShortName_validationIsFailed_responseIsValid() throws Exception {
+                List<Long> permissions = List.of(2L, 6L, 8L);
+
+                RoleRequestDTO requestDTO = RoleRequestDTO.builder()
+                        .name(RandomStringUtils.randomAlphabetic(2))
+                        .permissions(permissions)
+                        .build();
+
+                mockMvc.perform(post(ROLES_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("name"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The role name must be between 3 and 100 characters long (inclusive)"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(ROLES_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createRole_withAuth_withPermission_withLongName_validationIsFailed_responseIsValid() throws Exception {
+                List<Long> permissions = List.of(2L, 6L, 8L);
+
+                RoleRequestDTO requestDTO = RoleRequestDTO.builder()
+                        .name(RandomStringUtils.randomAlphabetic(101))
+                        .permissions(permissions)
+                        .build();
+
+                mockMvc.perform(post(ROLES_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("name"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The role name must be between 3 and 100 characters long (inclusive)"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(ROLES_API_URL));
+            }
+
             @Test
             @WithUserDetails("admin")
             void createRole_withAuth_withPermission_withoutName_validationIsFailed_responseIsValid() throws Exception {
@@ -314,7 +365,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
             @WithUserDetails("admin")
             void createRole_withAuth_withPermission_withEmptyNameAndPermissions_validationIsFailed_responseIsValid() throws Exception {
                 RoleRequestDTO requestDTO = RoleRequestDTO.builder()
-                        .name("")
+                        .name(null)
                         .permissions(Collections.emptyList())
                         .build();
 
@@ -586,6 +637,80 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Nested
         @DisplayName("Validation Tests")
         class ValidationTests {
+            @Test
+            @WithUserDetails("admin")
+            @Transactional
+            void updateRole_withAuth_withShortName_validationIsFailed_responseIsValid() throws Exception {
+                Set<Permission> permissions = new HashSet<>();
+                permissions.add(permissionRepository.findById(2L).orElseThrow());
+                permissions.add(permissionRepository.findById(6L).orElseThrow());
+                permissions.add(permissionRepository.findById(7L).orElseThrow());
+                permissions.add(permissionRepository.findById(10L).orElseThrow());
+
+                String roleName = "MANAGER";
+
+                Role roleToUpdate = roleRepository.save(Role.builder()
+                        .name(roleName)
+                        .permissions(permissions)
+                        .build());
+
+                RoleRequestDTO requestDTO = RoleRequestDTO.builder()
+                        .name(RandomStringUtils.randomAlphabetic(2))
+                        .build();
+
+                String requestUrl = ROLES_API_URL + "/" + roleToUpdate.getId();
+
+                mockMvc.perform(put(requestUrl)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("name"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The role name must be between 3 and 100 characters long (inclusive)"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            @Transactional
+            void updateRole_withAuth_withLongName_validationIsFailed_responseIsValid() throws Exception {
+                Set<Permission> permissions = new HashSet<>();
+                permissions.add(permissionRepository.findById(2L).orElseThrow());
+                permissions.add(permissionRepository.findById(6L).orElseThrow());
+                permissions.add(permissionRepository.findById(7L).orElseThrow());
+                permissions.add(permissionRepository.findById(10L).orElseThrow());
+
+                String roleName = "MANAGER";
+
+                Role roleToUpdate = roleRepository.save(Role.builder()
+                        .name(roleName)
+                        .permissions(permissions)
+                        .build());
+
+                RoleRequestDTO requestDTO = RoleRequestDTO.builder()
+                        .name(RandomStringUtils.randomAlphabetic(101))
+                        .build();
+
+                String requestUrl = ROLES_API_URL + "/" + roleToUpdate.getId();
+
+                mockMvc.perform(put(requestUrl)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("name"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The role name must be between 3 and 100 characters long (inclusive)"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
+
             @Test
             @WithUserDetails("admin")
             @Transactional
