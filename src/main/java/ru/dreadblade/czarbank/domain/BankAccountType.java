@@ -2,11 +2,7 @@ package ru.dreadblade.czarbank.domain;
 
 import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.validation.constraints.Digits;
+import javax.persistence.*;
 import java.math.BigDecimal;
 
 @Getter
@@ -20,11 +16,12 @@ public class BankAccountType extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "bank_account_type_id_sequence")
     private Long id;
 
+    @Column(length = 100, nullable = false, unique = true)
     private String name;
 
-    @Digits(integer = 0, fraction = 10)
+    @Column(nullable = false, precision = 6, scale = 6)
     private BigDecimal transactionCommission;
 
-    @Digits(integer = 0, fraction = 10)
+    @Column(nullable = false, precision = 6, scale = 6)
     private BigDecimal currencyExchangeCommission;
 }

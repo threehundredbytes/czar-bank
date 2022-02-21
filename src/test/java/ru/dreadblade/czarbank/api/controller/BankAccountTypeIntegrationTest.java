@@ -1,5 +1,6 @@
 package ru.dreadblade.czarbank.api.controller;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
@@ -12,7 +13,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
-import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 import ru.dreadblade.czarbank.api.mapper.BankAccountTypeMapper;
 import ru.dreadblade.czarbank.api.model.request.BankAccountTypeRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.BankAccountTypeResponseDTO;
@@ -133,8 +133,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
         void createBankAccountType_withoutAuth_isFailed() throws Exception {
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name("New BankAccountType")
-                    .transactionCommission(new BigDecimal("0.001"))
-                    .currencyExchangeCommission(new BigDecimal("0.001"))
+                    .transactionCommission(new BigDecimal("0.01"))
+                    .currencyExchangeCommission(new BigDecimal("0.01"))
                     .build();
 
             mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
@@ -154,8 +154,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
 
             BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                     .name(typeFromDb.getName())
-                    .transactionCommission(new BigDecimal("0.001"))
-                    .currencyExchangeCommission(new BigDecimal("0.001"))
+                    .transactionCommission(new BigDecimal("0.0001"))
+                    .currencyExchangeCommission(new BigDecimal("0.0001"))
                     .build();
 
             mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
@@ -174,8 +174,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
             void createBankAccountType_withAuth_withPermission_withBlankName_validationIsFailed_responseIsCorrect() throws Exception {
                 BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                         .name(" ")
-                        .transactionCommission(new BigDecimal("0.001"))
-                        .currencyExchangeCommission(new BigDecimal("0.001"))
+                        .transactionCommission(new BigDecimal("0.00001"))
+                        .currencyExchangeCommission(new BigDecimal("0.00001"))
                         .build();
 
                 mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
@@ -196,9 +196,9 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
             @WithUserDetails("admin")
             void createBankAccountType_withAuth_withPermission_withLongName_validationIsFailed_responseIsCorrect() throws Exception {
                 BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
-                        .name(RandomStringUtils.randomAlphabetic(33))
-                        .transactionCommission(new BigDecimal("0.001"))
-                        .currencyExchangeCommission(new BigDecimal("0.001"))
+                        .name(RandomStringUtils.randomAlphabetic(101))
+                        .transactionCommission(new BigDecimal("0.000001"))
+                        .currencyExchangeCommission(new BigDecimal("0.000001"))
                         .build();
 
                 mockMvc.perform(post(BANK_ACCOUNT_TYPES_API_URL)
@@ -210,7 +210,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                         .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
                         .andExpect(jsonPath("$.errors", hasSize(1)))
                         .andExpect(jsonPath("$.errors[0].field").value("name"))
-                        .andExpect(jsonPath("$.errors[0].message").value("The maximum length of the bank account type name is 32 characters"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The maximum length of the bank account type name is 100 characters"))
                         .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
                         .andExpect(jsonPath("$.path").value(BANK_ACCOUNT_TYPES_API_URL));
             }
@@ -220,7 +220,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
             void createBankAccountType_withAuth_withPermission_withInvalidTransactionCommissionAndCurrencyExchangeCommission_validationIsFailed_responseIsCorrect() throws Exception {
                 BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
                         .name("New bank account type")
-                        .transactionCommission(new BigDecimal("0.00000000001"))
+                        .transactionCommission(new BigDecimal("0.0000001"))
                         .currencyExchangeCommission(new BigDecimal("1"))
                         .build();
 
@@ -235,8 +235,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                         .andExpect(jsonPath("$.errors[*].field")
                                 .value(containsInAnyOrder("transactionCommission", "currencyExchangeCommission")))
                         .andExpect(jsonPath("$.errors[*].message")
-                                .value(containsInAnyOrder("Transaction commission must contain 0 integers and up to 10 fractional numbers (inclusive)",
-                                        "Currency exchange commission must contain 0 integers and up to 10 fractional numbers (inclusive)")))
+                                .value(containsInAnyOrder("Transaction commission must contain 0 integers and up to 6 fractional numbers (inclusive)",
+                                        "Currency exchange commission must contain 0 integers and up to 6 fractional numbers (inclusive)")))
                         .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
                         .andExpect(jsonPath("$.path").value(BANK_ACCOUNT_TYPES_API_URL));
             }
@@ -397,7 +397,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                         .orElseThrow();
 
                 BankAccountTypeRequestDTO bankAccountTypeRequest = BankAccountTypeRequestDTO.builder()
-                        .name("New BankAccountType (old name is \"" + unusedBankAccountType.getName() + "\")")
+                        .name(RandomStringUtils.randomAlphabetic(101))
                         .transactionCommission(new BigDecimal("0.07"))
                         .currencyExchangeCommission(new BigDecimal("0.05"))
                         .build();
@@ -415,7 +415,7 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                         .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
                         .andExpect(jsonPath("$.errors", hasSize(1)))
                         .andExpect(jsonPath("$.errors[0].field").value("name"))
-                        .andExpect(jsonPath("$.errors[0].message").value("The maximum length of the bank account type name is 32 characters"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The maximum length of the bank account type name is 100 characters"))
                         .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
                         .andExpect(jsonPath("$.path").value(requestUrl));
             }
@@ -448,8 +448,8 @@ public class BankAccountTypeIntegrationTest extends BaseIntegrationTest {
                         .andExpect(jsonPath("$.errors[*].field")
                                 .value(containsInAnyOrder("transactionCommission", "currencyExchangeCommission")))
                         .andExpect(jsonPath("$.errors[*].message")
-                                .value(containsInAnyOrder("Transaction commission must contain 0 integers and up to 10 fractional numbers (inclusive)",
-                                        "Currency exchange commission must contain 0 integers and up to 10 fractional numbers (inclusive)")))
+                                .value(containsInAnyOrder("Transaction commission must contain 0 integers and up to 6 fractional numbers (inclusive)",
+                                        "Currency exchange commission must contain 0 integers and up to 6 fractional numbers (inclusive)")))
                         .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
                         .andExpect(jsonPath("$.path").value(requestUrl));
             }

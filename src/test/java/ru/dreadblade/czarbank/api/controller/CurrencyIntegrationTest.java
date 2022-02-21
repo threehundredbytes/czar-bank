@@ -268,7 +268,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
             @WithUserDetails("admin")
             void createCurrency_withAuth_withPermission_withInvalidCodeAndSymbol_isSuccessful() throws Exception {
                 CurrencyRequestDTO requestDTO = CurrencyRequestDTO.builder()
-                        .code(RandomStringUtils.randomAlphabetic(5))
+                        .code(RandomStringUtils.randomAlphabetic(4))
                         .symbol(RandomStringUtils.randomAlphabetic(5))
                         .build();
 

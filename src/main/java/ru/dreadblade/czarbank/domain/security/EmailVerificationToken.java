@@ -18,7 +18,7 @@ public class EmailVerificationToken extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "email_verification_token_id_sequence")
     private Long id;
 
-    @Column(updatable = false)
+    @Column(length = 36, nullable = false, unique = true, updatable = false)
     private String emailVerificationToken;
 
     @ManyToOne(fetch = FetchType.EAGER)

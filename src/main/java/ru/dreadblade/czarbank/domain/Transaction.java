@@ -18,11 +18,7 @@ public class Transaction extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "transaction_id_sequence")
     private Long id;
 
-    @CreationTimestamp
-    @Column(updatable = false)
-    private Instant datetime;
-
-    @Column(updatable = false)
+    @Column(nullable = false, updatable = false, precision = 20, scale = 2)
     private BigDecimal amount;
 
     @Column(updatable = false)
@@ -33,4 +29,8 @@ public class Transaction extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.EAGER)
     private BankAccount destinationBankAccount;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private Instant createdAt;
 }

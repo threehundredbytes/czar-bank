@@ -18,6 +18,7 @@ public class BankAccount extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "bank_account_id_sequence")
     private Long id;
 
+    @Column(length = 20, nullable = false, unique = true, updatable = false)
     private String number;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -27,6 +28,7 @@ public class BankAccount extends BaseEntity {
     private Currency usedCurrency;
 
     @Builder.Default
+    @Column(nullable = false, precision = 20, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
 
     @Builder.Default

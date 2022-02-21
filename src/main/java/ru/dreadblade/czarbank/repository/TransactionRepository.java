@@ -11,6 +11,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             "inner join BankAccount b on t.sourceBankAccount.id = b.id or " +
             "t.destinationBankAccount.id = b.id " +
             "where b.id = :bankAccountId " +
-            "order by t.datetime desc")
+            "order by t.createdAt desc")
     List<Transaction> findAllByBankAccountId(Long bankAccountId);
 }

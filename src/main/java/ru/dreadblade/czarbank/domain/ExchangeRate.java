@@ -23,7 +23,9 @@ public class ExchangeRate extends BaseEntity {
     /**
      * Exchange rate against the Russian Ruble
      */
+    @Column(nullable = false, precision = 6, scale = 2)
     private BigDecimal exchangeRate;
 
+    @Column(nullable = false, updatable = false)
     private LocalDate date;
 }

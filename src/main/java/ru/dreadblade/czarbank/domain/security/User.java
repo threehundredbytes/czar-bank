@@ -24,12 +24,16 @@ public class User extends BaseEntity implements UserDetails {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_id_sequence")
     private Long id;
 
+    @Column(length = 10, nullable = false, unique = true)
     private String userId;
 
+    @Column(length = 32, nullable = false, unique = true)
     private String username;
 
+    @Column(length = 60, nullable = false)
     private String password;
 
+    @Column(length = 254, nullable = false, unique = true)
     private String email;
 
     @Singular(value = "addRole")

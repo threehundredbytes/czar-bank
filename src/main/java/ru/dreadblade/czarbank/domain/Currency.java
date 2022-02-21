@@ -2,10 +2,7 @@ package ru.dreadblade.czarbank.domain;
 
 import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 @Getter
 @Setter
@@ -18,7 +15,9 @@ public class Currency extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "currency_id_sequence")
     private Long id;
 
+    @Column(length = 3, nullable = false, unique = true, updatable = false)
     private String code;
 
+    @Column(length = 4, nullable = false, unique = true, updatable = false)
     private String symbol;
 }

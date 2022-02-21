@@ -96,11 +96,12 @@ public class ScheduledTasksIntegrationTests extends BaseIntegrationTest {
 
             Assertions.assertThat(addedRates).isNotEmpty();
             Assertions.assertThat(addedRates.get(0).getExchangeRate())
-                    .isEqualTo(rates.get(0).getRate().setScale(2, RoundingMode.UP));
+                    .isEqualByComparingTo(rates.get(0).getRate().setScale(2, RoundingMode.HALF_EVEN));
             Assertions.assertThat(addedRates.get(0).getCurrency().getCode())
                     .isEqualTo(rates.get(0).getCurrencyCode());
+
             Assertions.assertThat(addedRates.get(1).getExchangeRate())
-                    .isEqualTo(rates.get(1).getRate().setScale(2, RoundingMode.UP));
+                    .isEqualByComparingTo(rates.get(1).getRate().setScale(2, RoundingMode.HALF_EVEN));
             Assertions.assertThat(addedRates.get(1).getCurrency().getCode())
                     .isEqualTo(rates.get(1).getCurrencyCode());
         }
@@ -118,12 +119,12 @@ public class ScheduledTasksIntegrationTests extends BaseIntegrationTest {
                     CbrExchangeRatesResponseDTO.CbrExchangeRateResponseDTO.builder()
                             .currencyCode(currencyRepository.findById(2L).orElseThrow().getCode())
                             .nominal(1L)
-                            .rate(new BigDecimal("1234.56789"))
+                            .rate(new BigDecimal("123.456789"))
                             .build(),
                     CbrExchangeRatesResponseDTO.CbrExchangeRateResponseDTO.builder()
                             .currencyCode(currencyRepository.findById(3L).orElseThrow().getCode())
                             .nominal(1L)
-                            .rate(new BigDecimal("1234.56789"))
+                            .rate(new BigDecimal("123.456789"))
                             .build()
             );
 
@@ -146,11 +147,11 @@ public class ScheduledTasksIntegrationTests extends BaseIntegrationTest {
 
             Assertions.assertThat(addedRates).isNotEmpty();
             Assertions.assertThat(addedRates.get(0).getExchangeRate())
-                    .isEqualTo(rates.get(0).getRate().setScale(2, RoundingMode.UP));
+                    .isEqualTo(rates.get(0).getRate().setScale(2, RoundingMode.HALF_EVEN));
             Assertions.assertThat(addedRates.get(0).getCurrency().getCode())
                     .isEqualTo(rates.get(0).getCurrencyCode());
             Assertions.assertThat(addedRates.get(1).getExchangeRate())
-                    .isEqualTo(rates.get(1).getRate().setScale(2, RoundingMode.UP));
+                    .isEqualTo(rates.get(1).getRate().setScale(2, RoundingMode.HALF_EVEN));
             Assertions.assertThat(addedRates.get(1).getCurrency().getCode())
                     .isEqualTo(rates.get(1).getCurrencyCode());
         }

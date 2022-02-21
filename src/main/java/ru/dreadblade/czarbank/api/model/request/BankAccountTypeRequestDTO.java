@@ -17,17 +17,17 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class BankAccountTypeRequestDTO {
     @NotBlank(message = "Bank account type name must be not empty", groups = CreateRequest.class)
-    @Size(message = "The maximum length of the bank account type name is 32 characters",
-            groups = { CreateRequest.class, UpdateRequest.class }, max = 32)
+    @Size(message = "The maximum length of the bank account type name is 100 characters",
+            groups = { CreateRequest.class, UpdateRequest.class }, max = 100)
     private String name;
 
     @NotNull(message = "Transaction commission must be not null", groups = CreateRequest.class)
-    @Digits(message = "Transaction commission must contain 0 integers and up to 10 fractional numbers (inclusive)",
-            groups = { CreateRequest.class, UpdateRequest.class }, integer = 0, fraction = 10)
+    @Digits(message = "Transaction commission must contain 0 integers and up to 6 fractional numbers (inclusive)",
+            groups = { CreateRequest.class, UpdateRequest.class }, integer = 0, fraction = 6)
     private BigDecimal transactionCommission;
 
     @NotNull(message = "Currency exchange commission must be not null", groups = CreateRequest.class)
-    @Digits(message = "Currency exchange commission must contain 0 integers and up to 10 fractional numbers (inclusive)",
-            groups = { CreateRequest.class, UpdateRequest.class }, integer = 0, fraction = 10)
+    @Digits(message = "Currency exchange commission must contain 0 integers and up to 6 fractional numbers (inclusive)",
+            groups = { CreateRequest.class, UpdateRequest.class }, integer = 0, fraction = 6)
     private BigDecimal currencyExchangeCommission;
 }

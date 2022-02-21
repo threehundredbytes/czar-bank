@@ -3,10 +3,7 @@ package ru.dreadblade.czarbank.domain.security;
 import lombok.*;
 import ru.dreadblade.czarbank.domain.BaseEntity;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 @Getter
 @Setter
@@ -19,5 +16,6 @@ public class Permission extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "permission_id_sequence")
     private Long id;
 
+    @Column(length = 100, nullable = false, unique = true, updatable = false)
     private String name;
 }

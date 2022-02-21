@@ -18,7 +18,7 @@ public class BlacklistedAccessToken extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "blacklisted_access_token_id_sequence")
     private Long id;
 
-    @Column(updatable = false, length = 1024)
+    @Column(length = 4096, nullable = false, updatable = false)
     private String accessToken;
 
     @CreationTimestamp

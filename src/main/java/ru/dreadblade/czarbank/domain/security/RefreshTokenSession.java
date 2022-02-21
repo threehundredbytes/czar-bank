@@ -18,7 +18,7 @@ public class RefreshTokenSession extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "refresh_token_session_sequence")
     private Long id;
 
-    @Column(updatable = false, unique = true)
+    @Column(length = 36, nullable = false, unique = true, updatable = false)
     private String refreshToken;
 
     @ManyToOne(fetch = FetchType.EAGER)
