@@ -14,6 +14,7 @@ import javax.persistence.*;
 public class Permission extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "permission_id_sequence")
+    @SequenceGenerator(name = "permission_id_sequence", allocationSize = 1)
     private Long id;
 
     @Column(length = 100, nullable = false, unique = true, updatable = false)

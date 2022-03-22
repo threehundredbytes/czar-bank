@@ -16,12 +16,13 @@ import java.time.Instant;
 public class Transaction extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "transaction_id_sequence")
+    @SequenceGenerator(name = "transaction_id_sequence", allocationSize = 1)
     private Long id;
 
     @Column(nullable = false, updatable = false, precision = 20, scale = 2)
     private BigDecimal amount;
 
-    @Column(updatable = false)
+    @Column(nullable = false, updatable = false, precision = 20, scale = 2)
     private BigDecimal receivedAmount;
 
     @ManyToOne(fetch = FetchType.EAGER)

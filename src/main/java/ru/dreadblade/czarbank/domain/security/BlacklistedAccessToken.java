@@ -16,6 +16,7 @@ import java.time.Instant;
 public class BlacklistedAccessToken extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "blacklisted_access_token_id_sequence")
+    @SequenceGenerator(name = "blacklisted_access_token_id_sequence", allocationSize = 1)
     private Long id;
 
     @Column(length = 4096, nullable = false, updatable = false)

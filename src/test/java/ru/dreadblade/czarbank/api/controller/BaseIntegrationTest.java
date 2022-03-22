@@ -69,7 +69,6 @@ public abstract class BaseIntegrationTest {
     }
 
     public static class DockerDataSourceInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-
         @Override
         public void initialize(ConfigurableApplicationContext applicationContext) {
             TestPropertySourceUtils.addInlinedPropertiesToEnvironment(

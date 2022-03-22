@@ -1,6 +1,8 @@
 package ru.dreadblade.czarbank.domain;
 
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import ru.dreadblade.czarbank.domain.security.User;
 
 import javax.persistence.*;
@@ -16,12 +18,14 @@ import java.util.Set;
 public class BankAccount extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "bank_account_id_sequence")
+    @SequenceGenerator(name = "bank_account_id_sequence", allocationSize = 1)
     private Long id;
 
     @Column(length = 20, nullable = false, unique = true, updatable = false)
     private String number;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User owner;
 
     @ManyToOne(fetch = FetchType.EAGER)

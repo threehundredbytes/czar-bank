@@ -15,6 +15,7 @@ import java.time.LocalDate;
 public class ExchangeRate extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "exchange_rate_id_sequence")
+    @SequenceGenerator(name = "exchange_rate_id_sequence", allocationSize = 1)
     private Long id;
 
     @ManyToOne(fetch = FetchType.EAGER)

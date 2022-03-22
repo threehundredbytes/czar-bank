@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public class User extends BaseEntity implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_id_sequence")
+    @SequenceGenerator(name = "user_id_sequence", allocationSize = 1)
     private Long id;
 
     @Column(length = 10, nullable = false, unique = true)
