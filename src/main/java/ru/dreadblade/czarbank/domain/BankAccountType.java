@@ -1,27 +1,28 @@
 package ru.dreadblade.czarbank.domain;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+import lombok.*;
 
-import javax.persistence.Entity;
-import javax.validation.constraints.Digits;
+import javax.persistence.*;
 import java.math.BigDecimal;
 
 @Getter
 @Setter
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 public class BankAccountType extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "bank_account_type_id_sequence")
+    @SequenceGenerator(name = "bank_account_type_id_sequence", allocationSize = 1)
+    private Long id;
+
+    @Column(length = 100, nullable = false, unique = true)
     private String name;
 
-    @Digits(integer = 0, fraction = 10)
+    @Column(nullable = false, precision = 6, scale = 6)
     private BigDecimal transactionCommission;
 
-    @Digits(integer = 0, fraction = 10)
+    @Column(nullable = false, precision = 6, scale = 6)
     private BigDecimal currencyExchangeCommission;
 }

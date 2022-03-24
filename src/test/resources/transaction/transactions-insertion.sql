@@ -1,9 +1,9 @@
 delete from transaction;
 
-insert into transaction (id, amount, datetime, destination_bank_account_id, source_bank_account_id)
-values (59, 1000, now(), 54, 55),
-       (60, 2500, now(), 55, 56),
-       (61, 1500, now(), 56, 57),
-       (62, 250, now(), 57, 58);
+insert into transaction (id, amount, received_amount, destination_bank_account_id, source_bank_account_id, created_at)
+values (1, 1000, 1000, 1, 2, now()),
+       (2, 2500, 2500, 2, 3, now()),
+       (3, 1500, 1500, 3, 4, now()),
+       (4, 250, 250, 4, 5, now());
 
-alter sequence hibernate_sequence restart 63;
+alter sequence transaction_id_sequence restart 5;

@@ -1,5 +1,6 @@
 package ru.dreadblade.czarbank.api.controller;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
@@ -104,7 +105,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void findRoleById_withAuth_withPermission_isSuccessful() throws Exception {
-            Role expectedRole = roleRepository.findById(BASE_ROLE_ID + 1L).orElseThrow();
+            Role expectedRole = roleRepository.findById(1L).orElseThrow();
 
             String expectedResponse = objectMapper.writeValueAsString(expectedRole);
 
@@ -116,7 +117,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void findRoleById_withAuth_isFailed() throws Exception {
-            long expectedRoleId =BASE_ROLE_ID + 1L;
+            long expectedRoleId = 1L;
 
             mockMvc.perform(get(ROLES_API_URL + "/" + expectedRoleId))
                     .andExpect(status().isForbidden())
@@ -125,7 +126,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void findRoleById_withoutAuth_isFailed() throws Exception {
-            long expectedRoleId =BASE_ROLE_ID + 1L;
+            long expectedRoleId = 1L;
 
             mockMvc.perform(get(ROLES_API_URL + "/" + expectedRoleId))
                     .andExpect(status().isForbidden())
@@ -135,7 +136,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void findRoleById_withAuth_withPermission_isNotFound() throws Exception {
-            long expectedRoleId = BASE_ROLE_ID + 123L;
+            long expectedRoleId = 123L;
 
             Assertions.assertThat(roleRepository.existsById(expectedRoleId)).isFalse();
 
@@ -152,7 +153,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         @Transactional
         void createRole_withAuth_withPermission_isSuccessful() throws Exception {
-            List<Long> permissions = List.of(BASE_PERMISSION_ID + 2L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
+            List<Long> permissions = List.of(2L, 6L, 8L);
 
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name("MANAGER")
@@ -184,7 +185,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void createRole_withAuth_isFailed() throws Exception {
-            List<Long> permissions = List.of(BASE_PERMISSION_ID + 2L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
+            List<Long> permissions = List.of(2L, 6L, 8L);
 
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name("MANAGER")
@@ -202,7 +203,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void createRole_withoutAuth_isFailed() throws Exception {
-            List<Long> permissions = List.of(BASE_PERMISSION_ID + 2L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
+            List<Long> permissions = List.of(2L, 6L, 8L);
 
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name("MANAGER")
@@ -218,38 +219,88 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(roleRepository.existsByName(requestDTO.getName())).isFalse();
         }
 
-        @Test
-        @WithUserDetails("admin")
-        void createRole_withAuth_withPermission_roleWithSameNameAlreadyExists() throws Exception {
-            Role existingRole = roleRepository.findById(BASE_ROLE_ID + 1L).orElseThrow();
-            Assertions.assertThat(roleRepository.existsByName(existingRole.getName())).isTrue();
-
-            long rolesCountBeforeCreating = roleRepository.count();
-
-            List<Long> permissions = List.of(BASE_PERMISSION_ID + 1L);
-
-            RoleRequestDTO requestDTO = RoleRequestDTO.builder()
-                    .name(existingRole.getName())
-                    .permissions(permissions)
-                    .build();
-
-            mockMvc.perform(post(ROLES_API_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(requestDTO)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message")
-                            .value(ExceptionMessage.ROLE_NAME_ALREADY_EXISTS.getMessage()));
-
-            Assertions.assertThat(rolesCountBeforeCreating).isEqualTo(roleRepository.count());
-        }
-
         @Nested
         @DisplayName("Validation Tests")
         class ValidationTests {
             @Test
             @WithUserDetails("admin")
+            void createRole_withAuth_withPermission_roleWithSameNameAlreadyExists() throws Exception {
+                Role existingRole = roleRepository.findById(1L).orElseThrow();
+                Assertions.assertThat(roleRepository.existsByName(existingRole.getName())).isTrue();
+
+                List<Long> permissions = List.of(1L);
+
+                RoleRequestDTO requestDTO = RoleRequestDTO.builder()
+                        .name(existingRole.getName())
+                        .permissions(permissions)
+                        .build();
+
+                mockMvc.perform(post(ROLES_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("name"))
+                        .andExpect(jsonPath("$.errors[0].message").value("Role with the same name already exists"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(ROLES_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createRole_withAuth_withPermission_withShortName_validationIsFailed_responseIsValid() throws Exception {
+                List<Long> permissions = List.of(2L, 6L, 8L);
+
+                RoleRequestDTO requestDTO = RoleRequestDTO.builder()
+                        .name(RandomStringUtils.randomAlphabetic(2))
+                        .permissions(permissions)
+                        .build();
+
+                mockMvc.perform(post(ROLES_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("name"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The role name must be between 3 and 100 characters long (inclusive)"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(ROLES_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createRole_withAuth_withPermission_withLongName_validationIsFailed_responseIsValid() throws Exception {
+                List<Long> permissions = List.of(2L, 6L, 8L);
+
+                RoleRequestDTO requestDTO = RoleRequestDTO.builder()
+                        .name(RandomStringUtils.randomAlphabetic(101))
+                        .permissions(permissions)
+                        .build();
+
+                mockMvc.perform(post(ROLES_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("name"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The role name must be between 3 and 100 characters long (inclusive)"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(ROLES_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
             void createRole_withAuth_withPermission_withoutName_validationIsFailed_responseIsValid() throws Exception {
-                List<Long> permissions = List.of(BASE_PERMISSION_ID + 2L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
+                List<Long> permissions = List.of(2L, 6L, 8L);
 
                 RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                         .permissions(permissions)
@@ -314,7 +365,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
             @WithUserDetails("admin")
             void createRole_withAuth_withPermission_withEmptyNameAndPermissions_validationIsFailed_responseIsValid() throws Exception {
                 RoleRequestDTO requestDTO = RoleRequestDTO.builder()
-                        .name("")
+                        .name(null)
                         .permissions(Collections.emptyList())
                         .build();
 
@@ -365,10 +416,10 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Transactional
         void updateRole_withAuth_withPermission_isSuccessful() throws Exception {
             Set<Permission> permissions = new HashSet<>();
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 6L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 7L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 10L).orElseThrow());
+            permissions.add(permissionRepository.findById(2L).orElseThrow());
+            permissions.add(permissionRepository.findById(6L).orElseThrow());
+            permissions.add(permissionRepository.findById(7L).orElseThrow());
+            permissions.add(permissionRepository.findById(10L).orElseThrow());
 
             String roleName = "MANAGER";
 
@@ -377,7 +428,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .permissions(permissions)
                     .build());
 
-            List<Long> updatedPermissions = List.of(BASE_PERMISSION_ID + 3L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
+            List<Long> updatedPermissions = List.of(3L, 6L, 8L);
 
             Set<Permission> expectedPermissions = updatedPermissions.stream()
                     .filter(id -> permissionRepository.existsById(id))
@@ -410,10 +461,10 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Transactional
         void updateRole_withAuth_withPermission_withoutName_isSuccessful() throws Exception {
             Set<Permission> permissions = new HashSet<>();
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 6L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 7L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 10L).orElseThrow());
+            permissions.add(permissionRepository.findById(2L).orElseThrow());
+            permissions.add(permissionRepository.findById(6L).orElseThrow());
+            permissions.add(permissionRepository.findById(7L).orElseThrow());
+            permissions.add(permissionRepository.findById(10L).orElseThrow());
 
             String roleName = "MANAGER";
 
@@ -422,7 +473,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
                     .permissions(permissions)
                     .build());
 
-            List<Long> updatedPermissions = List.of(BASE_PERMISSION_ID + 3L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
+            List<Long> updatedPermissions = List.of(3L, 6L, 8L);
 
             Set<Permission> expectedPermissions = updatedPermissions.stream()
                     .filter(id -> permissionRepository.existsById(id))
@@ -452,10 +503,10 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Rollback
         void updateRole_withAuth_withPermission_withoutPermissions_isSuccessful() throws Exception {
             Set<Permission> permissions = new HashSet<>();
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 6L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 7L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 10L).orElseThrow());
+            permissions.add(permissionRepository.findById(2L).orElseThrow());
+            permissions.add(permissionRepository.findById(6L).orElseThrow());
+            permissions.add(permissionRepository.findById(7L).orElseThrow());
+            permissions.add(permissionRepository.findById(10L).orElseThrow());
 
             String roleName = "MANAGER";
 
@@ -490,17 +541,17 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Rollback
         void updateRole_withAuth_isFailed() throws Exception {
             Set<Permission> permissions = new HashSet<>();
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 6L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 7L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 10L).orElseThrow());
+            permissions.add(permissionRepository.findById(2L).orElseThrow());
+            permissions.add(permissionRepository.findById(6L).orElseThrow());
+            permissions.add(permissionRepository.findById(7L).orElseThrow());
+            permissions.add(permissionRepository.findById(10L).orElseThrow());
 
             Role roleToUpdate = roleRepository.save(Role.builder()
                     .name("MANAGER")
                     .permissions(permissions)
                     .build());
 
-            List<Long> updatedPermissions = List.of(BASE_PERMISSION_ID + 3L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
+            List<Long> updatedPermissions = List.of(3L, 6L, 8L);
 
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name("upd" + roleToUpdate.getName())
@@ -520,17 +571,17 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Rollback
         void updateRole_withoutAuth_isFailed() throws Exception {
             Set<Permission> permissions = new HashSet<>();
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 6L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 7L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 10L).orElseThrow());
+            permissions.add(permissionRepository.findById(2L).orElseThrow());
+            permissions.add(permissionRepository.findById(6L).orElseThrow());
+            permissions.add(permissionRepository.findById(7L).orElseThrow());
+            permissions.add(permissionRepository.findById(10L).orElseThrow());
 
             Role roleToUpdate = roleRepository.save(Role.builder()
                     .name("MANAGER")
                     .permissions(permissions)
                     .build());
 
-            List<Long> updatedPermissions = List.of(BASE_PERMISSION_ID + 3L, BASE_PERMISSION_ID + 6L, BASE_PERMISSION_ID + 8L);
+            List<Long> updatedPermissions = List.of(3L, 6L, 8L);
 
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name("upd" + roleToUpdate.getName())
@@ -549,7 +600,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void updateRole_withAuth_withPermission_isNotFound() throws Exception {
-            long roleToUpdateId = BASE_ROLE_ID + 123;
+            long roleToUpdateId = 123;
 
             Assertions.assertThat(roleRepository.existsById(roleToUpdateId)).isFalse();
 
@@ -568,8 +619,8 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void updateRole_withAuth_withPermission_roleWithSameNameAlreadyExists() throws Exception {
-            Role existingRole = roleRepository.findById(BASE_ROLE_ID + 1L).orElseThrow();
-            Role roleToUpdate = roleRepository.findById(BASE_ROLE_ID + 2L).orElseThrow();
+            Role existingRole = roleRepository.findById(1L).orElseThrow();
+            Role roleToUpdate = roleRepository.findById(2L).orElseThrow();
 
             RoleRequestDTO requestDTO = RoleRequestDTO.builder()
                     .name(existingRole.getName())
@@ -589,12 +640,86 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
             @Test
             @WithUserDetails("admin")
             @Transactional
+            void updateRole_withAuth_withShortName_validationIsFailed_responseIsValid() throws Exception {
+                Set<Permission> permissions = new HashSet<>();
+                permissions.add(permissionRepository.findById(2L).orElseThrow());
+                permissions.add(permissionRepository.findById(6L).orElseThrow());
+                permissions.add(permissionRepository.findById(7L).orElseThrow());
+                permissions.add(permissionRepository.findById(10L).orElseThrow());
+
+                String roleName = "MANAGER";
+
+                Role roleToUpdate = roleRepository.save(Role.builder()
+                        .name(roleName)
+                        .permissions(permissions)
+                        .build());
+
+                RoleRequestDTO requestDTO = RoleRequestDTO.builder()
+                        .name(RandomStringUtils.randomAlphabetic(2))
+                        .build();
+
+                String requestUrl = ROLES_API_URL + "/" + roleToUpdate.getId();
+
+                mockMvc.perform(put(requestUrl)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("name"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The role name must be between 3 and 100 characters long (inclusive)"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            @Transactional
+            void updateRole_withAuth_withLongName_validationIsFailed_responseIsValid() throws Exception {
+                Set<Permission> permissions = new HashSet<>();
+                permissions.add(permissionRepository.findById(2L).orElseThrow());
+                permissions.add(permissionRepository.findById(6L).orElseThrow());
+                permissions.add(permissionRepository.findById(7L).orElseThrow());
+                permissions.add(permissionRepository.findById(10L).orElseThrow());
+
+                String roleName = "MANAGER";
+
+                Role roleToUpdate = roleRepository.save(Role.builder()
+                        .name(roleName)
+                        .permissions(permissions)
+                        .build());
+
+                RoleRequestDTO requestDTO = RoleRequestDTO.builder()
+                        .name(RandomStringUtils.randomAlphabetic(101))
+                        .build();
+
+                String requestUrl = ROLES_API_URL + "/" + roleToUpdate.getId();
+
+                mockMvc.perform(put(requestUrl)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("name"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The role name must be between 3 and 100 characters long (inclusive)"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            @Transactional
             void updateRole_withAuth_withoutName_withNullPermission_validationIsFailed_responseIsValid() throws Exception {
                 Set<Permission> permissions = new HashSet<>();
-                permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
-                permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 6L).orElseThrow());
-                permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 7L).orElseThrow());
-                permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 10L).orElseThrow());
+                permissions.add(permissionRepository.findById(2L).orElseThrow());
+                permissions.add(permissionRepository.findById(6L).orElseThrow());
+                permissions.add(permissionRepository.findById(7L).orElseThrow());
+                permissions.add(permissionRepository.findById(10L).orElseThrow());
 
                 String roleName = "MANAGER";
 
@@ -631,10 +756,10 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Rollback
         void deleteRole_withAuth_withPermission_isSuccessful() throws Exception {
             Set<Permission> permissions = new HashSet<>();
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 6L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 7L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 10L).orElseThrow());
+            permissions.add(permissionRepository.findById(2L).orElseThrow());
+            permissions.add(permissionRepository.findById(6L).orElseThrow());
+            permissions.add(permissionRepository.findById(7L).orElseThrow());
+            permissions.add(permissionRepository.findById(10L).orElseThrow());
 
             Role roleToDelete = roleRepository.save(Role.builder()
                     .name("MANAGER")
@@ -665,10 +790,10 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Rollback
         void deleteRole_withAuth_isFailed() throws Exception {
             Set<Permission> permissions = new HashSet<>();
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 6L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 7L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 10L).orElseThrow());
+            permissions.add(permissionRepository.findById(2L).orElseThrow());
+            permissions.add(permissionRepository.findById(6L).orElseThrow());
+            permissions.add(permissionRepository.findById(7L).orElseThrow());
+            permissions.add(permissionRepository.findById(10L).orElseThrow());
 
             Role roleToDelete = roleRepository.save(Role.builder()
                     .name("MANAGER")
@@ -690,10 +815,10 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Rollback
         void deleteRole_withoutAuth_isFailed() throws Exception {
             Set<Permission> permissions = new HashSet<>();
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 2L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 6L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 7L).orElseThrow());
-            permissions.add(permissionRepository.findById(BASE_PERMISSION_ID + 10L).orElseThrow());
+            permissions.add(permissionRepository.findById(2L).orElseThrow());
+            permissions.add(permissionRepository.findById(6L).orElseThrow());
+            permissions.add(permissionRepository.findById(7L).orElseThrow());
+            permissions.add(permissionRepository.findById(10L).orElseThrow());
 
             Role roleToDelete = roleRepository.save(Role.builder()
                     .name("MANAGER")
@@ -714,7 +839,7 @@ public class RoleIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void deleteRole_withAuth_withPermission_isNotFound() throws Exception {
-            long userToDeleteId = BASE_USER_ID + 123L;
+            long userToDeleteId = 123L;
 
             Assertions.assertThat(roleRepository.existsById(userToDeleteId)).isFalse();
 

@@ -126,7 +126,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void findAllByBankAccountId_withAuth_withPermission_isSuccessful() throws Exception {
-            BankAccount bankAccountForTest = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow();
+            BankAccount bankAccountForTest = bankAccountRepository.findById( 3L).orElseThrow();
 
             List<TransactionResponseDTO> expectedTransactions = transactionRepository
                     .findAllByBankAccountId(bankAccountForTest.getId())
@@ -147,7 +147,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void findAllByBankAccountId_withAuth_asOwner_isSuccessful() throws Exception {
-            BankAccount bankAccountForTest = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow();
+            BankAccount bankAccountForTest = bankAccountRepository.findById(3L).orElseThrow();
 
             List<TransactionResponseDTO> expectedTransactions = transactionRepository
                     .findAllByBankAccountId(bankAccountForTest.getId())
@@ -168,7 +168,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void findAllByBankAccountId_withAuth_notAsOwner_isFailed() throws Exception {
-            BankAccount bankAccountForTest = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
+            BankAccount bankAccountForTest = bankAccountRepository.findById(1L).orElseThrow();
 
             mockMvc.perform(get(BANK_ACCOUNTS_API_URL + "/" + bankAccountForTest.getId() + "/" + TRANSACTIONS)
                             .contentType(MediaType.APPLICATION_JSON))
@@ -178,7 +178,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void findAllByBankAccountId_withoutAuth_isFailed() throws Exception {
-            BankAccount bankAccountForTest = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
+            BankAccount bankAccountForTest = bankAccountRepository.findById(1L).orElseThrow();
 
             mockMvc.perform(get(BANK_ACCOUNTS_API_URL + "/" + bankAccountForTest.getId() + "/" + TRANSACTIONS)
                             .contentType(MediaType.APPLICATION_JSON))
@@ -189,7 +189,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void findAllByBankAccountId_withAuth_withPermission_isNotFound() throws Exception {
-            long expectedId = BASE_BANK_ACCOUNT_ID - 1L;
+            long expectedId = 1234L;
 
             Assertions.assertThat(bankAccountRepository.existsById(expectedId)).isFalse();
 
@@ -201,7 +201,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void findAllByBankAccountId_withAuth_nonExistentAccount_isNotFound() throws Exception {
-            long expectedId = BASE_BANK_ACCOUNT_ID - 1L;
+            long expectedId = 1234L;
 
             Assertions.assertThat(bankAccountRepository.existsById(expectedId)).isFalse();
 
@@ -212,7 +212,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void findAllByBankAccountId_withoutAuth_nonExistentAccount_isForbidden() throws Exception {
-            long expectedId = BASE_BANK_ACCOUNT_ID - 1L;
+            long expectedId = 1234L;
 
             Assertions.assertThat(bankAccountRepository.existsById(expectedId)).isFalse();
 
@@ -230,8 +230,8 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         @Transactional
         void createTransaction_withAuth_withPermission_sameCurrencies_isSuccessful() throws Exception {
-            BankAccount sourceBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
-            BankAccount destinationBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 2L).orElseThrow();
+            BankAccount sourceBankAccount = bankAccountRepository.findById(1L).orElseThrow();
+            BankAccount destinationBankAccount = bankAccountRepository.findById(2L).orElseThrow();
 
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(10000L))
@@ -249,13 +249,11 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(sourceBankAccountBalanceBeforeTransaction)
                     .isGreaterThanOrEqualTo(transactionAmountWithCommission);
 
-            long expectedId = BASE_TRANSACTION_ID + transactionRepository.count() + 1;
-
             mockMvc.perform(post(TRANSACTIONS_API_URL)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(transactionRequest)))
                     .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.id").value(expectedId))
+                    .andExpect(jsonPath("$.id").isNumber())
                     .andExpect(jsonPath("$.amount").value(transactionRequest.getAmount()))
                     .andExpect(jsonPath("$.receivedAmount").value(transactionRequest.getAmount()))
                     .andExpect(jsonPath("$.sourceBankAccount.number")
@@ -286,8 +284,8 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("client")
         @Transactional
         void createTransaction_withAuth_asOwnerOfSourceBankAccount_sameCurrencies_isSuccessful() throws Exception {
-            BankAccount sourceBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow();
-            BankAccount destinationBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 2L).orElseThrow();
+            BankAccount sourceBankAccount = bankAccountRepository.findById(3L).orElseThrow();
+            BankAccount destinationBankAccount = bankAccountRepository.findById(2L).orElseThrow();
 
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(1000L))
@@ -306,13 +304,11 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(sourceBankAccountBalanceBeforeTransaction)
                     .isGreaterThanOrEqualTo(transactionAmountWithCommission);
 
-            long expectedId = BASE_TRANSACTION_ID + transactionRepository.count() + 1;
-
             mockMvc.perform(post(TRANSACTIONS_API_URL)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(transactionRequest)))
                     .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.id").value(expectedId))
+                    .andExpect(jsonPath("$.id").isNumber())
                     .andExpect(jsonPath("$.amount").value(transactionRequest.getAmount()))
                     .andExpect(jsonPath("$.receivedAmount").value(transactionRequest.getAmount()))
                     .andExpect(jsonPath("$.sourceBankAccount.number")
@@ -343,8 +339,8 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("client")
         @Transactional
         void createTransaction_withAuth_notAsOwnerOfSourceBankAccount_sameCurrencies_isFailed() throws Exception {
-            BankAccount sourceBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
-            BankAccount destinationBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 2L).orElseThrow();
+            BankAccount sourceBankAccount = bankAccountRepository.findById(1L).orElseThrow();
+            BankAccount destinationBankAccount = bankAccountRepository.findById(2L).orElseThrow();
 
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(10000L))
@@ -388,8 +384,8 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         @Test
         @Transactional
         void createTransaction_withoutAuth_sameCurrencies_isFailed() throws Exception {
-            BankAccount sourceBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
-            BankAccount destinationBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 2L).orElseThrow();
+            BankAccount sourceBankAccount = bankAccountRepository.findById(1L).orElseThrow();
+            BankAccount destinationBankAccount = bankAccountRepository.findById(2L).orElseThrow();
 
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(10000L))
@@ -434,11 +430,11 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         @Transactional
         void createTransaction_withAuth_withPermission_currenciesDiffer_isSuccessful() throws Exception {
-            BankAccount sourceBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
+            BankAccount sourceBankAccount = bankAccountRepository.findById(1L).orElseThrow();
 
-            long ownerId = BASE_USER_ID + 1L;
-            long bankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
-            long currencyId = BASE_CURRENCY_ID + 2L;
+            long ownerId = 1L;
+            long bankAccountTypeId = 1L;
+            long currencyId = 2L;
 
             BankAccount destinationBankAccount = bankAccountService.create(ownerId, bankAccountTypeId, currencyId);
 
@@ -501,7 +497,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(10000L))
                     .sourceBankAccountNumber("11111111111111111111")
-                    .destinationBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 2L).orElseThrow().getNumber())
+                    .destinationBankAccountNumber(bankAccountRepository.findById(2L).orElseThrow().getNumber())
                     .build();
 
             mockMvc.perform(post(TRANSACTIONS_API_URL)
@@ -518,7 +514,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(10000L))
                     .sourceBankAccountNumber("11111111111111111111")
-                    .destinationBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 2L).orElseThrow().getNumber())
+                    .destinationBankAccountNumber(bankAccountRepository.findById(2L).orElseThrow().getNumber())
                     .build();
 
             mockMvc.perform(post(TRANSACTIONS_API_URL)
@@ -534,7 +530,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(10000L))
                     .sourceBankAccountNumber("11111111111111111111")
-                    .destinationBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 2L).orElseThrow().getNumber())
+                    .destinationBankAccountNumber(bankAccountRepository.findById(2L).orElseThrow().getNumber())
                     .build();
 
             mockMvc.perform(post(TRANSACTIONS_API_URL)
@@ -549,7 +545,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         void createTransaction_withAuth_withPermission_nonExistentDestinationBankAccount_isBadRequest() throws Exception {
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(1L))
-                    .sourceBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow().getNumber())
+                    .sourceBankAccountNumber(bankAccountRepository.findById(1L).orElseThrow().getNumber())
                     .destinationBankAccountNumber("01234567899876543210")
                     .build();
 
@@ -566,7 +562,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         void createTransaction_withAuth_asOwnerOfSourceBankAccount_nonExistentDestinationBankAccount_isBadRequest() throws Exception {
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(1L))
-                    .sourceBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow().getNumber())
+                    .sourceBankAccountNumber(bankAccountRepository.findById(3L).orElseThrow().getNumber())
                     .destinationBankAccountNumber("01234567899876543210")
                     .build();
 
@@ -583,7 +579,7 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         void createTransaction_withAuth_notAsOwnerOfSourceBankAccount_nonExistentDestinationBankAccount_isForbidden() throws Exception {
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(1L))
-                    .sourceBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow().getNumber())
+                    .sourceBankAccountNumber(bankAccountRepository.findById(1L).orElseThrow().getNumber())
                     .destinationBankAccountNumber("01234567899876543210")
                     .build();
 
@@ -600,8 +596,8 @@ public class TransactionIntegrationTest extends BaseIntegrationTest {
         void createTransaction_withAuth_withPermission_sourceBankAccountDoesntHaveEnoughBalanceToCompleteTransaction() throws Exception {
             TransactionRequestDTO transactionRequest = TransactionRequestDTO.builder()
                     .amount(BigDecimal.valueOf(10000L))
-                    .sourceBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow().getNumber())
-                    .destinationBankAccountNumber(bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 4L).orElseThrow().getNumber())
+                    .sourceBankAccountNumber(bankAccountRepository.findById(3L).orElseThrow().getNumber())
+                    .destinationBankAccountNumber(bankAccountRepository.findById(4L).orElseThrow().getNumber())
                     .build();
 
             mockMvc.perform(post(TRANSACTIONS_API_URL)

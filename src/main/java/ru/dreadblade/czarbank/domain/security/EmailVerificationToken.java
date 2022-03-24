@@ -1,30 +1,31 @@
 package ru.dreadblade.czarbank.domain.security;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import ru.dreadblade.czarbank.domain.BaseEntity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.ManyToOne;
+import javax.persistence.*;
 import java.time.Instant;
 
 @Getter
 @Setter
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 public class EmailVerificationToken extends BaseEntity {
-    @Column(updatable = false)
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "email_verification_token_id_sequence")
+    @SequenceGenerator(name = "email_verification_token_id_sequence", allocationSize = 1)
+    private Long id;
+
+    @Column(length = 36, nullable = false, unique = true, updatable = false)
     private String emailVerificationToken;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
     @CreationTimestamp

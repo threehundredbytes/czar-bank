@@ -1,5 +1,6 @@
 package ru.dreadblade.czarbank.api.controller;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
@@ -111,7 +112,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void findUserById_withAuth_withPermission_isSuccessful() throws Exception {
-            User expectedUser = userRepository.findById(BASE_USER_ID + 2L).orElseThrow();
+            User expectedUser = userRepository.findById(2L).orElseThrow();
 
             String expectedResponse = objectMapper.writeValueAsString(userMapper.entityToResponseDto(expectedUser));
 
@@ -123,7 +124,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void findUserById_withAuth_asSelf_isSuccessful() throws Exception {
-            User expectedUser = userRepository.findById(BASE_USER_ID + 3L).orElseThrow();
+            User expectedUser = userRepository.findById(3L).orElseThrow();
 
             String expectedResponse = objectMapper.writeValueAsString(userMapper.entityToResponseDto(expectedUser));
 
@@ -135,7 +136,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void findUserById_withAuth_isFailed() throws Exception {
-            User expectedUser = userRepository.findById(BASE_USER_ID + 1L).orElseThrow();
+            User expectedUser = userRepository.findById(1L).orElseThrow();
 
             mockMvc.perform(get(USERS_API_URL + "/" + expectedUser.getId()))
                     .andExpect(status().isForbidden())
@@ -144,7 +145,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void findUserById_withoutAuth_isFailed() throws Exception {
-            User expectedUser = userRepository.findById(BASE_USER_ID + 1L).orElseThrow();
+            User expectedUser = userRepository.findById(1L).orElseThrow();
 
             mockMvc.perform(get(USERS_API_URL + "/" + expectedUser.getId()))
                     .andExpect(status().isForbidden())
@@ -154,7 +155,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void findByUserId_withAuth_withPermission_isNotFound() throws Exception {
-            long expectedUserId = BASE_USER_ID + 123L;
+            long expectedUserId = 123L;
 
             mockMvc.perform(get(USERS_API_URL + "/" + expectedUserId))
                     .andExpect(status().isNotFound());
@@ -192,8 +193,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username("boyarin")
                     .email("boyarin@czarbank.org")
-                    .password("password")
-                    .addRole(BASE_ROLE_ID + 2L)
+                    .password("c0mp1exP@ssw0rd")
+                    .addRole(2L)
                     .build();
 
             mockMvc.perform(post(USERS_API_URL)
@@ -206,7 +207,6 @@ public class UserIntegrationTest extends BaseIntegrationTest {
             User createdUser = userRepository.findByUsername(requestDTO.getUsername()).orElseThrow();
 
             Assertions.assertThat(createdUser.getEmail()).isEqualTo(createdUser.getEmail());
-            Assertions.assertThat(createdUser.getUserId()).isNotBlank();
             Assertions.assertThat(createdUser.getRoles()).contains(roleRepository.findByName("EMPLOYEE").orElseThrow());
         }
 
@@ -216,8 +216,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username("boyarin")
                     .email("boyarin@czarbank.org")
-                    .password("password")
-                    .addRole(BASE_ROLE_ID + 2L)
+                    .password("c0mp1exP@ssw0rd")
+                    .addRole(2L)
                     .build();
 
             mockMvc.perform(post(USERS_API_URL)
@@ -234,52 +234,112 @@ public class UserIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThat(createdUser.getRoles()).doesNotContain(roleRepository.findByName("EMPLOYEE").orElseThrow());
         }
 
-        @Test
-        void createUser_withoutAuth_userWithSameUsernameAlreadyExists() throws Exception {
-            User existingUser = userRepository.findById(BASE_USER_ID + 2L).orElseThrow();
-
-            UserRequestDTO requestDTO = UserRequestDTO.builder()
-                    .username(existingUser.getUsername())
-                    .email("user@czarbank.org")
-                    .password("password")
-                    .build();
-
-            mockMvc.perform(post(USERS_API_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(requestDTO)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message")
-                            .value(ExceptionMessage.USERNAME_ALREADY_EXISTS.getMessage()));
-        }
-
-        @Test
-        void createUser_withoutAuth_userWithSameEmailAlreadyExists() throws Exception {
-            User existingUser = userRepository.findById(BASE_USER_ID + 2L).orElseThrow();
-
-            UserRequestDTO requestDTO = UserRequestDTO.builder()
-                    .username("user")
-                    .email(existingUser.getEmail())
-                    .password("password")
-                    .build();
-
-            mockMvc.perform(post(USERS_API_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(requestDTO)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message")
-                            .value(ExceptionMessage.USER_EMAIL_ALREADY_EXISTS.getMessage()));
-        }
-
         @Nested
         @DisplayName("Validation Tests")
         class ValidationTests {
+            @Test
+            void createUser_withoutAuth_withExistingUsername_validationIsFailed_responseIsCorrect() throws Exception {
+                User existingUser = userRepository.findById(2L).orElseThrow();
+
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .username(existingUser.getUsername())
+                        .email("user@czarbank.org")
+                        .password("c0mp1exP@ssw0rd")
+                        .build();
+
+                mockMvc.perform(post(USERS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("username"))
+                        .andExpect(jsonPath("$.errors[0].message").value("User with the same username already exists"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(USERS_API_URL));
+            }
+
+            @Test
+            void createUser_withoutAuth_withExistingEmail_validationIsFailed_responseIsCorrect() throws Exception {
+                User existingUser = userRepository.findById(2L).orElseThrow();
+
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .username("user")
+                        .email(existingUser.getEmail())
+                        .password("c0mp1exP@ssw0rd")
+                        .build();
+
+                mockMvc.perform(post(USERS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("email"))
+                        .andExpect(jsonPath("$.errors[0].message").value("User with the same email already exists"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(USERS_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createUser_withAuth_withPermission_withShortUsername_validationIsFailed_responseIsCorrect() throws Exception {
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .username(RandomStringUtils.randomAlphabetic(2))
+                        .email("boyarin@czarbank.org")
+                        .password("c0mp1exP@ssw0rd")
+                        .addRole(2L)
+                        .build();
+
+                mockMvc.perform(post(USERS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("username"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The username must be between 3 and 32 characters long (inclusive)"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(USERS_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createUser_withAuth_withPermission_withLongUsername_validationIsFailed_responseIsCorrect() throws Exception {
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .username(RandomStringUtils.randomAlphabetic(33))
+                        .email("boyarin@czarbank.org")
+                        .password("c0mp1exP@ssw0rd")
+                        .addRole(2L)
+                        .build();
+
+                mockMvc.perform(post(USERS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("username"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The username must be between 3 and 32 characters long (inclusive)"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(USERS_API_URL));
+            }
+
             @Test
             @WithUserDetails("admin")
             void createUser_withAuth_withPermission_withoutUsername_validationIsFailed_responseIsCorrect() throws Exception {
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
                         .email("boyarin@czarbank.org")
-                        .password("password")
-                        .addRole(BASE_ROLE_ID + 2L)
+                        .password("c0mp1exP@ssw0rd")
+                        .addRole(2L)
                         .build();
 
                 mockMvc.perform(post(USERS_API_URL)
@@ -298,11 +358,110 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
             @Test
             @WithUserDetails("admin")
+            void createUser_withAuth_withPermission_withShortInvalidEmail_validationIsFailed_responseIsCorrect() throws Exception {
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .username("boyarin")
+                        .email(RandomStringUtils.randomAlphabetic(2))
+                        .password("c0mp1exP@ssw0rd")
+                        .addRole(2L)
+                        .build();
+
+                mockMvc.perform(post(USERS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(2)))
+                        .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("email", "email")))
+                        .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Invalid email address", "The email must be between 3 and 254 characters long (inclusive)")))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(USERS_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createUser_withAuth_withPermission_withLongInvalidEmail_validationIsFailed_responseIsCorrect() throws Exception {
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .username("boyarin")
+                        .email(RandomStringUtils.randomAlphabetic(255))
+                        .password("c0mp1exP@ssw0rd")
+                        .addRole(2L)
+                        .build();
+
+                mockMvc.perform(post(USERS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(2)))
+                        .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("email", "email")))
+                        .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Invalid email address", "The email must be between 3 and 254 characters long (inclusive)")))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(USERS_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createUser_withAuth_withPermission_withInvalidEmail_validationIsFailed_responseIsCorrect() throws Exception {
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .username("boyarin")
+                        .email("boyarin@czarbank.organization")
+                        .password("c0mp1exP@ssw0rd")
+                        .addRole(2L)
+                        .build();
+
+                mockMvc.perform(post(USERS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[*].field").value( "email"))
+                        .andExpect(jsonPath("$.errors[*].message").value("Invalid email address"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(USERS_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void createUser_withAuth_withPermission_withInvalidPassword_validationIsFailed_responseIsCorrect() throws Exception {
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .username("boyarin")
+                        .email("boyarin@czarbank.org")
+                        .password("easypassword")
+                        .addRole(2L)
+                        .build();
+
+                String invalidPasswordMessage = "The password must contain at least 8 characters, contain at least 1 number, " +
+                "1 lowercase and 1 uppercase letter, and a special character (!~<>,;:_=?*+#.\"'&§%°()|[]-$^@/)";
+
+                mockMvc.perform(post(USERS_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("password"))
+                        .andExpect(jsonPath("$.errors[0].message").value(invalidPasswordMessage))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(USERS_API_URL));
+            }
+
+            @Test
+            @WithUserDetails("admin")
             void createUser_withAuth_withPermission_withoutEmail_validationIsFailed_responseIsCorrect() throws Exception {
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
                         .username("boyarin")
-                        .password("password")
-                        .addRole(BASE_ROLE_ID + 2L)
+                        .password("c0mp1exP@ssw0rd")
+                        .addRole(2L)
                         .build();
 
                 mockMvc.perform(post(USERS_API_URL)
@@ -325,7 +484,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
                         .username("boyarin")
                         .email("boyarin@czarbank.org")
-                        .addRole(BASE_ROLE_ID + 2L)
+                        .addRole(2L)
                         .build();
 
                 mockMvc.perform(post(USERS_API_URL)
@@ -346,7 +505,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
             @WithUserDetails("admin")
             void createUser_withAuth_withPermission_withoutUsername_withoutEmail_withoutPassword_validationIsFailed_responseIsCorrect() throws Exception {
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
-                        .addRole(BASE_ROLE_ID + 2L)
+                        .addRole(2L)
                         .build();
 
                 String[] validationFields = { "username", "email", "password" };
@@ -379,7 +538,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Transactional
         @WithUserDetails("admin")
         void updateUserById_withAuth_withPermission_isSuccessful() throws Exception {
-            User userToBeUpdated = userRepository.findById(BASE_USER_ID + 4L).orElseThrow();
+            User userToBeUpdated = userRepository.findById(4L).orElseThrow();
 
             Role role = roleRepository.findByName("EMPLOYEE").orElseThrow();
 
@@ -394,7 +553,6 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(userToBeUpdated.getId()))
-                    .andExpect(jsonPath("$.userId").value(userToBeUpdated.getUserId()))
                     .andExpect(jsonPath("$.username").value(requestDTO.getUsername()))
                     .andExpect(jsonPath("$.email").value(requestDTO.getEmail()))
                     .andExpect(jsonPath("$.roles", hasSize(1)))
@@ -411,7 +569,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Transactional
         @WithUserDetails("client")
         void updateUserById_withAuth_asSelf_isSuccessful() throws Exception {
-            User userToBeUpdated = userRepository.findById(BASE_USER_ID + 3L).orElseThrow();
+            User userToBeUpdated = userRepository.findById(3L).orElseThrow();
 
             Role role = roleRepository.findByName("EMPLOYEE").orElseThrow();
 
@@ -444,7 +602,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void updateUserById_withAuth_isFailed() throws Exception {
-            User userToBeUpdated = userRepository.findById(BASE_USER_ID + 4L).orElseThrow();
+            User userToBeUpdated = userRepository.findById(4L).orElseThrow();
 
             Role role = roleRepository.findByName("EMPLOYEE").orElseThrow();
 
@@ -469,7 +627,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .email("updated@email.upd")
                     .build();
 
-            mockMvc.perform(put(USERS_API_URL + "/" + BASE_USER_ID + 123L)
+            mockMvc.perform(put(USERS_API_URL + "/" + 123L)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isNotFound());
@@ -478,8 +636,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void updateUserById_withAuth_withPermission_userWithSameUsernameAlreadyExists() throws Exception {
-            User existingUser = userRepository.findById(BASE_USER_ID + 3L).orElseThrow();
-            User userToBeUpdated = userRepository.findById(BASE_USER_ID + 4L).orElseThrow();
+            User existingUser = userRepository.findById(3L).orElseThrow();
+            User userToBeUpdated = userRepository.findById(4L).orElseThrow();
 
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username(existingUser.getUsername())
@@ -497,8 +655,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void updateById_withAuth_withPermission_userWithSameEmailAlreadyExists() throws Exception {
-            User existingUser = userRepository.findById(BASE_USER_ID + 3L).orElseThrow();
-            User userToBeUpdated = userRepository.findById(BASE_USER_ID + 4L).orElseThrow();
+            User existingUser = userRepository.findById(3L).orElseThrow();
+            User userToBeUpdated = userRepository.findById(4L).orElseThrow();
 
             UserRequestDTO requestDTO = UserRequestDTO.builder()
                     .username("upd" + userToBeUpdated.getUsername())
@@ -518,8 +676,137 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         class ValidationTests {
             @Test
             @WithUserDetails("admin")
-            void updateUserById_withAuth_withPermission_withoutName_withoutEmail_withNullRoles_validationIsFailed_responseIsCorrect() throws Exception {
-                User userToBeUpdated = userRepository.findById(BASE_USER_ID + 4L).orElseThrow();
+            void updateUserById_withAuth_withPermission_withShortUsername_withoutEmail_withoutRoles_validationIsFailed_responseIsCorrect() throws Exception {
+                User userToBeUpdated = userRepository.findById(4L).orElseThrow();
+
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .username(RandomStringUtils.randomAlphabetic(2))
+                        .build();
+
+                String requestUrl = USERS_API_URL + "/" + userToBeUpdated.getId();
+
+                mockMvc.perform(put(requestUrl)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("username"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The username must be between 3 and 32 characters long (inclusive)"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void updateUserById_withAuth_withPermission_withLongUsername_withoutEmail_withoutRoles_validationIsFailed_responseIsCorrect() throws Exception {
+                User userToBeUpdated = userRepository.findById(4L).orElseThrow();
+
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .username(RandomStringUtils.randomAlphabetic(33))
+                        .build();
+
+                String requestUrl = USERS_API_URL + "/" + userToBeUpdated.getId();
+
+                mockMvc.perform(put(requestUrl)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("username"))
+                        .andExpect(jsonPath("$.errors[0].message").value("The username must be between 3 and 32 characters long (inclusive)"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void updateUserById_withAuth_withPermission_withoutUsername_withShortInvalidEmail_withoutRoles_validationIsFailed_responseIsCorrect() throws Exception {
+                User userToBeUpdated = userRepository.findById(4L).orElseThrow();
+
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .email(RandomStringUtils.randomAlphabetic(2))
+                        .build();
+
+                String requestUrl = USERS_API_URL + "/" + userToBeUpdated.getId();
+
+                mockMvc.perform(put(requestUrl)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(2)))
+                        .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("email", "email")))
+                        .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Invalid email address", "The email must be between 3 and 254 characters long (inclusive)")))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void updateUserById_withAuth_withPermission_withoutUsername_withLongInvalidEmail_withoutRoles_validationIsFailed_responseIsCorrect() throws Exception {
+                User userToBeUpdated = userRepository.findById(4L).orElseThrow();
+
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .email(RandomStringUtils.randomAlphabetic(255))
+                        .build();
+
+                String requestUrl = USERS_API_URL + "/" + userToBeUpdated.getId();
+
+                mockMvc.perform(put(requestUrl)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(2)))
+                        .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("email", "email")))
+                        .andExpect(jsonPath("$.errors[*].message").value(containsInAnyOrder("Invalid email address", "The email must be between 3 and 254 characters long (inclusive)")))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
+
+            @Test
+            @WithUserDetails("admin")
+            void updateUser_withAuth_withPermission_withInvalidPassword_validationIsFailed_responseIsCorrect() throws Exception {
+                User userToBeUpdated = userRepository.findById(4L).orElseThrow();
+
+                UserRequestDTO requestDTO = UserRequestDTO.builder()
+                        .username("boyarin")
+                        .email("boyarin@czarbank.org")
+                        .password("easypassword")
+                        .build();
+
+                String invalidPasswordMessage = "The password must contain at least 8 characters, contain at least 1 number, " +
+                        "1 lowercase and 1 uppercase letter, and a special character (!~<>,;:_=?*+#.\"'&§%°()|[]-$^@/)";
+
+                String requestUrl = USERS_API_URL + "/" + userToBeUpdated.getId();
+
+                mockMvc.perform(put(requestUrl)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("password"))
+                        .andExpect(jsonPath("$.errors[0].message").value(invalidPasswordMessage))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(requestUrl));
+            }
+            @Test
+            @WithUserDetails("admin")
+            void updateUserById_withAuth_withPermission_withoutUsername_withoutEmail_withNullRoles_validationIsFailed_responseIsCorrect() throws Exception {
+                User userToBeUpdated = userRepository.findById(4L).orElseThrow();
 
                 UserRequestDTO requestDTO = UserRequestDTO.builder()
                         .build();
@@ -551,7 +838,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Transactional
         @WithUserDetails("admin")
         void deleteUserById_withAuth_withPermission_isSuccessful() throws Exception {
-            long userDeletionId = BASE_USER_ID + 4L;
+            long userDeletionId = 4L;
 
             Assertions.assertThat(userRepository.existsById(userDeletionId)).isTrue();
 
@@ -568,7 +855,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Transactional
         @WithUserDetails("client")
         void deleteUserById_withAuth_asSelf_isSuccessful() throws Exception {
-            long userDeletionId = BASE_USER_ID + 3L;
+            long userDeletionId = 3L;
 
             Assertions.assertThat(userRepository.existsById(userDeletionId)).isTrue();
 
@@ -584,7 +871,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void deleteUserById_withAuth_isFailed() throws Exception {
-            long userDeletionId = BASE_USER_ID + 4L;
+            long userDeletionId = 4L;
 
             Assertions.assertThat(userRepository.existsById(userDeletionId)).isTrue();
 
@@ -598,7 +885,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void deleteUserById_withAuth_withPermission_isNotFound() throws Exception {
-            long userDeletionId = BASE_USER_ID + 123L;
+            long userDeletionId = 123L;
 
             Assertions.assertThat(userRepository.existsById(userDeletionId)).isFalse();
 

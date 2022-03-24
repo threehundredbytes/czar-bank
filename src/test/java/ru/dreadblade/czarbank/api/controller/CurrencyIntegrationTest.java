@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -268,7 +267,7 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
             @WithUserDetails("admin")
             void createCurrency_withAuth_withPermission_withInvalidCodeAndSymbol_isSuccessful() throws Exception {
                 CurrencyRequestDTO requestDTO = CurrencyRequestDTO.builder()
-                        .code(RandomStringUtils.randomAlphabetic(5))
+                        .code(RandomStringUtils.randomAlphabetic(4))
                         .symbol(RandomStringUtils.randomAlphabetic(5))
                         .build();
 

@@ -1,25 +1,25 @@
 package ru.dreadblade.czarbank.domain.security;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import ru.dreadblade.czarbank.domain.BaseEntity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
+import javax.persistence.*;
 import java.time.Instant;
 
 @Getter
 @Setter
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 public class BlacklistedAccessToken extends BaseEntity {
-    @Column(updatable = false, length = 1024)
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "blacklisted_access_token_id_sequence")
+    @SequenceGenerator(name = "blacklisted_access_token_id_sequence", allocationSize = 1)
+    private Long id;
+
+    @Column(length = 4096, nullable = false, updatable = false)
     private String accessToken;
 
     @CreationTimestamp

@@ -16,6 +16,8 @@ spring:
         starttls:
           enable: 'true'
         timeout: 5000
+  flyway:
+    enabled: false
 
 czar-bank:
   currency:

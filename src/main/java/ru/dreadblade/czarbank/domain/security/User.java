@@ -1,7 +1,6 @@
 package ru.dreadblade.czarbank.domain.security;
 
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,18 +14,27 @@ import java.util.stream.Collectors;
 
 @Getter
 @Setter
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "users")
 public class User extends BaseEntity implements UserDetails {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_id_sequence")
+    @SequenceGenerator(name = "user_id_sequence", allocationSize = 1)
+    private Long id;
+
+    @Column(length = 10, nullable = false, unique = true)
     private String userId;
 
+    @Column(length = 32, nullable = false, unique = true)
     private String username;
 
+    @Column(length = 60, nullable = false)
     private String password;
 
+    @Column(length = 254, nullable = false, unique = true)
     private String email;
 
     @Singular(value = "addRole")

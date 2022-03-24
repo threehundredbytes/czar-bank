@@ -76,7 +76,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void findAll_withAuth_isSuccess() throws Exception {
-            Long ownerId = BASE_USER_ID + 3L;
+            Long ownerId = 3L;
 
             Set<BankAccountResponseDTO> expectedBankAccounts = bankAccountRepository.findAll().stream()
                     .map(bankAccountMapper::entityToResponseDto)
@@ -123,7 +123,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void findById_withAuth_withPermission_isSuccessful() throws Exception {
-            BankAccount expectedBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 4L).orElseThrow();
+            BankAccount expectedBankAccount = bankAccountRepository.findById(4L).orElseThrow();
 
             BankAccountResponseDTO expectedResponseDTO = bankAccountMapper.entityToResponseDto(expectedBankAccount);
 
@@ -138,7 +138,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void findById_withAuth_asOwnerOfBankAccount_isSuccessful() throws Exception {
-            BankAccount expectedBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow();
+            BankAccount expectedBankAccount = bankAccountRepository.findById(3L).orElseThrow();
 
             BankAccountResponseDTO expectedResponseDTO = bankAccountMapper.entityToResponseDto(expectedBankAccount);
 
@@ -153,7 +153,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void findById_withAuth_notAsOwner_isFailed() throws Exception {
-            BankAccount expectedBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
+            BankAccount expectedBankAccount = bankAccountRepository.findById(1L).orElseThrow();
 
             mockMvc.perform(get(BANK_ACCOUNTS_API_URL + "/" + expectedBankAccount.getId())
                             .contentType(MediaType.APPLICATION_JSON))
@@ -163,7 +163,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void findById_withoutAuth_isFailed() throws Exception {
-            BankAccount expectedBankAccount = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow();
+            BankAccount expectedBankAccount = bankAccountRepository.findById(3L).orElseThrow();
 
             mockMvc.perform(get(BANK_ACCOUNTS_API_URL + "/" + expectedBankAccount.getId())
                             .contentType(MediaType.APPLICATION_JSON))
@@ -211,8 +211,8 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         @Rollback
         void createAccount_withAuth_withPermission_isSuccessful() throws Exception {
-            Long expectedBankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
-            Long expectedCurrencyId = BASE_CURRENCY_ID + 1L;
+            Long expectedBankAccountTypeId = 1L;
+            Long expectedCurrencyId = 1L;
 
             User userForTest = userRepository.findByUsername("admin").orElseThrow();
 
@@ -247,8 +247,8 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("client")
         @Rollback
         void createAccount_withAuth_asOwner_isSuccessful() throws Exception {
-            Long expectedBankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
-            Long expectedCurrencyId = BASE_CURRENCY_ID + 1L;
+            Long expectedBankAccountTypeId = 1L;
+            Long expectedCurrencyId = 1L;
 
             User userForTest = userRepository.findByUsername("client").orElseThrow();
 
@@ -282,8 +282,8 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void createAccount_withAuth_notAsOwner_isFailed() throws Exception {
-            Long expectedBankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
-            Long expectedCurrencyId = BASE_CURRENCY_ID + 1L;
+            Long expectedBankAccountTypeId = 1L;
+            Long expectedCurrencyId = 1L;
 
             User userForTest = userRepository.findByUsername("client").orElseThrow();
 
@@ -310,9 +310,9 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void createAccount_withoutAuth_isFailed() throws Exception {
-            Long ownerId = BASE_USER_ID + 1L;
-            Long bankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
-            Long currencyId = BASE_CURRENCY_ID + 1L;
+            Long ownerId = 1L;
+            Long bankAccountTypeId = 1L;
+            Long currencyId = 1L;
 
             BankAccountRequestDTO requestDTO = BankAccountRequestDTO.builder()
                     .ownerId(ownerId)
@@ -337,8 +337,8 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
             @WithUserDetails("admin")
             void createAccount_withAuth_withPermission_withNullOwnerId_validationIsFailed_responseIsCorrect() throws Exception {
                 Long ownerId = null;
-                Long bankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
-                Long currencyId = BASE_CURRENCY_ID + 1L;
+                Long bankAccountTypeId = 1L;
+                Long currencyId = 1L;
 
                 User userForTest = userRepository.findByUsername("admin").orElseThrow();
 
@@ -376,7 +376,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
 
                 Long ownerId = userForTest.getId();
                 Long bankAccountTypeId = null;
-                Long currencyId = BASE_CURRENCY_ID + 1L;
+                Long currencyId = 1L;
 
                 Assertions.assertThat(userForTest.getAuthorities().stream()
                                 .map(GrantedAuthority::getAuthority)
@@ -411,7 +411,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
                 User userForTest = userRepository.findByUsername("admin").orElseThrow();
 
                 Long ownerId = userForTest.getId();
-                Long bankAccountTypeId = BASE_BANK_ACCOUNT_TYPE_ID + 1L;
+                Long bankAccountTypeId = 1L;
                 Long currencyId = null;
 
                 Assertions.assertThat(userForTest.getAuthorities().stream()
@@ -486,7 +486,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         @Rollback
         void deleteAccount_withAuth_withPermission_isSuccessful() throws Exception {
-            BankAccount bankAccountToDelete = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
+            BankAccount bankAccountToDelete = bankAccountRepository.findById(1L).orElseThrow();
 
             User currentUser = userRepository.findByUsername("admin").orElseThrow();
 
@@ -506,7 +506,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("client")
         @Rollback
         void deleteAccount_withAuth_asOwner_isSuccessful() throws Exception {
-            BankAccount bankAccountToDelete = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 3L).orElseThrow();
+            BankAccount bankAccountToDelete = bankAccountRepository.findById(3L).orElseThrow();
 
             User currentUser = userRepository.findByUsername("client").orElseThrow();
 
@@ -524,7 +524,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void deleteAccount_withAuth_notAsOwner_isFailed() throws Exception {
-            BankAccount bankAccountToDelete = bankAccountRepository.findById(BASE_BANK_ACCOUNT_ID + 1L).orElseThrow();
+            BankAccount bankAccountToDelete = bankAccountRepository.findById(1L).orElseThrow();
 
             User currentUser = userRepository.findByUsername("client").orElseThrow();
 
@@ -539,7 +539,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void deleteAccount_withoutAuth_isFailed() throws Exception {
-            long bankAccountDeletionId = BASE_BANK_ACCOUNT_ID + 1L;
+            long bankAccountDeletionId = 1L;
 
             mockMvc.perform(delete(BANK_ACCOUNTS_API_URL + "/" + bankAccountDeletionId))
                     .andExpect(status().isForbidden())
@@ -549,7 +549,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("admin")
         void deleteAccount_withAuth_withPermission_isNotFound() throws Exception {
-            long bankAccountDeletionId = BASE_BANK_ACCOUNT_ID - 1L;
+            long bankAccountDeletionId = 1234L;
 
             mockMvc.perform(delete(BANK_ACCOUNTS_API_URL + "/" + bankAccountDeletionId))
                     .andExpect(status().isNotFound())
@@ -559,7 +559,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
         @Test
         @WithUserDetails("client")
         void deleteAccount_withAuth_nonExistentAccount_isNotFound() throws Exception {
-            long bankAccountDeletionId = BASE_BANK_ACCOUNT_ID - 1L;
+            long bankAccountDeletionId = 1234L;
 
             mockMvc.perform(delete(BANK_ACCOUNTS_API_URL + "/" + bankAccountDeletionId))
                     .andExpect(status().isNotFound())
@@ -568,7 +568,7 @@ public class BankAccountIntegrationTest extends BaseIntegrationTest {
 
         @Test
         void deleteAccount_withoutAuth_nonExistentAccount_isForbidden() throws Exception {
-            long bankAccountDeletionId = BASE_BANK_ACCOUNT_ID - 1L;
+            long bankAccountDeletionId = 1L;
 
             mockMvc.perform(delete(BANK_ACCOUNTS_API_URL + "/" + bankAccountDeletionId))
                     .andExpect(status().isForbidden())

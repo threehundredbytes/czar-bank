@@ -1,27 +1,31 @@
 package ru.dreadblade.czarbank.domain.security;
 
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import ru.dreadblade.czarbank.domain.BaseEntity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.ManyToOne;
+import javax.persistence.*;
 import java.time.Instant;
 
 @Getter
 @Setter
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 public class RefreshTokenSession extends BaseEntity {
-    @Column(updatable = false, unique = true)
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "refresh_token_session_sequence")
+    @SequenceGenerator(name = "refresh_token_session_sequence", allocationSize = 1)
+    private Long id;
+
+    @Column(length = 36, nullable = false, unique = true, updatable = false)
     private String refreshToken;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
     @CreationTimestamp
