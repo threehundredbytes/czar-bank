@@ -30,11 +30,14 @@ public enum ExceptionMessage {
     EMAIL_VERIFICATION_TOKEN_EXPIRED("We have sent a new email with a link to verify your account to " +
             "the email address you provided when you created your account", HttpStatus.BAD_REQUEST),
     EMAIL_VERIFICATION_REQUIRED("Please check your email and follow the link to verify your email address", HttpStatus.UNAUTHORIZED),
+    TWO_FACTOR_AUTHENTICATION_ALREADY_SETUP("Two-factor authentication is already set up", HttpStatus.BAD_REQUEST),
+    SETUP_TWO_FACTOR_AUTHENTICATION("You need to set up two-factor authentication", HttpStatus.BAD_REQUEST),
 
     REFRESH_TOKEN_EXPIRED("Refresh token expired", HttpStatus.BAD_REQUEST),
     INVALID_REFRESH_TOKEN("Invalid refresh token", HttpStatus.BAD_REQUEST),
     INVALID_ACCESS_TOKEN("Invalid access token", HttpStatus.BAD_REQUEST),
-    INVALID_EMAIL_VERIFICATION_TOKEN("Invalid email verification token", HttpStatus.BAD_REQUEST);
+    INVALID_EMAIL_VERIFICATION_TOKEN("Invalid email verification token", HttpStatus.BAD_REQUEST),
+    INVALID_TWO_FACTOR_AUTHENTICATION_CODE("Invalid two-factor authentication code", HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatus status;
