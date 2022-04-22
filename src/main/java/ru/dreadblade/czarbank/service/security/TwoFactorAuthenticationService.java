@@ -47,7 +47,7 @@ public class TwoFactorAuthenticationService {
         }
 
         if (!totpService.isValidCode(code, secretKey)) {
-            throw new CzarBankSecurityException(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE);
+            throw new CzarBankSecurityException(ExceptionMessage.TWO_FACTOR_AUTHENTICATION_VERIFICATION_FAILED);
         }
 
         user.setTwoFactorAuthenticationEnabled(true);

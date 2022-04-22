@@ -15,4 +15,6 @@ public class AuthenticationRequestDTO {
 
     @NotBlank(message = "Password must be not empty")
     private String password;
+
+    private String code;
 }

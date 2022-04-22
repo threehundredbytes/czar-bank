@@ -1,6 +1,7 @@
 package ru.dreadblade.czarbank.security.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,22 +20,15 @@ import ru.dreadblade.czarbank.repository.security.RefreshTokenSessionRepository;
 import java.util.function.Predicate;
 
 @Service
+@RequiredArgsConstructor
 public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final BlacklistedAccessTokenRepository blacklistedAccessTokenRepository;
     private final RefreshTokenSessionRepository refreshTokenSessionRepository;
+    private final TotpService totpService;
 
     @Value("${czar-bank.security.access-token.header.prefix}")
     private String authorizationHeaderPrefix;
-
-    @Autowired
-    public AuthenticationService(AuthenticationManager authenticationManager,
-                                 BlacklistedAccessTokenRepository blacklistedAccessTokenRepository,
-                                 RefreshTokenSessionRepository refreshTokenSessionRepository) {
-        this.authenticationManager = authenticationManager;
-        this.blacklistedAccessTokenRepository = blacklistedAccessTokenRepository;
-        this.refreshTokenSessionRepository = refreshTokenSessionRepository;
-    }
 
     public User authenticateUser(AuthenticationRequestDTO authenticationRequestDTO) {
         String username = authenticationRequestDTO.getUsername();
@@ -48,6 +42,15 @@ public class AuthenticationService {
 
         if (!user.isEmailVerified()) {
             throw new CzarBankSecurityException(ExceptionMessage.EMAIL_VERIFICATION_REQUIRED);
+        }
+
+        if (user.isTwoFactorAuthenticationEnabled()) {
+            String totpCode = authenticationRequestDTO.getCode();
+            String secretKey = user.getTwoFactorAuthenticationSecretKey();
+
+            if (StringUtils.isBlank(totpCode) || !totpService.isValidCode(totpCode, secretKey)) {
+                throw new CzarBankSecurityException(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE);
+            }
         }
 
         return user;

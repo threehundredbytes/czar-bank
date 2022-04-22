@@ -1,5 +1,9 @@
 package ru.dreadblade.czarbank.api.controller;
 
+import dev.samstevens.totp.code.CodeGenerator;
+import dev.samstevens.totp.secret.SecretGenerator;
+import dev.samstevens.totp.spring.autoconfigure.TotpProperties;
+import dev.samstevens.totp.time.TimeProvider;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
@@ -83,6 +87,18 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
     @Autowired
     ReleaseBlacklistedAccessTokensTask releaseBlacklistedAccessTokensTask;
 
+    @Autowired
+    SecretGenerator secretGenerator;
+
+    @Autowired
+    CodeGenerator codeGenerator;
+
+    @Autowired
+    TimeProvider timeProvider;
+
+    @Autowired
+    TotpProperties totpProperties;
+
     @Nested
     @DisplayName("login() Tests")
     class LoginTests {
@@ -111,6 +127,101 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             User userFromToken = accessTokenService.getUserFromToken(accessToken);
 
             Assertions.assertThat(userFromToken.getUsername()).isEqualTo(username);
+        }
+
+        @Test
+        @Rollback
+        void login_withTwoFactorAuthenticationRequired_isSuccessful() throws Exception {
+            User currentUser = userRepository.findByUsername("admin").orElseThrow();
+
+            String secretKey = secretGenerator.generate();
+            long counter = Math.floorDiv(timeProvider.getTime(), totpProperties.getTime().getPeriod());
+            String generatedTotpCode = codeGenerator.generate(secretKey, counter);
+
+            currentUser.setTwoFactorAuthenticationSecretKey(secretKey);
+            currentUser.setTwoFactorAuthenticationEnabled(true);
+
+            userRepository.save(currentUser);
+
+            AuthenticationRequestDTO authenticationRequestDTO = AuthenticationRequestDTO.builder()
+                    .username("admin")
+                    .password("password")
+                    .code(generatedTotpCode)
+                    .build();
+
+            String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
+
+            String responseContent = mockMvc.perform(post(LOGIN_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.accessToken").isString())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            String accessToken = objectMapper.readValue(responseContent, AuthenticationResponseDTO.class)
+                    .getAccessToken();
+
+            User userFromToken = accessTokenService.getUserFromToken(accessToken);
+
+            Assertions.assertThat(userFromToken.getId()).isEqualTo(currentUser.getId());
+        }
+
+        @Test
+        @Rollback
+        void login_withTwoFactorAuthenticationRequired_wrongTwoFactorAuthenticationTotpCode_isFailed() throws Exception {
+            User currentUser = userRepository.findByUsername("admin").orElseThrow();
+
+            String randomWrongTotpCode = RandomStringUtils.randomNumeric(7); // always wrong
+
+            String secretKey = secretGenerator.generate();
+            currentUser.setTwoFactorAuthenticationSecretKey(secretKey);
+            currentUser.setTwoFactorAuthenticationEnabled(true);
+
+            userRepository.save(currentUser);
+
+            AuthenticationRequestDTO authenticationRequestDTO = AuthenticationRequestDTO.builder()
+                    .username("admin")
+                    .password("password")
+                    .code(randomWrongTotpCode)
+                    .build();
+
+            String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
+
+            mockMvc.perform(post(LOGIN_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE.getMessage()));
+        }
+
+        @Test
+        @Rollback
+        void login_withTwoFactorAuthenticationRequired_emptyTwoFactorAuthenticationTotpCode_isFailed() throws Exception {
+            User currentUser = userRepository.findByUsername("admin").orElseThrow();
+
+            String secretKey = secretGenerator.generate();
+            currentUser.setTwoFactorAuthenticationSecretKey(secretKey);
+            currentUser.setTwoFactorAuthenticationEnabled(true);
+
+            userRepository.save(currentUser);
+
+            AuthenticationRequestDTO authenticationRequestDTO = AuthenticationRequestDTO.builder()
+                    .username("admin")
+                    .password("password")
+                    .code("")
+                    .build();
+
+            String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
+
+            mockMvc.perform(post(LOGIN_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE.getMessage()));
         }
 
         @Test
