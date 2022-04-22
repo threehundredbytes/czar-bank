@@ -20,13 +20,14 @@ import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
+import ru.dreadblade.czarbank.api.model.request.security.TwoFactorAuthenticationVerificationRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.UserRequestDTO;
 import ru.dreadblade.czarbank.domain.security.EmailVerificationToken;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.EmailVerificationTokenRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
-import ru.dreadblade.czarbank.security.service.TwoFactorAuthenticationService;
+import ru.dreadblade.czarbank.security.service.TotpService;
 import ru.dreadblade.czarbank.service.security.EmailVerificationTokenService;
 
 import java.util.concurrent.TimeUnit;
@@ -56,7 +57,7 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
     MailSender mailSender;
 
     @Autowired
-    TwoFactorAuthenticationService twoFactorAuthenticationService;
+    TotpService totpService;
 
     @Autowired
     CodeGenerator codeGenerator;
@@ -228,7 +229,7 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
         void setupAndVerifyTwoFactorAuthentication_isSuccessful() throws Exception {
             mockMvc.perform(get(SETUP_2FA_API_URL))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentType(twoFactorAuthenticationService.getQrCodeImageMediaType()));
+                    .andExpect(content().contentType(totpService.getQrCodeImageMediaType()));
 
             User currentUser = userRepository.findByUsername("admin").orElseThrow();
 
@@ -237,23 +238,15 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
 
             String generatedTotpCode = codeGenerator.generate(secretKey, counter);
 
-            mockMvc.perform(post(VERIFY_2FA_API_URL + "/" + generatedTotpCode))
+            var requestDTO = new TwoFactorAuthenticationVerificationRequestDTO(generatedTotpCode);
+
+            mockMvc.perform(post(VERIFY_2FA_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isOk());
-        }
 
-        @Test
-        @WithUserDetails("admin")
-        void setupAndVerifyTwoFactorAuthentication_wrongCode_isFailed() throws Exception {
-            mockMvc.perform(get(SETUP_2FA_API_URL))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentType(twoFactorAuthenticationService.getQrCodeImageMediaType()));
-
-            String randomWrongTotpCode = RandomStringUtils.randomNumeric(7); // always wrong
-
-            mockMvc.perform(post(VERIFY_2FA_API_URL + "/" + randomWrongTotpCode))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message")
-                            .value(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE.getMessage()));
+            currentUser = userRepository.findByUsername("admin").orElseThrow();
+            Assertions.assertThat(currentUser.isTwoFactorAuthenticationEnabled()).isTrue();
         }
 
         @Test
@@ -261,10 +254,7 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
         @WithUserDetails("admin")
         void setupTwoFactorAuthentication_alreadySetup_isFailed() throws Exception {
             User currentUser = userRepository.findByUsername("admin").orElseThrow();
-
             currentUser.setTwoFactorAuthenticationEnabled(true);
-
-            userRepository.save(currentUser);
 
             mockMvc.perform(get(SETUP_2FA_API_URL))
                     .andExpect(status().isBadRequest())
@@ -277,10 +267,42 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
         void verifyTwoFactorAuthentication_withoutSetup_isFailed() throws Exception {
             String randomTotpCode = RandomStringUtils.randomNumeric(6);
 
-            mockMvc.perform(post(VERIFY_2FA_API_URL + "/" + randomTotpCode))
+            var requestDTO = new TwoFactorAuthenticationVerificationRequestDTO(randomTotpCode);
+
+            mockMvc.perform(post(VERIFY_2FA_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message")
                             .value(ExceptionMessage.SETUP_TWO_FACTOR_AUTHENTICATION.getMessage()));
+
+            User currentUser = userRepository.findByUsername("admin").orElseThrow();
+            Assertions.assertThat(currentUser.isTwoFactorAuthenticationEnabled()).isFalse();
+            Assertions.assertThat(currentUser.getTwoFactorAuthenticationSecretKey()).isNullOrEmpty();
+        }
+
+        @Test
+        @Rollback
+        @WithUserDetails("admin")
+        void setupAndVerifyTwoFactorAuthentication_wrongCode_isFailed() throws Exception {
+            mockMvc.perform(get(SETUP_2FA_API_URL))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType(totpService.getQrCodeImageMediaType()));
+
+            String randomWrongTotpCode = RandomStringUtils.randomNumeric(7); // always wrong
+
+            var requestDTO = new TwoFactorAuthenticationVerificationRequestDTO(randomWrongTotpCode);
+
+            mockMvc.perform(post(VERIFY_2FA_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(requestDTO)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE.getMessage()));
+
+            User currentUser = userRepository.findByUsername("admin").orElseThrow();
+            Assertions.assertThat(currentUser.isTwoFactorAuthenticationEnabled()).isFalse();
+            Assertions.assertThat(currentUser.getTwoFactorAuthenticationSecretKey()).isNotBlank();
         }
     }
 }

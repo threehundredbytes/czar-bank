@@ -1,6 +1,6 @@
 package ru.dreadblade.czarbank.service.security;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -14,6 +14,7 @@ import ru.dreadblade.czarbank.service.MailService;
 import java.time.Instant;
 
 @Service
+@RequiredArgsConstructor
 public class AccountManagementService {
     private final UserRepository userRepository;
     private final EmailVerificationTokenService emailVerificationTokenService;
@@ -21,13 +22,6 @@ public class AccountManagementService {
 
     @Value("${czar-bank.security.email-verification-token.expiration-seconds:86400}")
     private Long emailVerificationTokenExpirationSeconds;
-
-    @Autowired
-    public AccountManagementService(UserRepository userRepository, EmailVerificationTokenService emailVerificationTokenService, MailService mailService) {
-        this.userRepository = userRepository;
-        this.emailVerificationTokenService = emailVerificationTokenService;
-        this.mailService = mailService;
-    }
 
     public void verifyEmail(String token) {
         EmailVerificationToken emailVerificationToken = emailVerificationTokenService.findByEmailVerificationToken(token);

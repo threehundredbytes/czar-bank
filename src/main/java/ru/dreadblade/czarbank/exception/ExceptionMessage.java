@@ -37,7 +37,9 @@ public enum ExceptionMessage {
     INVALID_REFRESH_TOKEN("Invalid refresh token", HttpStatus.BAD_REQUEST),
     INVALID_ACCESS_TOKEN("Invalid access token", HttpStatus.BAD_REQUEST),
     INVALID_EMAIL_VERIFICATION_TOKEN("Invalid email verification token", HttpStatus.BAD_REQUEST),
-    INVALID_TWO_FACTOR_AUTHENTICATION_CODE("Invalid two-factor authentication code", HttpStatus.BAD_REQUEST);
+    INVALID_TWO_FACTOR_AUTHENTICATION_CODE("Invalid two-factor authentication code", HttpStatus.BAD_REQUEST),
+
+    TOTP_QR_CODE_GENERATION_FAILED("QR code generation failed. If the problem persists, please, contact support!", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String message;
     private final HttpStatus status;
