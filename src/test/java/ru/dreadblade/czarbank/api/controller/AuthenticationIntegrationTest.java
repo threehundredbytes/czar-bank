@@ -1,11 +1,11 @@
 package ru.dreadblade.czarbank.api.controller;
 
 import dev.samstevens.totp.code.CodeGenerator;
+import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.spring.autoconfigure.TotpProperties;
 import dev.samstevens.totp.time.TimeProvider;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -23,14 +23,17 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMethod;
+import ru.dreadblade.czarbank.api.controller.util.RecoveryCodeTestUtils;
 import ru.dreadblade.czarbank.api.model.request.security.AuthenticationRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.LogoutRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.RefreshTokensRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.security.AuthenticationResponseDTO;
+import ru.dreadblade.czarbank.domain.security.RecoveryCode;
 import ru.dreadblade.czarbank.domain.security.RefreshTokenSession;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.BlacklistedAccessTokenRepository;
+import ru.dreadblade.czarbank.repository.security.RecoveryCodeRepository;
 import ru.dreadblade.czarbank.repository.security.RefreshTokenSessionRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 import ru.dreadblade.czarbank.security.service.AccessTokenService;
@@ -38,8 +41,12 @@ import ru.dreadblade.czarbank.security.service.RefreshTokenService;
 import ru.dreadblade.czarbank.service.task.ReleaseBlacklistedAccessTokensTask;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
@@ -48,26 +55,32 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
-        "czar-bank.security.access-token.expiration-seconds=5",
-        "czar-bank.security.refresh-token.expiration-seconds=5",
+        "czar-bank.security.access-token.expiration-seconds=1",
+        "czar-bank.security.refresh-token.expiration-seconds=1",
+        "czar-bank.security.refresh-token.limit-per-user=5",
+        "czar-bank.security.two-factor-authentication.recovery-codes.amount=16"
 })
 @DisplayName("Authentication Integration Tests")
 @Sql(value = "/user/users-insertion.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(value = "/user/users-deletion.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class AuthenticationIntegrationTest extends BaseIntegrationTest {
-
     private static final String LOGIN_API_URL = "/api/auth/login";
     private static final String REFRESH_TOKENS_API_URL = "/api/auth/refresh-tokens";
     private static final String LOGOUT_API_URL = "/api/auth/logout";
     private static final String USERS_API_URL = "/api/users";
     private static final String ACCESS_TOKEN_IS_INVALID_MESSAGE = "Access token is invalid";
     private static final String ACCESS_TOKEN_EXPIRED_MESSAGE = "Access token expired";
+    private static final int ACCESS_TOKEN_EXPIRATION_SECONDS = 1;
+    private static final int REFRESH_TOKEN_EXPIRATION_SECONDS = 1;
 
     @Value("${czar-bank.security.access-token.header.prefix}")
     private String headerPrefix;
 
-    @Value("${czar-bank.security.refresh-token.expiration-seconds}")
+    @Value("${czar-bank.security.refresh-token.limit-per-user}")
     private int refreshTokensPerUser;
+
+    @Value("${czar-bank.security.two-factor-authentication.recovery-codes.amount}")
+    private int recoveryCodesAmount;
 
     @Autowired
     UserRepository userRepository;
@@ -83,6 +96,12 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     BlacklistedAccessTokenRepository blacklistedAccessTokenRepository;
+
+    @Autowired
+    RecoveryCodeRepository recoveryCodeRepository;
+
+    @Autowired
+    RecoveryCodeGenerator recoveryCodeGenerator;
 
     @Autowired
     ReleaseBlacklistedAccessTokensTask releaseBlacklistedAccessTokensTask;
@@ -126,12 +145,12 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
             User userFromToken = accessTokenService.getUserFromToken(accessToken);
 
-            Assertions.assertThat(userFromToken.getUsername()).isEqualTo(username);
+            assertThat(userFromToken.getUsername()).isEqualTo(username);
         }
 
         @Test
         @Rollback
-        void login_withTwoFactorAuthenticationRequired_isSuccessful() throws Exception {
+        void login_withTwoFactorAuthenticationRequired_usingTotpCode_isSuccessful() throws Exception {
             User currentUser = userRepository.findByUsername("admin").orElseThrow();
 
             String secretKey = secretGenerator.generate();
@@ -165,17 +184,65 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
             User userFromToken = accessTokenService.getUserFromToken(accessToken);
 
-            Assertions.assertThat(userFromToken.getId()).isEqualTo(currentUser.getId());
+            assertThat(userFromToken.getId()).isEqualTo(currentUser.getId());
+        }
+
+        @Test
+        @Transactional
+        void login_withTwoFactorAuthenticationRequired_usingRecoveryCode_isSuccessful() throws Exception {
+            User currentUser = userRepository.findByUsername("admin").orElseThrow();
+
+            currentUser.setTwoFactorAuthenticationEnabled(true);
+
+            List<RecoveryCode> generatedRecoveryCodes = Arrays.stream(recoveryCodeGenerator.generateCodes(recoveryCodesAmount))
+                    .map(recoveryCode -> RecoveryCode.builder()
+                            .code(recoveryCode)
+                            .user(currentUser)
+                            .build()).collect(Collectors.toList());
+
+            assertThat(generatedRecoveryCodes).hasSize(recoveryCodesAmount);
+            recoveryCodeRepository.saveAll(generatedRecoveryCodes);
+            userRepository.save(currentUser);
+
+            RecoveryCode recoveryCode = generatedRecoveryCodes.get(0);
+
+            AuthenticationRequestDTO authenticationRequestDTO = AuthenticationRequestDTO.builder()
+                    .username("admin")
+                    .password("password")
+                    .code(recoveryCode.getCode())
+                    .build();
+
+            String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
+
+            String responseContent = mockMvc.perform(post(LOGIN_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.accessToken").isString())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            String accessToken = objectMapper.readValue(responseContent, AuthenticationResponseDTO.class)
+                    .getAccessToken();
+
+            User userFromToken = accessTokenService.getUserFromToken(accessToken);
+
+            assertThat(userFromToken.getId()).isEqualTo(currentUser.getId());
+            assertThat(recoveryCode.getIsUsed()).isTrue();
         }
 
         @Test
         @Rollback
-        void login_withTwoFactorAuthenticationRequired_wrongTwoFactorAuthenticationTotpCode_isFailed() throws Exception {
+        void login_withTwoFactorAuthenticationRequired_usingWrongTotpCode_isFailed() throws Exception {
             User currentUser = userRepository.findByUsername("admin").orElseThrow();
 
-            String randomWrongTotpCode = RandomStringUtils.randomNumeric(7); // always wrong
-
             String secretKey = secretGenerator.generate();
+
+            long counter = Math.floorDiv(timeProvider.getTime(), totpProperties.getTime().getPeriod());
+            String generatedTotpCode = codeGenerator.generate(secretKey, counter);
+            String wrongTotpCode = String.valueOf(Integer.parseInt(generatedTotpCode) + 1); // always wrong
+
             currentUser.setTwoFactorAuthenticationSecretKey(secretKey);
             currentUser.setTwoFactorAuthenticationEnabled(true);
 
@@ -184,7 +251,48 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             AuthenticationRequestDTO authenticationRequestDTO = AuthenticationRequestDTO.builder()
                     .username("admin")
                     .password("password")
-                    .code(randomWrongTotpCode)
+                    .code(wrongTotpCode)
+                    .build();
+
+            String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
+
+            mockMvc.perform(post(LOGIN_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE_AUTH_FAILED.getMessage()));
+        }
+
+        @Test
+        @Rollback
+        void login_withTwoFactorAuthenticationRequired_usingWrongRecoveryCode_isFailed() throws Exception {
+            User currentUser = userRepository.findByUsername("admin").orElseThrow();
+
+            String secretKey = secretGenerator.generate();
+            currentUser.setTwoFactorAuthenticationSecretKey(secretKey);
+            currentUser.setTwoFactorAuthenticationEnabled(true);
+
+            userRepository.save(currentUser);
+
+            List<RecoveryCode> generatedRecoveryCodes = Arrays.stream(recoveryCodeGenerator.generateCodes(recoveryCodesAmount))
+                    .map(recoveryCode -> RecoveryCode.builder()
+                            .code(recoveryCode)
+                            .user(currentUser)
+                            .build()).collect(Collectors.toList());
+
+            recoveryCodeRepository.saveAll(generatedRecoveryCodes);
+
+            String randomRecoveryCode = RecoveryCodeTestUtils.generateRandomRecoveryCode();
+
+            while (recoveryCodeRepository.findByCodeAndUser(randomRecoveryCode, currentUser).isPresent()) {
+                randomRecoveryCode = RecoveryCodeTestUtils.generateRandomRecoveryCode();
+            }
+
+            AuthenticationRequestDTO authenticationRequestDTO = AuthenticationRequestDTO.builder()
+                    .username("admin")
+                    .password("password")
+                    .code(randomRecoveryCode)
                     .build();
 
             String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
@@ -346,7 +454,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
             String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
 
-            TimeUnit.SECONDS.sleep(6);
+            TimeUnit.SECONDS.sleep(ACCESS_TOKEN_EXPIRATION_SECONDS + 1);
 
             mockMvc.perform(get(USERS_API_URL)
                             .header(HttpHeaders.AUTHORIZATION, accessToken))
@@ -361,13 +469,13 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
             User user = userRepository.findById(testUserId).orElseThrow();
 
-            Assertions.assertThat(user.isAccountLocked()).isFalse();
+            assertThat(user.isAccountLocked()).isFalse();
 
             String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
 
             user.setAccountLocked(true);
 
-            Assertions.assertThat(user.isAccountLocked()).isTrue();
+            assertThat(user.isAccountLocked()).isTrue();
 
             mockMvc.perform(get(USERS_API_URL)
                             .header(HttpHeaders.AUTHORIZATION, accessToken))
@@ -382,13 +490,13 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
             User user = userRepository.findById(testUserId).orElseThrow();
 
-            Assertions.assertThat(user.isEnabled()).isTrue();
+            assertThat(user.isEnabled()).isTrue();
 
             String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
 
             user.setEnabled(false);
 
-            Assertions.assertThat(user.isEnabled()).isFalse();
+            assertThat(user.isEnabled()).isFalse();
 
             mockMvc.perform(get(USERS_API_URL)
                             .header(HttpHeaders.AUTHORIZATION, accessToken))
@@ -403,13 +511,13 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
             User user = userRepository.findById(testUserId).orElseThrow();
 
-            Assertions.assertThat(user.isAccountExpired()).isFalse();
+            assertThat(user.isAccountExpired()).isFalse();
 
             String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
 
             user.setAccountExpired(true);
 
-            Assertions.assertThat(user.isAccountExpired()).isTrue();
+            assertThat(user.isAccountExpired()).isTrue();
 
             mockMvc.perform(get(USERS_API_URL)
                             .header(HttpHeaders.AUTHORIZATION, accessToken))
@@ -424,13 +532,13 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
             User user = userRepository.findById(testUserId).orElseThrow();
 
-            Assertions.assertThat(user.isCredentialsExpired()).isFalse();
+            assertThat(user.isCredentialsExpired()).isFalse();
 
             String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
 
             user.setCredentialsExpired(true);
 
-            Assertions.assertThat(user.isCredentialsExpired()).isTrue();
+            assertThat(user.isCredentialsExpired()).isTrue();
 
             mockMvc.perform(get(USERS_API_URL)
                             .header(HttpHeaders.AUTHORIZATION, accessToken))
@@ -445,13 +553,13 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
             User user = userRepository.findById(testUserId).orElseThrow();
 
-            Assertions.assertThat(user.isEmailVerified()).isTrue();
+            assertThat(user.isEmailVerified()).isTrue();
 
             String accessToken = headerPrefix + accessTokenService.generateAccessToken(user);
 
             user.setEmailVerified(false);
 
-            Assertions.assertThat(user.isEmailVerified()).isFalse();
+            assertThat(user.isEmailVerified()).isFalse();
 
             mockMvc.perform(get(USERS_API_URL)
                             .header(HttpHeaders.AUTHORIZATION, accessToken))
@@ -488,21 +596,21 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             RefreshTokenSession revokedSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken)
                     .orElseThrow();
 
-            Assertions.assertThat(revokedSession.getRefreshToken()).isEqualTo(refreshToken);
-            Assertions.assertThat(revokedSession.getUser()).isEqualTo(user);
-            Assertions.assertThat(revokedSession.getCreatedAt()).isBeforeOrEqualTo(Instant.now());
-            Assertions.assertThat(revokedSession.getIsRevoked()).isTrue();
+            assertThat(revokedSession.getRefreshToken()).isEqualTo(refreshToken);
+            assertThat(revokedSession.getUser()).isEqualTo(user);
+            assertThat(revokedSession.getCreatedAt()).isBeforeOrEqualTo(Instant.now());
+            assertThat(revokedSession.getIsRevoked()).isTrue();
 
             AuthenticationResponseDTO responseDTO = objectMapper.readValue(responseContent, AuthenticationResponseDTO.class);
 
-            Assertions.assertThat(user).isEqualTo(accessTokenService.getUserFromToken(responseDTO.getAccessToken()));
+            assertThat(user).isEqualTo(accessTokenService.getUserFromToken(responseDTO.getAccessToken()));
 
             RefreshTokenSession createdSession = refreshTokenSessionRepository
                     .findByRefreshToken(responseDTO.getRefreshToken()).orElseThrow();
 
-            Assertions.assertThat(createdSession.getUser()).isEqualTo(user);
-            Assertions.assertThat(createdSession.getCreatedAt()).isBeforeOrEqualTo(Instant.now());
-            Assertions.assertThat(createdSession.getIsRevoked()).isFalse();
+            assertThat(createdSession.getUser()).isEqualTo(user);
+            assertThat(createdSession.getCreatedAt()).isBeforeOrEqualTo(Instant.now());
+            assertThat(createdSession.getIsRevoked()).isFalse();
         }
 
         @Test
@@ -517,15 +625,14 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                 currentRepetition++;
 
                 String refreshToken = refreshTokenService.generateRefreshToken(user);
-
-                Assertions.assertThat(refreshTokenSessionRepository.existsByRefreshToken(refreshToken)).isTrue();
+                assertThat(refreshTokenSessionRepository.existsByRefreshToken(refreshToken)).isTrue();
 
                 int refreshTokenSessionsCount = Math.toIntExact(refreshTokenSessionRepository.countByUser(user));
 
                 if (currentRepetition <= refreshTokensPerUser) {
-                    Assertions.assertThat(refreshTokenSessionsCount).isEqualTo(currentRepetition);
+                    assertThat(refreshTokenSessionsCount).isEqualTo(currentRepetition);
                 } else {
-                    Assertions.assertThat(refreshTokenSessionsCount).isOne();
+                    assertThat(refreshTokenSessionsCount).isOne();
                 }
             }
         }
@@ -545,7 +652,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             RefreshTokenSession revokedSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken)
                     .orElseThrow();
 
-            Assertions.assertThat(revokedSession.getUser()).isEqualTo(user);
+            assertThat(revokedSession.getUser()).isEqualTo(user);
 
             revokedSession.setIsRevoked(true);
 
@@ -567,7 +674,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
             String modifiedRefreshToken = refreshToken + RandomStringUtils.randomAlphanumeric(1, 10);
 
-            Assertions.assertThat(modifiedRefreshToken).isNotEqualTo(refreshToken);
+            assertThat(modifiedRefreshToken).isNotEqualTo(refreshToken);
 
             RefreshTokensRequestDTO requestDTO = new RefreshTokensRequestDTO(modifiedRefreshToken);
 
@@ -592,12 +699,12 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
             String requestContent = objectMapper.writeValueAsString(requestDTO);
 
-            TimeUnit.SECONDS.sleep(6);
+            TimeUnit.SECONDS.sleep(REFRESH_TOKEN_EXPIRATION_SECONDS);
 
             RefreshTokenSession refreshTokenSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken)
                     .orElseThrow();
 
-            Assertions.assertThat(refreshTokenSession.getIsRevoked()).isFalse();
+            assertThat(refreshTokenSession.getIsRevoked()).isFalse();
 
             mockMvc.perform(post(REFRESH_TOKENS_API_URL)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -646,10 +753,10 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             String accessToken = accessTokenService.generateAccessToken(user);
             String refreshToken = refreshTokenService.generateRefreshToken(user);
 
-            Assertions.assertThat(accessTokenService.getUserFromToken(accessToken).getId()).isEqualTo(userId);
+            assertThat(accessTokenService.getUserFromToken(accessToken).getId()).isEqualTo(userId);
 
             RefreshTokenSession refreshTokenSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken).orElseThrow();
-            Assertions.assertThat(refreshTokenSession.getIsRevoked()).isFalse();
+            assertThat(refreshTokenSession.getIsRevoked()).isFalse();
 
             LogoutRequestDTO logoutRequestDTO = new LogoutRequestDTO(refreshToken);
 
@@ -663,10 +770,10 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                             .content(requestContent))
                     .andExpect(status().isOk());
 
-            Assertions.assertThat(blacklistedAccessTokenRepository.existsByAccessToken(accessToken)).isTrue();
+            assertThat(blacklistedAccessTokenRepository.existsByAccessToken(accessToken)).isTrue();
 
             refreshTokenSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken).orElseThrow();
-            Assertions.assertThat(refreshTokenSession.getIsRevoked()).isTrue();
+            assertThat(refreshTokenSession.getIsRevoked()).isTrue();
 
             mockMvc.perform(post(LOGOUT_API_URL)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -675,10 +782,10 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value(ExceptionMessage.INVALID_ACCESS_TOKEN.getMessage()));
 
-            TimeUnit.SECONDS.sleep(6);
+            TimeUnit.SECONDS.sleep(ACCESS_TOKEN_EXPIRATION_SECONDS);
 
-            Assertions.assertThat(releaseBlacklistedAccessTokensTask.execute()).isTrue();
-            Assertions.assertThat(blacklistedAccessTokenRepository.existsByAccessToken(accessToken)).isFalse();
+            assertThat(releaseBlacklistedAccessTokensTask.execute()).isTrue();
+            assertThat(blacklistedAccessTokenRepository.existsByAccessToken(accessToken)).isFalse();
         }
 
         @Test
@@ -691,11 +798,11 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             String accessToken = accessTokenService.generateAccessToken(user);
             String refreshToken = refreshTokenService.generateRefreshToken(user);
 
-            Assertions.assertThat(accessTokenService.getUserFromToken(accessToken).getId()).isEqualTo(userId);
+            assertThat(accessTokenService.getUserFromToken(accessToken).getId()).isEqualTo(userId);
 
             RefreshTokenSession refreshTokenSession = refreshTokenSessionRepository.findByRefreshToken(refreshToken).orElseThrow();
             refreshTokenSession.setIsRevoked(true);
-            Assertions.assertThat(refreshTokenSession.getIsRevoked()).isTrue();
+            assertThat(refreshTokenSession.getIsRevoked()).isTrue();
 
             refreshTokenSessionRepository.save(refreshTokenSession);
 
@@ -722,7 +829,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
             String accessToken = accessTokenService.generateAccessToken(user);
             String refreshToken = "someRandomRefreshToken";
 
-            Assertions.assertThat(accessTokenService.getUserFromToken(accessToken).getId()).isEqualTo(userId);
+            assertThat(accessTokenService.getUserFromToken(accessToken).getId()).isEqualTo(userId);
 
             LogoutRequestDTO logoutRequestDTO = new LogoutRequestDTO(refreshToken);
 

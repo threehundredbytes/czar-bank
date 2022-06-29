@@ -7,6 +7,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.model.request.security.TwoFactorAuthenticationCodeRequestDTO;
+import ru.dreadblade.czarbank.api.model.response.security.RecoveryCodesResponseDTO;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.service.security.AccountManagementService;
 import ru.dreadblade.czarbank.service.security.TwoFactorAuthenticationService;
@@ -36,9 +37,13 @@ public class AccountManagementController {
 
     @PostMapping("/2fa/verify")
     @PreAuthorize("isAuthenticated()")
-    public void verifyTwoFactorAuthentication(@Valid @RequestBody TwoFactorAuthenticationCodeRequestDTO requestDTO,
-                                              @AuthenticationPrincipal User user) {
-        twoFactorAuthenticationService.verifyTwoFactorAuthentication(requestDTO.getCode(), user);
+    public ResponseEntity<RecoveryCodesResponseDTO> verifyTwoFactorAuthentication(
+            @Valid @RequestBody TwoFactorAuthenticationCodeRequestDTO requestDTO,
+            @AuthenticationPrincipal User user
+    ) {
+        var recoveryCodes = twoFactorAuthenticationService.verifyTwoFactorAuthentication(requestDTO.getCode(), user);
+
+        return ResponseEntity.ok(new RecoveryCodesResponseDTO(recoveryCodes));
     }
 
     @PostMapping("/2fa/disable")

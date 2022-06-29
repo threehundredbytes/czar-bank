@@ -5,20 +5,21 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.6.3</version>
+		<version>2.7.1</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>ru.dreadblade</groupId>
 	<artifactId>czar-bank</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Czar Bank</name>
+	<name>czar-bank</name>
 	<description>Virtual banking service for the court of His Imperial Majesty since 1721.</description>
 
 	<properties>
 		<java.version>17</java.version>
-		<testcontainers.version>1.16.3</testcontainers.version>
-		<mapstruct.version>1.4.2.Final</mapstruct.version>
-		<javaJwt.version>3.18.3</javaJwt.version>
+		<testcontainers.version>1.17.2</testcontainers.version>
+		<mapstruct.version>1.5.1.Final</mapstruct.version>
+		<javaJwt.version>3.19.2</javaJwt.version>
+		<totp.version>1.7.1</totp.version>
 	</properties>
 
 	<dependencies>
@@ -51,7 +52,7 @@
 		<dependency>
 			<groupId>dev.samstevens.totp</groupId>
 			<artifactId>totp-spring-boot-starter</artifactId>
-			<version>1.7.1</version>
+			<version>${totp.version}</version>
 		</dependency>
 
 		<dependency>
