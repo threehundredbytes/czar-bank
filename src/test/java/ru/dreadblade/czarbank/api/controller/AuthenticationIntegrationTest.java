@@ -194,7 +194,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                             .content(requestContent))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message")
-                            .value(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE.getMessage()));
+                            .value(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE_AUTH_FAILED.getMessage()));
         }
 
         @Test
@@ -221,7 +221,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                             .content(requestContent))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message")
-                            .value(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE.getMessage()));
+                            .value(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE_AUTH_FAILED.getMessage()));
         }
 
         @Test

@@ -2,10 +2,12 @@ package ru.dreadblade.czarbank.api.controller;
 
 import dev.samstevens.totp.code.CodeGenerator;
 import dev.samstevens.totp.code.CodeVerifier;
+import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.spring.autoconfigure.TotpProperties;
 import dev.samstevens.totp.time.TimeProvider;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -20,7 +23,7 @@ import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
-import ru.dreadblade.czarbank.api.model.request.security.TwoFactorAuthenticationVerificationRequestDTO;
+import ru.dreadblade.czarbank.api.model.request.security.TwoFactorAuthenticationCodeRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.UserRequestDTO;
 import ru.dreadblade.czarbank.domain.security.EmailVerificationToken;
 import ru.dreadblade.czarbank.domain.security.User;
@@ -32,8 +35,10 @@ import ru.dreadblade.czarbank.service.security.EmailVerificationTokenService;
 
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(properties = {
@@ -69,12 +74,16 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
     CodeVerifier codeVerifier;
 
     @Autowired
+    SecretGenerator secretGenerator;
+
+    @Autowired
     TotpProperties totpProperties;
 
     private static final String VERIFY_EMAIL_API_URL = "/api/account-management/verify-email";
     private static final String USERS_API_URL = "/api/users";
     private static final String SETUP_2FA_API_URL = "/api/account-management/2fa/setup";
     private static final String VERIFY_2FA_API_URL = "/api/account-management/2fa/verify";
+    private static final String DISABLE_2FA_API_URL = "/api/account-management/2fa/disable";
 
     @Nested
     @DisplayName("verifyEmail() Tests")
@@ -238,7 +247,7 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
 
             String generatedTotpCode = codeGenerator.generate(secretKey, counter);
 
-            var requestDTO = new TwoFactorAuthenticationVerificationRequestDTO(generatedTotpCode);
+            var requestDTO = new TwoFactorAuthenticationCodeRequestDTO(generatedTotpCode);
 
             mockMvc.perform(post(VERIFY_2FA_API_URL)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -267,7 +276,7 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
         void verifyTwoFactorAuthentication_withoutSetup_isFailed() throws Exception {
             String randomTotpCode = RandomStringUtils.randomNumeric(6);
 
-            var requestDTO = new TwoFactorAuthenticationVerificationRequestDTO(randomTotpCode);
+            var requestDTO = new TwoFactorAuthenticationCodeRequestDTO(randomTotpCode);
 
             mockMvc.perform(post(VERIFY_2FA_API_URL)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -291,18 +300,133 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
 
             String randomWrongTotpCode = RandomStringUtils.randomNumeric(7); // always wrong
 
-            var requestDTO = new TwoFactorAuthenticationVerificationRequestDTO(randomWrongTotpCode);
+            var requestDTO = new TwoFactorAuthenticationCodeRequestDTO(randomWrongTotpCode);
 
             mockMvc.perform(post(VERIFY_2FA_API_URL)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message")
-                            .value(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE.getMessage()));
+                            .value(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE_AUTH_FAILED.getMessage()));
 
             User currentUser = userRepository.findByUsername("admin").orElseThrow();
             Assertions.assertThat(currentUser.isTwoFactorAuthenticationEnabled()).isFalse();
             Assertions.assertThat(currentUser.getTwoFactorAuthenticationSecretKey()).isNotBlank();
         }
+
+        @Test
+        @Transactional
+        @WithUserDetails("admin")
+        void disableTwoFactorAuthentication_isSuccessful() throws Exception {
+            User currentUser = userRepository.findByUsername("admin").orElseThrow();
+
+            String secretKey = secretGenerator.generate();
+
+            currentUser.setTwoFactorAuthenticationEnabled(true);
+            currentUser.setTwoFactorAuthenticationSecretKey(secretKey);
+
+            long counter = Math.floorDiv(timeProvider.getTime(), totpProperties.getTime().getPeriod());
+            String generatedTotpCode = codeGenerator.generate(secretKey, counter);
+
+            var requestDTO = new TwoFactorAuthenticationCodeRequestDTO(generatedTotpCode);
+
+            mockMvc.perform(post(DISABLE_2FA_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(requestDTO)))
+                    .andExpect(status().isOk());
+
+            currentUser = userRepository.findByUsername("admin").orElseThrow();
+            Assertions.assertThat(currentUser.isTwoFactorAuthenticationEnabled()).isFalse();
+        }
+
+        @Test
+        @Transactional
+        @WithUserDetails("admin")
+        void disableTwoFactorAuthentication_withoutSetup_isFailed() throws Exception {
+            User currentUser = userRepository.findByUsername("admin").orElseThrow();
+
+            String secretKey = secretGenerator.generate();
+
+            currentUser.setTwoFactorAuthenticationEnabled(true);
+            currentUser.setTwoFactorAuthenticationSecretKey(secretKey);
+
+            long counter = Math.floorDiv(timeProvider.getTime(), totpProperties.getTime().getPeriod());
+            String generatedTotpCode = codeGenerator.generate(secretKey, counter);
+
+            var requestDTO = new TwoFactorAuthenticationCodeRequestDTO(generatedTotpCode);
+
+            mockMvc.perform(post(DISABLE_2FA_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(requestDTO)))
+                    .andExpect(status().isOk());
+
+            currentUser = userRepository.findByUsername("admin").orElseThrow();
+            Assertions.assertThat(currentUser.isTwoFactorAuthenticationEnabled()).isFalse();
+        }
+
+        @DisplayName("Validation Tests")
+        @Nested
+        class validationTests {
+            @Test
+            @Transactional
+            @WithUserDetails("admin")
+            void verifyTwoFactorAuthentication_withNullCode_validationIsFailed_responseIsCorrect() throws Exception {
+                User currentUser = userRepository.findByUsername("admin").orElseThrow();
+
+                String secretKey = secretGenerator.generate();
+
+                currentUser.setTwoFactorAuthenticationSecretKey(secretKey);
+
+                var requestDTO = new TwoFactorAuthenticationCodeRequestDTO(null);
+
+                mockMvc.perform(post(VERIFY_2FA_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("code"))
+                        .andExpect(jsonPath("$.errors[0].message").value("Two-factor authentication code must be not empty"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(VERIFY_2FA_API_URL));
+
+                currentUser = userRepository.findByUsername("admin").orElseThrow();
+                Assertions.assertThat(currentUser.isTwoFactorAuthenticationEnabled()).isFalse();
+            }
+
+            @Test
+            @Transactional
+            @WithUserDetails("admin")
+            void disableTwoFactorAuthentication_withNullCode_validationIsFailed_responseIsCorrect() throws Exception {
+                User currentUser = userRepository.findByUsername("admin").orElseThrow();
+
+                String secretKey = secretGenerator.generate();
+
+                currentUser.setTwoFactorAuthenticationEnabled(true);
+                currentUser.setTwoFactorAuthenticationSecretKey(secretKey);
+
+                var requestDTO = new TwoFactorAuthenticationCodeRequestDTO(null);
+
+                mockMvc.perform(post(DISABLE_2FA_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andDo(print())
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.timestamp").value(Matchers.any(String.class)))
+                        .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
+                        .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
+                        .andExpect(jsonPath("$.errors", hasSize(1)))
+                        .andExpect(jsonPath("$.errors[0].field").value("code"))
+                        .andExpect(jsonPath("$.errors[0].message").value("Two-factor authentication code must be not empty"))
+                        .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
+                        .andExpect(jsonPath("$.path").value(DISABLE_2FA_API_URL));
+
+                currentUser = userRepository.findByUsername("admin").orElseThrow();
+                Assertions.assertThat(currentUser.isTwoFactorAuthenticationEnabled()).isTrue();
+            }
+        }
+
     }
 }

@@ -49,7 +49,7 @@ public class AuthenticationService {
             String secretKey = user.getTwoFactorAuthenticationSecretKey();
 
             if (StringUtils.isBlank(totpCode) || !totpService.isValidCode(totpCode, secretKey)) {
-                throw new CzarBankSecurityException(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE);
+                throw new CzarBankSecurityException(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE_AUTH_FAILED);
             }
         }
 

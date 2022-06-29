@@ -9,7 +9,7 @@ import javax.validation.constraints.NotBlank;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TwoFactorAuthenticationVerificationRequestDTO {
+public class TwoFactorAuthenticationCodeRequestDTO {
     @NotBlank(message = "Two-factor authentication code must be not empty")
     private String code;
 }

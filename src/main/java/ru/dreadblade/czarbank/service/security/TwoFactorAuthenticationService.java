@@ -47,10 +47,26 @@ public class TwoFactorAuthenticationService {
         }
 
         if (!totpService.isValidCode(code, secretKey)) {
-            throw new CzarBankSecurityException(ExceptionMessage.TWO_FACTOR_AUTHENTICATION_VERIFICATION_FAILED);
+            throw new CzarBankSecurityException(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE);
         }
 
         user.setTwoFactorAuthenticationEnabled(true);
+        userRepository.save(user);
+    }
+
+    public void disableTwoFactorAuthentication(String code, User user) {
+        if (!user.isTwoFactorAuthenticationEnabled()) {
+            throw new CzarBankSecurityException(ExceptionMessage.SETUP_TWO_FACTOR_AUTHENTICATION);
+        }
+
+        String secretKey = user.getTwoFactorAuthenticationSecretKey();
+
+        if (!totpService.isValidCode(code, secretKey)) {
+            throw new CzarBankSecurityException(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE);
+        }
+
+        user.setTwoFactorAuthenticationEnabled(false);
+        user.setTwoFactorAuthenticationSecretKey(null);
         userRepository.save(user);
     }
 }
