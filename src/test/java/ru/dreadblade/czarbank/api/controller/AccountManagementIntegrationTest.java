@@ -318,7 +318,7 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
             }
 
             @Test
-            @Rollback
+            @Transactional
             @WithUserDetails("admin")
             void setupAndVerifyTwoFactorAuthentication_alreadySetup_isFailed() throws Exception {
                 User currentUser = userRepository.findByUsername("admin").orElseThrow();
