@@ -36,3 +36,6 @@ czar-bank:
       limit-per-user: 5
     email-verification-token:
       expiration-seconds: 86400
+    two-factor-authentication:
+      recovery-codes:
+        amount: 16

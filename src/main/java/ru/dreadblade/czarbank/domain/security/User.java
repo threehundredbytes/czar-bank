@@ -37,6 +37,9 @@ public class User extends BaseEntity implements UserDetails {
     @Column(length = 254, nullable = false, unique = true)
     private String email;
 
+    @Column(length = 32)
+    private String twoFactorAuthenticationSecretKey;
+
     @Singular(value = "addRole")
     @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.MERGE })
     @JoinTable(name = "user_role",
@@ -46,6 +49,9 @@ public class User extends BaseEntity implements UserDetails {
 
     @Builder.Default
     private boolean isEmailVerified = false;
+
+    @Builder.Default
+    private boolean isTwoFactorAuthenticationEnabled = false;
 
     @Builder.Default
     private boolean isAccountExpired = false;

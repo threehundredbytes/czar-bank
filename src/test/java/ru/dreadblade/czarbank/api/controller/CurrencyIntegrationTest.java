@@ -1,5 +1,6 @@
 package ru.dreadblade.czarbank.api.controller;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
@@ -13,7 +14,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
-import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 import ru.dreadblade.czarbank.api.mapper.CurrencyMapper;
 import ru.dreadblade.czarbank.api.model.request.CurrencyRequestDTO;
 import ru.dreadblade.czarbank.api.model.response.CurrencyResponseDTO;
