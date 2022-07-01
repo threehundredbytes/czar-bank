@@ -23,7 +23,7 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMethod;
-import ru.dreadblade.czarbank.api.controller.util.RecoveryCodeTestUtils;
+import ru.dreadblade.czarbank.util.RecoveryCodeTestUtils;
 import ru.dreadblade.czarbank.api.model.request.security.AuthenticationRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.LogoutRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.RefreshTokensRequestDTO;

@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface RecoveryCodeRepository extends JpaRepository<RecoveryCode, Long> {
     Optional<RecoveryCode> findByCodeAndUser(String code, User user);
+    void deleteAllByUser(User user);
 }

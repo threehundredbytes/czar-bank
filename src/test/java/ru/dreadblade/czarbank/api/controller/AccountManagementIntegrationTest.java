@@ -2,6 +2,7 @@ package ru.dreadblade.czarbank.api.controller;
 
 import dev.samstevens.totp.code.CodeGenerator;
 import dev.samstevens.totp.code.CodeVerifier;
+import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.spring.autoconfigure.TotpProperties;
 import dev.samstevens.totp.time.TimeProvider;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.model.request.security.TwoFactorAuthenticationCodeRequestDTO;
 import ru.dreadblade.czarbank.api.model.request.security.UserRequestDTO;
 import ru.dreadblade.czarbank.domain.security.EmailVerificationToken;
+import ru.dreadblade.czarbank.domain.security.RecoveryCode;
 import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.EmailVerificationTokenRepository;
@@ -34,7 +36,10 @@ import ru.dreadblade.czarbank.repository.security.UserRepository;
 import ru.dreadblade.czarbank.security.service.TotpService;
 import ru.dreadblade.czarbank.service.security.EmailVerificationTokenService;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -94,6 +99,9 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     TotpProperties totpProperties;
+
+    @Autowired
+    RecoveryCodeGenerator recoveryCodeGenerator;
 
     @Nested
     @DisplayName("verifyEmail() Tests")
@@ -295,7 +303,6 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
                         .andExpect(content().contentType(totpService.getQrCodeImageMediaType()));
 
                 String randomWrongTotpCode = RandomStringUtils.randomNumeric(7); // always wrong
-
                 var requestDTO = new TwoFactorAuthenticationCodeRequestDTO(randomWrongTotpCode);
 
                 mockMvc.perform(post(VERIFY_2FA_API_URL)
@@ -311,15 +318,13 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
             }
 
             @Test
-            @Transactional
+            @Rollback
             @WithUserDetails("admin")
             void setupAndVerifyTwoFactorAuthentication_alreadySetup_isFailed() throws Exception {
                 User currentUser = userRepository.findByUsername("admin").orElseThrow();
-
                 currentUser.setTwoFactorAuthenticationEnabled(true);
 
                 String randomTotpCode = RandomStringUtils.randomNumeric(6);
-
                 var requestDTO = new TwoFactorAuthenticationCodeRequestDTO(randomTotpCode);
 
                 mockMvc.perform(post(VERIFY_2FA_API_URL)
@@ -396,6 +401,19 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
                 currentUser.setTwoFactorAuthenticationEnabled(true);
                 currentUser.setTwoFactorAuthenticationSecretKey(secretKey);
 
+                List<RecoveryCode> generatedRecoveryCodes = Arrays.stream(recoveryCodeGenerator.generateCodes(recoveryCodesAmount))
+                        .map(recoveryCode -> RecoveryCode.builder()
+                                .code(recoveryCode)
+                                .user(currentUser)
+                                .build()).collect(Collectors.toList());
+
+                assertThat(generatedRecoveryCodes).hasSize(recoveryCodesAmount);
+                recoveryCodeRepository.saveAll(generatedRecoveryCodes);
+
+                long expectedRecoveryCodesAmount = recoveryCodesAmount;
+
+                assertThat(recoveryCodeRepository.count()).isEqualTo(expectedRecoveryCodesAmount);
+
                 long counter = Math.floorDiv(timeProvider.getTime(), totpProperties.getTime().getPeriod());
                 String generatedTotpCode = codeGenerator.generate(secretKey, counter);
 
@@ -406,7 +424,10 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
                                 .content(objectMapper.writeValueAsString(requestDTO)))
                         .andExpect(status().isOk());
 
+                expectedRecoveryCodesAmount = 0;
+
                 assertThat(currentUser.isTwoFactorAuthenticationEnabled()).isFalse();
+                assertThat(recoveryCodeRepository.count()).isEqualTo(expectedRecoveryCodesAmount);
             }
 
             @Test

@@ -81,6 +81,8 @@ public class TwoFactorAuthenticationService {
 
         user.setTwoFactorAuthenticationEnabled(false);
         user.setTwoFactorAuthenticationSecretKey(null);
+        recoveryCodeRepository.deleteAllByUser(user);
+        
         userRepository.save(user);
     }
 

@@ -1,4 +1,4 @@
-package ru.dreadblade.czarbank.api.controller.util;
+package ru.dreadblade.czarbank.util;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
