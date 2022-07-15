@@ -9,7 +9,7 @@ import ru.dreadblade.czarbank.domain.security.User;
 import ru.dreadblade.czarbank.exception.CzarBankSecurityException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
-import ru.dreadblade.czarbank.service.MailService;
+import ru.dreadblade.czarbank.service.email.MailService;
 
 import java.time.Instant;
 

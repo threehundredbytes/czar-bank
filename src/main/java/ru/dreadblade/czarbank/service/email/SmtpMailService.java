@@ -1,19 +1,18 @@
-package ru.dreadblade.czarbank.service;
+package ru.dreadblade.czarbank.service.email;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.stereotype.Service;
 
 @Service
-public class MailService {
+@Profile("smtp")
+@RequiredArgsConstructor
+public class SmtpMailService implements MailService {
     private final MailSender mailSender;
 
-    @Autowired
-    public MailService(MailSender mailSender) {
-        this.mailSender = mailSender;
-    }
-
+    @Override
     public void sendMail(String recipientEmailAddress, String subject, String content) {
         SimpleMailMessage mailMessage = new SimpleMailMessage();
 

@@ -1,8 +1,8 @@
 package ru.dreadblade.czarbank.service.security;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -13,7 +13,7 @@ import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
-import ru.dreadblade.czarbank.service.MailService;
+import ru.dreadblade.czarbank.service.email.MailService;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,21 +22,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final EmailVerificationTokenService emailVerificationTokenService;
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
-
-    @Autowired
-    public UserService(UserRepository userRepository, RoleRepository roleRepository, EmailVerificationTokenService emailVerificationTokenService, PasswordEncoder passwordEncoder, MailService mailService) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.emailVerificationTokenService = emailVerificationTokenService;
-        this.passwordEncoder = passwordEncoder;
-        this.mailService = mailService;
-    }
 
     public List<User> findAll() {
         return userRepository.findAll();

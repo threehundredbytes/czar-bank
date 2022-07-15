@@ -16,6 +16,7 @@ import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dreadblade.czarbank.api.mapper.security.RoleMapper;
@@ -39,6 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
+@ActiveProfiles("smtp")
 @DisplayName("User Integration Tests")
 @Sql(value = "/user/users-insertion.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(value = "/user/users-deletion.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
