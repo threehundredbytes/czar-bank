@@ -1,5 +1,7 @@
 package ru.dreadblade.czarbank.service.email;
 
+import javax.mail.MessagingException;
+
 public interface MailService {
-    void sendMail(String recipientEmailAddress, String subject, String content);
+    void sendHtmlMail(String recipientEmailAddress, String subject, String htmlContent) throws MessagingException;
 }

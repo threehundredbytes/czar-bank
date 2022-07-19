@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 @ConditionalOnMissingBean(SmtpMailService.class)
 public class NoOpMailService implements MailService {
     @Override
-    public void sendMail(String recipientEmailAddress, String subject, String content) {
-        log.info("Email sent to {}:\n{}\n{}", recipientEmailAddress, subject, content);
+    public void sendHtmlMail(String recipientEmailAddress, String subject, String htmlContent) {
+        log.info("Email sent to {}:\n{}\n{}", recipientEmailAddress, subject, htmlContent);
     }
 }

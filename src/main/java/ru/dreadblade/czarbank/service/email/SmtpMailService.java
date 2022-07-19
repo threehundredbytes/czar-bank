@@ -2,24 +2,28 @@ package ru.dreadblade.czarbank.service.email;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
-import org.springframework.mail.MailSender;
-import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
 
 @Service
 @Profile("smtp")
 @RequiredArgsConstructor
 public class SmtpMailService implements MailService {
-    private final MailSender mailSender;
+    private final JavaMailSender javaMailSender;
 
     @Override
-    public void sendMail(String recipientEmailAddress, String subject, String content) {
-        SimpleMailMessage mailMessage = new SimpleMailMessage();
+    public void sendHtmlMail(String recipientEmailAddress, String subject, String htmlContent) throws MessagingException {
+        MimeMessage message = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-        mailMessage.setTo(recipientEmailAddress);
-        mailMessage.setSubject(subject);
-        mailMessage.setText(content);
+        helper.setTo(recipientEmailAddress);
+        helper.setSubject(subject);
+        helper.setText(htmlContent, true);
 
-        mailSender.send(mailMessage);
+        javaMailSender.send(message);
     }
 }

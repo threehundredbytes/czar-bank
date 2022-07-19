@@ -4,21 +4,12 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
-# Required on smtp profile
   mail:
     host: 'smtp.host'
-    username: 'username'
+    username: 'greenmail'
     password: 'password'
-    port: 465
-    protocol: 'smtps'
-    properties:
-      smtps:
-        auth: 'true'
-        starttls:
-          enable: 'true'
-        timeout: 5000
-  flyway:
-    enabled: false
+    port: 3025
+    protocol: 'smtp'
 
 czar-bank:
   currency:
