@@ -9,15 +9,21 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.mail.MailSender;
-import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.utility.DockerImageName;
 import ru.dreadblade.czarbank.api.mapper.security.RoleMapper;
 import ru.dreadblade.czarbank.api.mapper.security.UserMapper;
 import ru.dreadblade.czarbank.api.model.request.security.UserRequestDTO;
@@ -28,6 +34,7 @@ import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 
+import javax.mail.internet.MimeMessage;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,10 +46,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
+@ActiveProfiles("smtp")
 @DisplayName("User Integration Tests")
 @Sql(value = "/user/users-insertion.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(value = "/user/users-deletion.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class UserIntegrationTest extends BaseIntegrationTest {
+    private static final String USERS_API_URL = "/api/users";
+
     @Autowired
     UserRepository userRepository;
 
@@ -55,10 +65,21 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     @Autowired
     RoleMapper roleMapper;
 
-    @MockBean
-    MailSender mailSender;
+    @SpyBean
+    JavaMailSender javaMailSender;
 
-    private static final String USERS_API_URL = "/api/users";
+    @Container
+    static GenericContainer<?> greenMailContainer = new GenericContainer<>(DockerImageName.parse("greenmail/standalone:1.6.9"))
+            .withCreateContainerCmdModifier(cmd -> cmd.withName("czar-bank-test-greenmail"))
+            .waitingFor(Wait.forLogMessage(".*Starting GreenMail standalone.*", 1))
+            .withEnv("GREENMAIL_OPTS", "-Dgreenmail.setup.test.smtp -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.users=greenmail:password")
+            .withExposedPorts(3025);
+
+    @DynamicPropertySource
+    static void configureMailHost(DynamicPropertyRegistry registry) {
+        registry.add("spring.mail.host", greenMailContainer::getHost);
+        registry.add("spring.mail.port", greenMailContainer::getFirstMappedPort);
+    }
 
     @Nested
     @DisplayName("findAll() Tests")
@@ -202,7 +223,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                     .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isCreated());
 
-            Mockito.verify(mailSender, Mockito.times(1)).send(Mockito.any(SimpleMailMessage.class));
+            Mockito.verify(javaMailSender, Mockito.times(1)).send(Mockito.any(MimeMessage.class));
 
             User createdUser = userRepository.findByUsername(requestDTO.getUsername()).orElseThrow();
 
@@ -225,7 +246,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                             .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isCreated());
 
-            Mockito.verify(mailSender, Mockito.times(1)).send(Mockito.any(SimpleMailMessage.class));
+            Mockito.verify(javaMailSender, Mockito.times(1)).send(Mockito.any(MimeMessage.class));
 
             User createdUser = userRepository.findByUsername(requestDTO.getUsername()).orElseThrow();
 
@@ -422,7 +443,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                         .andExpect(jsonPath("$.status").value(HttpStatus.UNPROCESSABLE_ENTITY.value()))
                         .andExpect(jsonPath("$.error").value(VALIDATION_ERROR))
                         .andExpect(jsonPath("$.errors", hasSize(1)))
-                        .andExpect(jsonPath("$.errors[*].field").value( "email"))
+                        .andExpect(jsonPath("$.errors[*].field").value("email"))
                         .andExpect(jsonPath("$.errors[*].message").value("Invalid email address"))
                         .andExpect(jsonPath("$.message").value(INVALID_REQUEST))
                         .andExpect(jsonPath("$.path").value(USERS_API_URL));

@@ -11,15 +11,11 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.mail.MailSender;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
@@ -79,9 +75,6 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
     @Autowired
     RecoveryCodeRepository recoveryCodeRepository;
 
-    @MockBean
-    MailSender mailSender;
-
     @Autowired
     TotpService totpService;
 
@@ -120,8 +113,6 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
                             .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isCreated());
 
-            Mockito.verify(mailSender, Mockito.times(1)).send(Mockito.any(SimpleMailMessage.class));
-
             User createdUser = userRepository.findByUsername(requestDTO.getUsername()).orElseThrow();
             assertThat(createdUser.isEmailVerified()).isFalse();
 
@@ -150,7 +141,6 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
                             .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isCreated());
 
-            Mockito.verify(mailSender, Mockito.times(1)).send(Mockito.any(SimpleMailMessage.class));
 
             User createdUser = userRepository.findByUsername(requestDTO.getUsername()).orElseThrow();
             assertThat(createdUser.isEmailVerified()).isFalse();
@@ -167,8 +157,6 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.message").value(ExceptionMessage.EMAIL_VERIFICATION_TOKEN_EXPIRED.getMessage()));
 
             assertThat(createdUser.isEmailVerified()).isFalse();
-
-            Mockito.verify(mailSender, Mockito.times(2)).send(Mockito.any(SimpleMailMessage.class));
 
             emailVerificationTokensForUser = emailVerificationTokenRepository.findAllByUser(createdUser);
             assertThat(emailVerificationTokensForUser).hasSize(2);
@@ -194,8 +182,6 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isCreated());
-
-            Mockito.verify(mailSender, Mockito.times(1)).send(Mockito.any(SimpleMailMessage.class));
 
             User createdUser = userRepository.findByUsername(requestDTO.getUsername()).orElseThrow();
             assertThat(createdUser.isEmailVerified()).isFalse();
@@ -225,8 +211,6 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isCreated());
-
-            Mockito.verify(mailSender, Mockito.times(1)).send(Mockito.any(SimpleMailMessage.class));
 
             User createdUser = userRepository.findByUsername(requestDTO.getUsername()).orElseThrow();
             assertThat(createdUser.isEmailVerified()).isFalse();

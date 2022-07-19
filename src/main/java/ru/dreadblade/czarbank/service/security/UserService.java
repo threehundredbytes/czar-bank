@@ -1,8 +1,9 @@
 package ru.dreadblade.czarbank.service.security;
 
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -13,30 +14,25 @@ import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.security.RoleRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
-import ru.dreadblade.czarbank.service.MailService;
+import ru.dreadblade.czarbank.service.email.MailService;
+import ru.dreadblade.czarbank.service.freemarker.FreemarkerTemplateService;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
+    private static final String VERIFICATION_EMAIL_SUBJECT = "czar-bank account verification";
+    private static final String VERIFICATION_EMAIL_SUPPORT_EMAIL_ADDRESS = "support@czarbank.org";
+    private static final String VERIFICATION_EMAIL_TEMPLATE_FILENAME = "verification-email-message.ftlh";
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final EmailVerificationTokenService emailVerificationTokenService;
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
-
-    @Autowired
-    public UserService(UserRepository userRepository, RoleRepository roleRepository, EmailVerificationTokenService emailVerificationTokenService, PasswordEncoder passwordEncoder, MailService mailService) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.emailVerificationTokenService = emailVerificationTokenService;
-        this.passwordEncoder = passwordEncoder;
-        this.mailService = mailService;
-    }
+    private final FreemarkerTemplateService templateService;
 
     public List<User> findAll() {
         return userRepository.findAll();
@@ -46,6 +42,7 @@ public class UserService {
         return userRepository.findById(userId).orElseThrow(() -> new CzarBankException(ExceptionMessage.USER_NOT_FOUND));
     }
 
+    @SneakyThrows
     public User createUser(User userToCreate, User currentUser) {
         if (userRepository.existsByUsername(userToCreate.getUsername())) {
             throw new CzarBankException(ExceptionMessage.USERNAME_ALREADY_EXISTS);
@@ -78,17 +75,19 @@ public class UserService {
 
         EmailVerificationToken emailVerificationToken = emailVerificationTokenService.generateVerificationToken(user);
 
-        String emailSubject = "Email verification";
         String emailVerificationUrl = ServletUriComponentsBuilder
                 .fromCurrentRequestUri()
                 .replacePath("/api/account-management/verify-email/")
                 .toUriString() + emailVerificationToken.getEmailVerificationToken();
 
-        String emailMessageContent = "Hello, " + user.getUsername() +
-                "!\nTo verify your account, please, follow the link below:\n" + emailVerificationUrl +
-                "\nIf you have any questions, please, let us know\nContact us: support@czarbank.org";
+        Map<String, Object> templateModel = new HashMap<>();
+        templateModel.put("username", user.getUsername());
+        templateModel.put("emailVerificationUrl", emailVerificationUrl);
+        templateModel.put("supportEmailAddress", VERIFICATION_EMAIL_SUPPORT_EMAIL_ADDRESS);
 
-        mailService.sendMail(user.getEmail(), emailSubject, emailMessageContent);
+        String emailMessageContent = templateService.getProcessedFreemarkerTemplate(VERIFICATION_EMAIL_TEMPLATE_FILENAME, templateModel);
+
+        mailService.sendHtmlMail(user.getEmail(), VERIFICATION_EMAIL_SUBJECT, emailMessageContent);
 
         return user;
     }

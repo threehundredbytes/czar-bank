@@ -5,30 +5,22 @@ spring:
     hibernate:
       ddl-auto: create-drop
   mail:
-    host: 'smtp.gmail.com'
-    username: 'email@gmail.com'
+    host: 'smtp.host'
+    username: 'greenmail'
     password: 'password'
-    port: 465
-    protocol: 'smtps'
-    properties:
-      smtps:
-        auth: 'true'
-        starttls:
-          enable: 'true'
-        timeout: 5000
-  flyway:
-    enabled: false
+    port: 3025
+    protocol: 'smtp'
 
 czar-bank:
   currency:
     exchange-rate:
-      update-rate-in-seconds: 3600
+      update-rate-seconds: 86400
   security:
     access-token:
       issuer: 'Czar Bank'
       audience: 'Czar Bank clients and staff'
       expiration-seconds: 900
-      secret-key: 'czar-bank-secret-key'
+      secret-key: 'czar-bank-secret-key-for-tests'
       header:
         prefix: 'Bearer '
     refresh-token:
