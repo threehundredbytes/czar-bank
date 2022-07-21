@@ -18,7 +18,7 @@ public class AccessTokenExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value()).body(CzarBankErrorResponseDTO.builder()
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
-                .message("Access token expired")
+                .message("Expired access token")
                 .path(request.getRequestURI())
                 .build());
     }
@@ -28,7 +28,7 @@ public class AccessTokenExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value()).body(CzarBankErrorResponseDTO.builder()
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
-                .message("Access token is invalid")
+                .message("Invalid access token")
                 .path(request.getRequestURI())
                 .build());
     }

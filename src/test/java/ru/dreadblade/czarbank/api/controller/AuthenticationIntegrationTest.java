@@ -68,8 +68,8 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
     private static final String REFRESH_TOKENS_API_URL = "/api/auth/refresh-tokens";
     private static final String LOGOUT_API_URL = "/api/auth/logout";
     private static final String USERS_API_URL = "/api/users";
-    private static final String ACCESS_TOKEN_IS_INVALID_MESSAGE = "Access token is invalid";
-    private static final String ACCESS_TOKEN_EXPIRED_MESSAGE = "Access token expired";
+    private static final String ACCESS_TOKEN_IS_INVALID_MESSAGE = "Invalid access token";
+    private static final String ACCESS_TOKEN_EXPIRED_MESSAGE = "Expired access token";
     private static final int ACCESS_TOKEN_EXPIRATION_SECONDS = 1;
     private static final int REFRESH_TOKEN_EXPIRATION_SECONDS = 1;
 
@@ -402,7 +402,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
     class AccessTokenTests {
 
         /**
-         * Disabled due to https://github.com/spring-projects/spring-security/issues/4516
+         * @see <a href="https://github.com/spring-projects/spring-security/issues/4516">GitHub Issue</a>
          */
         @Disabled
         @ParameterizedTest(name = "#{index} with [{arguments}]")

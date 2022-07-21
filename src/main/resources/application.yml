@@ -2,29 +2,12 @@ spring:
   application:
     name: 'czar-bank'
   datasource:
-    url: 'jdbc:postgresql://${SPRING_DATASOURCE_HOST}:${SPRING_DATASOURCE_PORT}/${SPRING_DATASOURCE_DATABASE}'
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: 'jdbc:postgresql://${postgresql.host:localhost}:${postgresql.port:5432}/${postgresql.database:czar_bank}'
+    username: '${postgresql.username:postgres}'
+    password: '${postgresql.password:password}'
   jpa:
     hibernate:
       ddl-auto: validate
-# Required at "smtp" profile
-#  mail:
-#    host: 'smtp.host'
-#    username: ${SPRING_MAIL_USERNAME}
-#    password: ${SPRING_MAIL_PASSWORD}
-#    port: 465
-#    protocol: 'smtps'
-#    test-connection: true
-#    properties:
-#      mail:
-#        smtp:
-#          auth: true
-#          ssl:
-#            enable: true
-#          starttls:
-#            enable: true
-#          timeout: 5000
 
 czar-bank:
   currency:
@@ -35,7 +18,7 @@ czar-bank:
       issuer: 'Czar Bank'
       audience: 'Czar Bank clients and staff'
       expiration-seconds: 900
-      secret-key: ${CZAR_BANK_ACCESS_TOKEN_SECRET_KEY}
+      secret-key: ${czar.bank.access.token.secret.key:czar-bank-secret-key}
       header:
         prefix: 'Bearer '
     refresh-token:
@@ -46,3 +29,24 @@ czar-bank:
     two-factor-authentication:
       recovery-codes:
         amount: 16
+
+---
+spring:
+  config:
+    activate:
+      on-profile: smtp
+  mail:
+    host: ${smtp.server.host}
+    port: ${smtp.server.port}
+    username: ${smtp.server.username}
+    password: ${smtp.server.password}
+    test-connection: true
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          starttls:
+            enable: true
+          timeout: 5000
