@@ -8,6 +8,7 @@ import ru.dreadblade.czarbank.domain.ExchangeRate;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface ExchangeRateRepository extends JpaRepository<ExchangeRate, Long> {
     @Query("select e from ExchangeRate as e where e.date in (select max(date) from ExchangeRate)")
@@ -17,6 +18,8 @@ public interface ExchangeRateRepository extends JpaRepository<ExchangeRate, Long
 
     @Query("select e from ExchangeRate as e where e.date between :start_date and :end_date order by e.date asc")
     List<ExchangeRate> findAllInTimeSeries(@Param("start_date") LocalDate startDate, @Param("end_date") LocalDate endDate);
+
+    Optional<ExchangeRate> findByCurrencyAndDate(Currency currency, LocalDate date);
 
     boolean existsByCurrencyAndDate(Currency currency, LocalDate date);
 

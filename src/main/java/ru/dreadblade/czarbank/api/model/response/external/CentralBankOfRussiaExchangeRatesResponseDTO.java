@@ -18,7 +18,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @JacksonXmlRootElement(localName = "ValCurs")
-public class CbrExchangeRatesResponseDTO {
+public class CentralBankOfRussiaExchangeRatesResponseDTO {
 
     @JacksonXmlProperty(localName = "Date", isAttribute = true)
     @JsonFormat(pattern = "dd.MM.yyyy")
@@ -43,5 +43,9 @@ public class CbrExchangeRatesResponseDTO {
         @JacksonXmlProperty(localName = "Value")
         @JsonDeserialize(using = BigDecimalDeserializer.class)
         private BigDecimal rate;
+    }
+
+    public boolean isValid() {
+        return rates != null && !rates.isEmpty() && date != null;
     }
 }

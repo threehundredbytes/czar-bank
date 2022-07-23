@@ -1,31 +1,25 @@
 package ru.dreadblade.czarbank.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.domain.Currency;
 import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.CurrencyRepository;
-import ru.dreadblade.czarbank.service.task.Task;
+import ru.dreadblade.czarbank.service.external.CentralBankOfRussiaService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CurrencyService {
     public static final String BASE_CURRENCY = "RUB";
 
     private final CurrencyRepository currencyRepository;
     private final ExchangeRateService exchangeRateService;
-    private final Task fetchExchangeRatesFromCbrTask;
-
-    @Autowired
-    public CurrencyService(CurrencyRepository currencyRepository, ExchangeRateService exchangeRateService, Task fetchExchangeRatesFromCbrTask) {
-        this.currencyRepository = currencyRepository;
-        this.exchangeRateService = exchangeRateService;
-        this.fetchExchangeRatesFromCbrTask = fetchExchangeRatesFromCbrTask;
-    }
+    private final CentralBankOfRussiaService centralBankOfRussiaService;
 
     public List<Currency> findAll() {
         return currencyRepository.findAll();
@@ -40,23 +34,16 @@ public class CurrencyService {
             throw new CzarBankException(ExceptionMessage.CURRENCY_SYMBOL_ALREADY_EXISTS);
         }
 
-        Currency createdCurrency = currencyRepository.save(Currency.builder()
+        Currency currency = Currency.builder()
                 .code(currencyCode)
                 .symbol(currencySymbol)
-                .build());
+                .build();
 
-        fetchExchangeRatesFromCbrTask.execute();
-
-        boolean exchangeRateForCurrencyExists = exchangeRateService.findAllLatest()
-                .stream()
-                .anyMatch(exchangeRate -> exchangeRate.getCurrency().getCode().equals(createdCurrency.getCode()));
-
-        if (!exchangeRateForCurrencyExists) {
-            currencyRepository.deleteById(createdCurrency.getId());
+        if (!centralBankOfRussiaService.exchangeRateForCurrencyExists(currency)) {
             throw new CzarBankException(ExceptionMessage.UNSUPPORTED_CURRENCY);
         }
 
-        return createdCurrency;
+        return currencyRepository.save(currency);
     }
 
     public BigDecimal exchangeCurrency(Currency source, BigDecimal amount, Currency target) {

@@ -60,7 +60,7 @@ public abstract class BaseIntegrationTest {
                 Arguments.of("client", "password"));
     }
 
-    public static PostgreSQLContainer<?> postgresqlContainer = new PostgreSQLContainer<>(DockerImageName.parse("postgres:13"))
+    public static PostgreSQLContainer<?> postgresqlContainer = new PostgreSQLContainer<>(DockerImageName.parse("postgres:14"))
             .withCreateContainerCmdModifier(cmd -> cmd.withName("czar-bank-test-postgresql"))
             .withDatabaseName("czar_bank_test");
 

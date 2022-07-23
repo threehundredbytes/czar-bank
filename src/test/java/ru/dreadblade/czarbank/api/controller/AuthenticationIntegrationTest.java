@@ -38,7 +38,7 @@ import ru.dreadblade.czarbank.repository.security.RefreshTokenSessionRepository;
 import ru.dreadblade.czarbank.repository.security.UserRepository;
 import ru.dreadblade.czarbank.security.service.AccessTokenService;
 import ru.dreadblade.czarbank.security.service.RefreshTokenService;
-import ru.dreadblade.czarbank.service.task.ReleaseBlacklistedAccessTokensTask;
+import ru.dreadblade.czarbank.service.task.scheduled.ReleaseBlacklistedAccessTokensTask;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -784,7 +784,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
             TimeUnit.SECONDS.sleep(ACCESS_TOKEN_EXPIRATION_SECONDS);
 
-            assertThat(releaseBlacklistedAccessTokensTask.execute()).isTrue();
+            releaseBlacklistedAccessTokensTask.run();
             assertThat(blacklistedAccessTokenRepository.existsByAccessToken(accessToken)).isFalse();
         }
 
