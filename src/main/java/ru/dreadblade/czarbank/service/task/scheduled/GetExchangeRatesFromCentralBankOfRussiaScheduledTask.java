@@ -9,24 +9,22 @@ import ru.dreadblade.czarbank.domain.ExchangeRate;
 import ru.dreadblade.czarbank.repository.CurrencyRepository;
 import ru.dreadblade.czarbank.repository.ExchangeRateRepository;
 import ru.dreadblade.czarbank.service.external.CentralBankOfRussiaService;
-import ru.dreadblade.czarbank.service.task.Task;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
-@Component
 @Slf4j
+@Component
 @RequiredArgsConstructor
-public class GetExchangeRatesFromCentralBankOfRussiaTask implements Task {
+public class GetExchangeRatesFromCentralBankOfRussiaScheduledTask implements ScheduledTask {
     private final CentralBankOfRussiaService centralBankOfRussiaService;
     private final ExchangeRateRepository exchangeRateRepository;
     private final CurrencyRepository currencyRepository;
 
-    @Scheduled(fixedRateString = "#{${czar-bank.currency.exchange-rate.update-rate-seconds:86400}}", timeUnit = TimeUnit.SECONDS)
+    @Scheduled(cron = "@daily")
     @Override
     public void run() {
         List<Currency> currencies = currencyRepository.findAll();
@@ -61,9 +59,9 @@ public class GetExchangeRatesFromCentralBankOfRussiaTask implements Task {
                 exchangeRateRepository.saveAll(exchangeRates);
             }
 
-            log.info("Loading exchange rates from the API of the Central Bank of Russian Federation has been successfully completed");
+            log.info("Loading exchange rates from the API of the Central Bank of the Russian Federation has been successfully completed");
         } catch (Exception e) {
-            log.error("Error when loading exchange rates from the API of the Central Bank of Russian Federation");
+            log.error("Error when loading exchange rates from the API of the Central Bank of the Russian Federation");
         }
     }
 }

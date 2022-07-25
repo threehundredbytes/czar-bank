@@ -20,8 +20,4 @@ public interface ExchangeRateRepository extends JpaRepository<ExchangeRate, Long
     List<ExchangeRate> findAllInTimeSeries(@Param("start_date") LocalDate startDate, @Param("end_date") LocalDate endDate);
 
     Optional<ExchangeRate> findByCurrencyAndDate(Currency currency, LocalDate date);
-
-    boolean existsByCurrencyAndDate(Currency currency, LocalDate date);
-
-    void deleteByCurrencyAndDate(Currency currency, LocalDate date);
 }

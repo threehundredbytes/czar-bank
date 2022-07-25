@@ -18,18 +18,13 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @JacksonXmlRootElement(localName = "ValCurs")
-public class CentralBankOfRussiaExchangeRatesResponseDTO {
-
-    @JacksonXmlProperty(localName = "Date", isAttribute = true)
-    @JsonFormat(pattern = "dd.MM.yyyy")
-    private LocalDate date;
-
-    @JacksonXmlProperty(localName = "Valute")
+public class CentralBankOfRussiaExchangeRatesBetweenDatesResponseDTO {
+    @JacksonXmlProperty(localName = "Record")
     @JacksonXmlElementWrapper(useWrapping = false)
-    private List<ExchangeRateOnDateDTO> rates;
+    private List<ExchangeRateBetweenDatesDTO> rates;
 
     public boolean isValid() {
-        return rates != null && !rates.isEmpty() && date != null;
+        return rates != null && !rates.isEmpty();
     }
 
     @Getter
@@ -37,12 +32,10 @@ public class CentralBankOfRussiaExchangeRatesResponseDTO {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ExchangeRateOnDateDTO {
-        @JacksonXmlProperty(localName = "ID", isAttribute = true)
-        private String uniqueCurrencyCode;
-
-        @JacksonXmlProperty(localName = "CharCode")
-        private String currencyCode;
+    public static class ExchangeRateBetweenDatesDTO {
+        @JacksonXmlProperty(localName = "Date", isAttribute = true)
+        @JsonFormat(pattern = "dd.MM.yyyy")
+        private LocalDate date;
 
         @JacksonXmlProperty(localName = "Nominal")
         private Long nominal;

@@ -1,15 +1,18 @@
 package ru.dreadblade.czarbank.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ru.dreadblade.czarbank.domain.Currency;
 import ru.dreadblade.czarbank.exception.CzarBankException;
 import ru.dreadblade.czarbank.exception.ExceptionMessage;
 import ru.dreadblade.czarbank.repository.CurrencyRepository;
+import ru.dreadblade.czarbank.repository.ExchangeRateRepository;
 import ru.dreadblade.czarbank.service.external.CentralBankOfRussiaService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -18,8 +21,11 @@ public class CurrencyService {
     public static final String BASE_CURRENCY = "RUB";
 
     private final CurrencyRepository currencyRepository;
-    private final ExchangeRateService exchangeRateService;
+    private final ExchangeRateRepository exchangeRateRepository;
     private final CentralBankOfRussiaService centralBankOfRussiaService;
+
+    @Value("#{T(java.time.LocalDate).parse('${czar-bank.exchange-rate.history.load-from-date:2012-01-01}')}")
+    private LocalDate loadHistoryFromDate;
 
     public List<Currency> findAll() {
         return currencyRepository.findAll();
@@ -39,11 +45,19 @@ public class CurrencyService {
                 .symbol(currencySymbol)
                 .build();
 
-        if (!centralBankOfRussiaService.exchangeRateForCurrencyExists(currency)) {
+        if (!centralBankOfRussiaService.exchangeRateForCurrencyExists(currency, loadHistoryFromDate)) {
             throw new CzarBankException(ExceptionMessage.UNSUPPORTED_CURRENCY);
         }
 
-        return currencyRepository.save(currency);
+        currency = currencyRepository.save(currency);
+
+        LocalDate today = LocalDate.now();
+
+        exchangeRateRepository.saveAll(
+                centralBankOfRussiaService.getExchangeRatesForCurrencyBetweenDates(currency, loadHistoryFromDate, today)
+        );
+
+        return currency;
     }
 
     public BigDecimal exchangeCurrency(Currency source, BigDecimal amount, Currency target) {
@@ -71,7 +85,7 @@ public class CurrencyService {
     }
 
     private BigDecimal getExchangeRateByCurrency(Currency currency) {
-        return exchangeRateService.findAllLatest().stream()
+        return exchangeRateRepository.findAllLatest().stream()
                 .filter(exchangeRate -> exchangeRate.getCurrency().getCode().equals(currency.getCode()))
                 .findFirst()
                 .orElseThrow(() -> new CzarBankException(ExceptionMessage.LATEST_EXCHANGE_RATES_NOT_FOUND))

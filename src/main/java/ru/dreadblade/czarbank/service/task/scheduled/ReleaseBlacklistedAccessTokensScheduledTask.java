@@ -7,7 +7,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import ru.dreadblade.czarbank.domain.security.BlacklistedAccessToken;
 import ru.dreadblade.czarbank.repository.security.BlacklistedAccessTokenRepository;
-import ru.dreadblade.czarbank.service.task.Task;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,8 +15,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class ReleaseBlacklistedAccessTokensTask implements Task {
-
+public class ReleaseBlacklistedAccessTokensScheduledTask implements ScheduledTask {
     private final BlacklistedAccessTokenRepository blacklistedAccessTokenRepository;
 
     @Value("${czar-bank.security.access-token.expiration-seconds}")

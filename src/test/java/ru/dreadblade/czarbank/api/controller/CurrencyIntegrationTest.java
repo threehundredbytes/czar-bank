@@ -29,6 +29,9 @@ import ru.dreadblade.czarbank.service.ExchangeRateService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -129,6 +132,17 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.id").isNumber())
                     .andExpect(jsonPath("$.code").value(requestDTO.getCode()))
                     .andExpect(jsonPath("$.symbol").value(requestDTO.getSymbol()));
+
+            LocalDate loadHistoryFromDate = LocalDate.of(2012, Month.JANUARY, 1);
+            LocalDate today = LocalDate.now();
+
+            long expectedExchangeRatesCount = ChronoUnit.DAYS.between(loadHistoryFromDate, today) + 1;
+            long actualExchangeRatesCount = exchangeRateRepository.findAll()
+                    .stream()
+                    .filter(exchangeRate -> exchangeRate.getCurrency().getCode().equals(requestDTO.getCode()))
+                    .count();
+
+            Assertions.assertThat(actualExchangeRatesCount).isEqualTo(expectedExchangeRatesCount);
         }
 
         @Test

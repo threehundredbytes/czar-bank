@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.support.TestPropertySourceUtils;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,6 +28,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 @ContextConfiguration(initializers = BaseIntegrationTest.DockerDataSourceInitializer.class)
 @Testcontainers
 @SpringBootTest
+@ActiveProfiles("test")
 public abstract class BaseIntegrationTest {
     protected static final String VALIDATION_ERROR = "Validation error";
     protected static final String INVALID_REQUEST = "Invalid request";
