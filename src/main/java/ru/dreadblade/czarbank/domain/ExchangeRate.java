@@ -1,6 +1,7 @@
 package ru.dreadblade.czarbank.domain;
 
 import lombok.*;
+import ru.dreadblade.czarbank.domain.key.ExchangeRateCompositeKey;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -12,12 +13,13 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@IdClass(ExchangeRateCompositeKey.class)
 public class ExchangeRate extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "exchange_rate_id_sequence")
-    @SequenceGenerator(name = "exchange_rate_id_sequence", allocationSize = 1)
-    private Long id;
+    @Column(nullable = false, updatable = false)
+    private LocalDate date;
 
+    @Id
     @ManyToOne(fetch = FetchType.EAGER)
     private Currency currency;
 
@@ -26,7 +28,4 @@ public class ExchangeRate extends BaseEntity {
      */
     @Column(nullable = false, precision = 6, scale = 2)
     private BigDecimal exchangeRate;
-
-    @Column(nullable = false, updatable = false)
-    private LocalDate date;
 }

@@ -10,9 +10,6 @@ spring:
       ddl-auto: validate
 
 czar-bank:
-  currency:
-    exchange-rate:
-      update-rate-seconds: 86400
   security:
     access-token:
       issuer: 'Czar Bank'

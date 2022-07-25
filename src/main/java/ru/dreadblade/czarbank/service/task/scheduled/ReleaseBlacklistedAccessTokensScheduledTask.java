@@ -1,25 +1,29 @@
-package ru.dreadblade.czarbank.service.task;
+package ru.dreadblade.czarbank.service.task.scheduled;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import ru.dreadblade.czarbank.domain.security.BlacklistedAccessToken;
 import ru.dreadblade.czarbank.repository.security.BlacklistedAccessTokenRepository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
-public class ReleaseBlacklistedAccessTokensTask implements Task {
-
+public class ReleaseBlacklistedAccessTokensScheduledTask implements ScheduledTask {
     private final BlacklistedAccessTokenRepository blacklistedAccessTokenRepository;
 
     @Value("${czar-bank.security.access-token.expiration-seconds}")
     private int accessTokenExpirationSeconds;
 
+    @Scheduled(fixedRateString = "#{${czar-bank.security.access-token.expiration-seconds:900}}", timeUnit = TimeUnit.SECONDS)
     @Override
-    public boolean execute() {
+    public void run() {
         List<BlacklistedAccessToken> blacklistedAccessTokens = blacklistedAccessTokenRepository
                 .findAllByCreatedAtIsBefore(Instant.now().minusSeconds(accessTokenExpirationSeconds));
 
@@ -28,6 +32,6 @@ public class ReleaseBlacklistedAccessTokensTask implements Task {
                     blacklistedAccessTokenRepository.deleteById(blacklistedAccessToken.getId()));
         }
 
-        return true;
+        log.info("Released blacklisted access tokens");
     }
 }

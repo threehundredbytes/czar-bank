@@ -1,6 +1,6 @@
 package ru.dreadblade.czarbank.api.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import ru.dreadblade.czarbank.api.mapper.ExchangeRateMapper;
@@ -13,15 +13,10 @@ import java.util.stream.Collectors;
 
 @RequestMapping("/api/currencies/exchange-rates")
 @RestController
+@RequiredArgsConstructor
 public class ExchangeRateController {
     private final ExchangeRateService exchangeRateService;
     private final ExchangeRateMapper exchangeRateMapper;
-
-    @Autowired
-    public ExchangeRateController(ExchangeRateService exchangeRateService, ExchangeRateMapper exchangeRateMapper) {
-        this.exchangeRateService = exchangeRateService;
-        this.exchangeRateMapper = exchangeRateMapper;
-    }
 
     @GetMapping("/latest")
     public List<ExchangeRateResponseDTO> findAllLatest() {

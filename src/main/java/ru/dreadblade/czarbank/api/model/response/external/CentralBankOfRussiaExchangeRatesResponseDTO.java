@@ -18,7 +18,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @JacksonXmlRootElement(localName = "ValCurs")
-public class CbrExchangeRatesResponseDTO {
+public class CentralBankOfRussiaExchangeRatesResponseDTO {
 
     @JacksonXmlProperty(localName = "Date", isAttribute = true)
     @JsonFormat(pattern = "dd.MM.yyyy")
@@ -26,14 +26,21 @@ public class CbrExchangeRatesResponseDTO {
 
     @JacksonXmlProperty(localName = "Valute")
     @JacksonXmlElementWrapper(useWrapping = false)
-    private List<CbrExchangeRateResponseDTO> rates;
+    private List<ExchangeRateOnDateDTO> rates;
+
+    public boolean isValid() {
+        return rates != null && !rates.isEmpty() && date != null;
+    }
 
     @Getter
     @Setter
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class CbrExchangeRateResponseDTO {
+    public static class ExchangeRateOnDateDTO {
+        @JacksonXmlProperty(localName = "ID", isAttribute = true)
+        private String uniqueCurrencyCode;
+
         @JacksonXmlProperty(localName = "CharCode")
         private String currencyCode;
 

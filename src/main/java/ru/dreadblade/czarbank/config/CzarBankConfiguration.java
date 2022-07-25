@@ -4,14 +4,12 @@ import freemarker.cache.ClassTemplateLoader;
 import freemarker.cache.TemplateLoader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
 
 import static freemarker.template.Configuration.VERSION_2_3_31;
 
 @Configuration
-@EnableScheduling
 public class CzarBankConfiguration {
     @Bean
     public RestTemplate restTemplate() {
