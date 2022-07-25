@@ -40,19 +40,24 @@ public class LoadExchangeRatesHistoryStartupTask implements StartupTask {
         long requiredExchangeRateCount = (ChronoUnit.DAYS.between(loadHistoryFromDate, loadHistoryToDate) + 1) *
                 foreignCurrencies.size();
 
-        if (exchangeRateRepository.count() != requiredExchangeRateCount) {
-            exchangeRateRepository.deleteAll();
+        if (exchangeRateRepository.count() == requiredExchangeRateCount) {
+            log.info("Historical exchange rate data already loaded");
 
-            foreignCurrencies.forEach(currency -> {
-                List<ExchangeRate> exchangeRates = centralBankOfRussiaService
-                        .getExchangeRatesForCurrencyBetweenDates(currency, loadHistoryFromDate, loadHistoryToDate);
-
-                exchangeRateRepository.saveAll(exchangeRates);
-
-                log.trace("Loaded exchange rates history ({})", currency.getSymbol());
-            });
-
-            log.info("Loading the history of exchange rates from the API of the Central Bank of the Russian Federation has been successfully completed");
+            return;
         }
+
+        exchangeRateRepository.deleteAll();
+
+        foreignCurrencies.forEach(currency -> {
+            List<ExchangeRate> exchangeRates = centralBankOfRussiaService
+                    .getExchangeRatesForCurrencyBetweenDates(currency, loadHistoryFromDate, loadHistoryToDate);
+
+            exchangeRateRepository.saveAll(exchangeRates);
+
+            log.trace("Loaded exchange rates history ({})", currency.getSymbol());
+        });
+
+        log.info("Loading the history of exchange rates from the API of the Central Bank of the Russian Federation " +
+                "has been successfully completed");
     }
 }

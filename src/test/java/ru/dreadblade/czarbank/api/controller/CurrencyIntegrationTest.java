@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -30,7 +31,6 @@ import ru.dreadblade.czarbank.service.ExchangeRateService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.Month;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -70,6 +70,9 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     UserRepository userRepository;
+
+    @Value("#{T(java.time.LocalDate).parse('${czar-bank.exchange-rate.history.load-from-date:2012-01-01}')}")
+    private LocalDate loadHistoryFromDate;
 
     @Nested
     @DisplayName("findAll() Tests")
@@ -133,7 +136,6 @@ public class CurrencyIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.code").value(requestDTO.getCode()))
                     .andExpect(jsonPath("$.symbol").value(requestDTO.getSymbol()));
 
-            LocalDate loadHistoryFromDate = LocalDate.of(2012, Month.JANUARY, 1);
             LocalDate today = LocalDate.now();
 
             long expectedExchangeRatesCount = ChronoUnit.DAYS.between(loadHistoryFromDate, today) + 1;

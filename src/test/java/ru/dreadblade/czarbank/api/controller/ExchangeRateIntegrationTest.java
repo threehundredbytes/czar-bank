@@ -90,7 +90,7 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
     class FindAllByDateTests {
         @Test
         void findAllByDate_isSuccessful() throws Exception {
-            LocalDate expectedDate = exchangeRateRepository.findById(5L).orElseThrow().getDate();
+            LocalDate expectedDate = LocalDate.of(2021, 9, 1);
 
             String dateStr = expectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
@@ -110,7 +110,7 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void findAllByDate_dataDoesNotExistOnTheGivenDate() throws Exception {
+        void findAllByDate_dataDoesNotExistOnTheGivenDate_isFailed() throws Exception {
             LocalDate expectedDate = LocalDate.of(2010, 6, 10);
 
             String dateStr = expectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -128,8 +128,8 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
     class FindAllInTimeSeriesTests {
         @Test
         void findAllInTimeSeries_isSuccessful() throws Exception {
-            LocalDate startDate = exchangeRateRepository.findById(1L).orElseThrow().getDate();
-            LocalDate endDate = exchangeRateRepository.findById(10L).orElseThrow().getDate();
+            LocalDate startDate = LocalDate.of(2021, 9, 1);
+            LocalDate endDate = LocalDate.of(2021, 9, 5);
 
             String startDateStr = startDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             String endDateStr = endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -156,7 +156,7 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void findAllInTimeSeries_dataDoesNotExistOnTheGivenDate() throws Exception {
+        void findAllInTimeSeries_dataDoesNotExistOnTheGivenDate_isFailed() throws Exception {
             LocalDate startDate = LocalDate.of(2009, 6, 10);
             LocalDate endDate = LocalDate.of(2010, 6, 10);
 
@@ -177,9 +177,9 @@ public class ExchangeRateIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        void findAllInTimeSeries_dataIsNotCompleteOnTheGivenDate() throws Exception {
+        void findAllInTimeSeries_dataIsNotCompleteOnTheGivenDate_isFailed() throws Exception {
             LocalDate startDate = LocalDate.of(2009, 6, 10);
-            LocalDate endDate = exchangeRateRepository.findById(4L).orElseThrow().getDate();
+            LocalDate endDate = LocalDate.of(2021, 9, 4);
 
             String startDateStr = startDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             String endDateStr = endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
