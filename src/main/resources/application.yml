@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: 'czar-bank'
+  datasource:
+    url: 'jdbc:postgresql://${postgresql.host:localhost}:${postgresql.port:5432}/${postgresql.database:czar_bank}'
+    username: '${postgresql.username:postgres}'
+    password: '${postgresql.password:password}'
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+czar-bank:
+  security:
+    access-token:
+      issuer: 'Czar Bank'
+      audience: 'Czar Bank clients and staff'
+      expiration-seconds: 900
+      secret-key: ${czar.bank.access.token.secret.key:czar-bank-secret-key}
+      header:
+        prefix: 'Bearer '
+    refresh-token:
+      expiration-seconds: 604800
+      limit-per-user: 5
+    email-verification-token:
+      expiration-seconds: 86400
+    two-factor-authentication:
+      recovery-codes:
+        amount: 16
+
+---
+spring:
+  config:
+    activate:
+      on-profile: smtp
+  mail:
+    host: ${smtp.server.host}
+    port: ${smtp.server.port}
+    username: ${smtp.server.username}
+    password: ${smtp.server.password}
+    test-connection: true
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          starttls:
+            enable: true
+          timeout: 5000

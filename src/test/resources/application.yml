@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  mail:
+    host: 'smtp.host'
+    username: 'greenmail'
+    password: 'password'
+    port: 3025
+    protocol: 'smtp'
+
+czar-bank:
+  currency:
+    exchange-rate:
+      update-rate-seconds: 86400
+  security:
+    access-token:
+      issuer: 'Czar Bank'
+      audience: 'Czar Bank clients and staff'
+      expiration-seconds: 900
+      secret-key: 'czar-bank-secret-key-for-tests'
+      header:
+        prefix: 'Bearer '
+    refresh-token:
+      expiration-seconds: 604800
+      limit-per-user: 5
+    email-verification-token:
+      expiration-seconds: 86400
+    two-factor-authentication:
+      recovery-codes:
+        amount: 16

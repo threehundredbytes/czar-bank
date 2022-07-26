@@ -1,0 +1,9 @@
+coverage:
+  range: 85..100
+  precision: 2
+  status:
+    project:
+      default:
+        target: 85%
+        threshold: 1%
+    patch: off
