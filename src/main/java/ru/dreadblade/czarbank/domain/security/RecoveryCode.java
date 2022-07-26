@@ -1,6 +1,8 @@
 package ru.dreadblade.czarbank.domain.security;
 
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import ru.dreadblade.czarbank.domain.BaseEntity;
 
 import javax.persistence.*;
@@ -18,6 +20,7 @@ public class RecoveryCode extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
     @Column(length = 19, nullable = false, updatable = false)

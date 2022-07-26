@@ -1,6 +1,6 @@
 # czar-bank [![GitHub license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/Dreadblade-dev/czar-bank/blob/main/LICENSE)
 
-**A virtual banking REST api (currently in development)**
+**A virtual banking REST API (currently in development)**
 
 **Build status**
 
@@ -11,6 +11,19 @@ master:
 development:
 ![Build status](https://github.com/dreadblade-dev/czar-bank/actions/workflows/workflow.yml/badge.svg)
 [![codecov](https://codecov.io/gh/Dreadblade-dev/czar-bank/branch/development/graph/badge.svg?token=AW8IRQMF0T)](https://codecov.io/gh/Dreadblade-dev/czar-bank)
+
+## About:
+
+czar-bank is a virtual banking REST API
+
+Features:
+
+- Currency exchange rate API (loaded from the Central Bank of the Russian Federation)
+- Bank account & transactions (currently - just a transfer from one account to another, currency exchange supported)
+- Authentication based on access tokens that can be refreshed (with refresh-sessions limits per user)
+- Two-factor authentication (with totp (via 2fa apps) and x16 one-time recovery codes in `xxxx-xxxx-xxxx-xxxx` format)
+- Flexible permissions system (each role contains specific permissions)
+- Incoming requests validation
 
 # How to run
 
@@ -57,6 +70,16 @@ mvnw spring-boot:run
 
 You can access czar-bank at `http://localhost:8080`
 
+There is currently no frontend, but you can use the app using Postman.
+
+To do this, import `czar-bank.postman_collection.json` into Postman.
+The Postman collection contains all requests to each czar-bank API endpoint.
+
+Authentication credentials:
+- `admin:password` - administrator with full permissions 
+- `employee:password` - employee with specific permissions required to help clients
+- `client:password` - as client, no permissions
+
 # Email service configuration
 
 In its default configuration, czar-bank uses no operation email service 
@@ -70,3 +93,4 @@ environment with details about your smtp server:
 - `SMTP_SERVER_PORT` (e.g. `465`)
 - `SMTP_SERVER_USERNAME` (e.g. `emailaddress@gmail.com`)
 - `SMTP_SERVER_PASSWORD` (e.g. `password`)
+

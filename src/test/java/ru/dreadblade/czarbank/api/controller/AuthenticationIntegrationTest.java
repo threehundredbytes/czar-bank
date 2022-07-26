@@ -233,6 +233,58 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
+        @Transactional
+        void login_withTwoFactorAuthenticationRequired_usingSameRecoveryCodeTwice_isCorrect() throws Exception {
+            User currentUser = userRepository.findByUsername("admin").orElseThrow();
+
+            currentUser.setTwoFactorAuthenticationEnabled(true);
+
+            List<RecoveryCode> generatedRecoveryCodes = Arrays.stream(recoveryCodeGenerator.generateCodes(recoveryCodesAmount))
+                    .map(recoveryCode -> RecoveryCode.builder()
+                            .code(recoveryCode)
+                            .user(currentUser)
+                            .build()).collect(Collectors.toList());
+
+            assertThat(generatedRecoveryCodes).hasSize(recoveryCodesAmount);
+            recoveryCodeRepository.saveAll(generatedRecoveryCodes);
+            userRepository.save(currentUser);
+
+            RecoveryCode recoveryCode = generatedRecoveryCodes.get(0);
+
+            AuthenticationRequestDTO authenticationRequestDTO = AuthenticationRequestDTO.builder()
+                    .username("admin")
+                    .password("password")
+                    .code(recoveryCode.getCode())
+                    .build();
+
+            String requestContent = objectMapper.writeValueAsString(authenticationRequestDTO);
+
+            String responseContent = mockMvc.perform(post(LOGIN_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.accessToken").isString())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            String accessToken = objectMapper.readValue(responseContent, AuthenticationResponseDTO.class)
+                    .getAccessToken();
+
+            User userFromToken = accessTokenService.getUserFromToken(accessToken);
+
+            assertThat(userFromToken.getId()).isEqualTo(currentUser.getId());
+            assertThat(recoveryCode.getIsUsed()).isTrue();
+
+            mockMvc.perform(post(LOGIN_API_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestContent))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message")
+                            .value(ExceptionMessage.RECOVERY_CODE_ALREADY_USED_AUTH_FAILED.getMessage()));
+        }
+
+        @Test
         @Rollback
         void login_withTwoFactorAuthenticationRequired_usingWrongTotpCode_isFailed() throws Exception {
             User currentUser = userRepository.findByUsername("admin").orElseThrow();
@@ -302,7 +354,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                             .content(requestContent))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.message")
-                            .value(ExceptionMessage.INVALID_TWO_FACTOR_AUTHENTICATION_CODE_AUTH_FAILED.getMessage()));
+                            .value(ExceptionMessage.INVALID_RECOVERY_CODE_AUTH_FAILED.getMessage()));
         }
 
         @Test

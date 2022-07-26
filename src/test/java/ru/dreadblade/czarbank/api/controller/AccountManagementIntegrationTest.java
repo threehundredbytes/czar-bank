@@ -378,7 +378,7 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
             @Test
             @Transactional
             @WithUserDetails("admin")
-            void disableTwoFactorAuthentication_isSuccessful() throws Exception {
+            void disableTwoFactorAuthentication_usingTotpCode_isSuccessful() throws Exception {
                 User currentUser = userRepository.findByUsername("admin").orElseThrow();
 
                 String secretKey = secretGenerator.generate();
@@ -415,6 +415,82 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
             }
 
             @Test
+            @Transactional
+            @WithUserDetails("admin")
+            void disableTwoFactorAuthentication_usingRecoveryCode_isSuccessful() throws Exception {
+                User currentUser = userRepository.findByUsername("admin").orElseThrow();
+
+                String secretKey = secretGenerator.generate();
+                currentUser.setTwoFactorAuthenticationEnabled(true);
+                currentUser.setTwoFactorAuthenticationSecretKey(secretKey);
+
+                List<RecoveryCode> generatedRecoveryCodes = Arrays.stream(recoveryCodeGenerator.generateCodes(recoveryCodesAmount))
+                        .map(recoveryCode -> RecoveryCode.builder()
+                                .code(recoveryCode)
+                                .user(currentUser)
+                                .build()).collect(Collectors.toList());
+
+                assertThat(generatedRecoveryCodes).hasSize(recoveryCodesAmount);
+                recoveryCodeRepository.saveAll(generatedRecoveryCodes);
+
+                long expectedRecoveryCodesAmount = recoveryCodesAmount;
+
+                assertThat(recoveryCodeRepository.count()).isEqualTo(expectedRecoveryCodesAmount);
+
+                String generatedRecoveryCode = generatedRecoveryCodes.get(0).getCode();
+
+                var requestDTO = new TwoFactorAuthenticationCodeRequestDTO(generatedRecoveryCode);
+
+                mockMvc.perform(post(DISABLE_2FA_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isOk());
+
+                expectedRecoveryCodesAmount = 0;
+
+                assertThat(currentUser.isTwoFactorAuthenticationEnabled()).isFalse();
+                assertThat(recoveryCodeRepository.count()).isEqualTo(expectedRecoveryCodesAmount);
+            }
+
+            @Test
+            @Transactional
+            @WithUserDetails("admin")
+            void disableTwoFactorAuthentication_usingAlreadyUsedRecoveryCode_isFailed() throws Exception {
+                User currentUser = userRepository.findByUsername("admin").orElseThrow();
+
+                String secretKey = secretGenerator.generate();
+                currentUser.setTwoFactorAuthenticationEnabled(true);
+                currentUser.setTwoFactorAuthenticationSecretKey(secretKey);
+
+                List<RecoveryCode> generatedRecoveryCodes = Arrays.stream(recoveryCodeGenerator.generateCodes(recoveryCodesAmount))
+                        .map(recoveryCode -> RecoveryCode.builder()
+                                .code(recoveryCode)
+                                .user(currentUser)
+                                .build()).collect(Collectors.toList());
+
+                assertThat(generatedRecoveryCodes).hasSize(recoveryCodesAmount);
+                recoveryCodeRepository.saveAll(generatedRecoveryCodes);
+
+                long expectedRecoveryCodesAmount = recoveryCodesAmount;
+
+                assertThat(recoveryCodeRepository.count()).isEqualTo(expectedRecoveryCodesAmount);
+
+                RecoveryCode generatedRecoveryCode = generatedRecoveryCodes.get(0);
+                generatedRecoveryCode.setIsUsed(true);
+
+                var requestDTO = new TwoFactorAuthenticationCodeRequestDTO(generatedRecoveryCode.getCode());
+
+                mockMvc.perform(post(DISABLE_2FA_API_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.message").value(ExceptionMessage.RECOVERY_CODE_ALREADY_USED.getMessage()));
+
+                assertThat(currentUser.isTwoFactorAuthenticationEnabled()).isTrue();
+                assertThat(generatedRecoveryCode.getIsUsed()).isTrue();
+            }
+
+            @Test
             @Rollback
             @WithUserDetails("admin")
             void disableTwoFactorAuthentication_withoutSetup_isFailed() throws Exception {
@@ -436,7 +512,7 @@ public class AccountManagementIntegrationTest extends BaseIntegrationTest {
             @Test
             @Transactional
             @WithUserDetails("admin")
-            void disableTwoFactorAuthentication_wrongCode_isFailed() throws Exception {
+            void disableTwoFactorAuthentication_wrongTotpCode_isFailed() throws Exception {
                 User currentUser = userRepository.findByUsername("admin").orElseThrow();
 
                 String secretKey = secretGenerator.generate();

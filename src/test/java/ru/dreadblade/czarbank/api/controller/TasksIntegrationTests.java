@@ -154,9 +154,6 @@ public class TasksIntegrationTests extends BaseIntegrationTest {
 
             Long expectedCount = exchangeRateRepository.count();
             List<ExchangeRate> expectedExchangeRates = exchangeRateRepository.findAllLatest();
-//            List<Long> expectedExchangeRateIds = expectedExchangeRates.stream()
-//                    .map(ExchangeRate::getId)
-//                    .toList();
             List<BigDecimal> expectedExchangeRateValues = expectedExchangeRates.stream()
                     .map(ExchangeRate::getExchangeRate)
                     .toList();
@@ -189,9 +186,6 @@ public class TasksIntegrationTests extends BaseIntegrationTest {
             mockServer.verify();
 
             Assertions.assertThat(exchangeRateRepository.count()).isEqualTo(expectedCount);
-//            Assertions.assertThat(exchangeRateRepository.findAllLatest().stream()
-//                    .map(ExchangeRate::getId)
-//                    .toList()).containsExactlyInAnyOrderElementsOf(expectedExchangeRateIds);
             Assertions.assertThat(exchangeRateRepository.findAllLatest().stream()
                     .map(ExchangeRate::getExchangeRate)
                     .toList()).doesNotContainAnyElementsOf(expectedExchangeRateValues);

@@ -39,6 +39,10 @@ public enum ExceptionMessage {
     INVALID_EMAIL_VERIFICATION_TOKEN("Invalid email verification token", HttpStatus.BAD_REQUEST),
     INVALID_TWO_FACTOR_AUTHENTICATION_CODE("Invalid two-factor authentication code", HttpStatus.BAD_REQUEST),
     INVALID_TWO_FACTOR_AUTHENTICATION_CODE_AUTH_FAILED("Invalid two-factor authentication code", HttpStatus.UNAUTHORIZED),
+    INVALID_RECOVERY_CODE("Invalid recovery code", HttpStatus.BAD_REQUEST),
+    INVALID_RECOVERY_CODE_AUTH_FAILED("Invalid recovery code", HttpStatus.UNAUTHORIZED),
+    RECOVERY_CODE_ALREADY_USED("Recovery code already used", HttpStatus.BAD_REQUEST),
+    RECOVERY_CODE_ALREADY_USED_AUTH_FAILED("Recovery code already used", HttpStatus.UNAUTHORIZED),
 
     TOTP_QR_CODE_GENERATION_FAILED("QR code generation failed. If the problem persists, please, contact support!", HttpStatus.INTERNAL_SERVER_ERROR);
 

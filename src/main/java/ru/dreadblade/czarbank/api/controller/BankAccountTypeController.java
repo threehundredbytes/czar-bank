@@ -65,7 +65,7 @@ public class BankAccountTypeController {
     @PreAuthorize("hasAuthority('BANK_ACCOUNT_TYPE_DELETE')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{bankAccountTypeId}")
-    public void deleteBankAccountById(@PathVariable long bankAccountTypeId) {
+    public void deleteBankAccountTypeById(@PathVariable long bankAccountTypeId) {
         bankAccountTypeService.deleteById(bankAccountTypeId);
     }
 }
