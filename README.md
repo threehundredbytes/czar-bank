@@ -1,22 +1,24 @@
 # czar-bank [![GitHub license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/Dreadblade-dev/czar-bank/blob/main/LICENSE)
 
-**A virtual banking REST API (currently in development)**
+A virtual banking REST API (currently in development)
 
-**Build status**
-
-master:
 ![Build status](https://github.com/dreadblade-dev/czar-bank/actions/workflows/workflow.yml/badge.svg?branch=master)
 [![codecov](https://codecov.io/gh/Dreadblade-dev/czar-bank/branch/master/graph/badge.svg?token=AW8IRQMF0T)](https://codecov.io/gh/Dreadblade-dev/czar-bank)
 
-development:
-![Build status](https://github.com/dreadblade-dev/czar-bank/actions/workflows/workflow.yml/badge.svg)
-[![codecov](https://codecov.io/gh/Dreadblade-dev/czar-bank/branch/development/graph/badge.svg?token=AW8IRQMF0T)](https://codecov.io/gh/Dreadblade-dev/czar-bank)
+This is Spring Boot demo project. Here you can find examples of:
+- Spring Boot (web, components, exception handling, scheduling and properties)
+- Spring Security (custom access- and refresh- tokens, 2FA)
+- Spring Data JPA (Entities, repositories with custom @Query, composite keys)
+- Spring Validation (Inbound and outbound DTO validation)
+- Spring Mail
+- Flyway (Database migrations)
+- Apache Freemarker (For email template)
+- Custom TOTP & Recovery codes 
+- Integration testing (JUnit & Testcontainers)
+- CI/CD (GitHub Actions & CodeCov)
+- MapStruct & Lombok
 
-## About:
-
-czar-bank is a virtual banking REST API
-
-Features:
+# Features:
 
 - Currency exchange rate API (loaded from the Central Bank of the Russian Federation)
 - Bank account & transactions (currently - just a transfer from one account to another, currency exchange supported)
@@ -37,9 +39,7 @@ Provide a PostgreSQL instance:
 
 Or you could run PostgreSQL using docker:
 
-```
-docker run -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password -e POSTGRES_DB=czar_bank -p 5432:5432 postgres:14
-```
+    docker compose up
 
 Or you could provide environment with details about your PostgreSQL instance:
 
