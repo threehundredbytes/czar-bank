@@ -1,9 +1,9 @@
-# czar-bank [![GitHub license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/Dreadblade-dev/czar-bank/blob/main/LICENSE)
+# czar-bank [![GitHub license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/threehundredbytes/czar-bank/blob/main/LICENSE)
 
 A virtual banking REST API (currently in development)
 
-![Build status](https://github.com/dreadblade-dev/czar-bank/actions/workflows/workflow.yml/badge.svg?branch=master)
-[![codecov](https://codecov.io/gh/Dreadblade-dev/czar-bank/branch/master/graph/badge.svg?token=AW8IRQMF0T)](https://codecov.io/gh/Dreadblade-dev/czar-bank)
+![Build status](https://github.com/threehundredbytes/czar-bank/actions/workflows/workflow.yml/badge.svg?branch=master)
+[![codecov](https://codecov.io/gh/threehundredbytes/czar-bank/branch/master/graph/badge.svg?token=AW8IRQMF0T)](https://codecov.io/gh/threehundredbytes/czar-bank)
 
 This is Spring Boot demo project. Here you can find examples of:
 - Spring Boot (web, components, exception handling, scheduling and properties)
